@@ -14,8 +14,12 @@ const PORT = Number(process.env.PORT || 3000);
 const projectId = process.env.FIREBASE_PROJECT_ID;
 
 if (!admin.apps.length) {
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+
   admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+    credential: serviceAccount
+      ? admin.credential.cert(JSON.parse(serviceAccount))
+      : admin.credential.applicationDefault(),
     ...(projectId ? { projectId } : {})
   });
 }
