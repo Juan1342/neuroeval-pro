@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#4f46e5">
+  <title>NeuroEval Pro | Evaluación de autorregistro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{font-family:Inter,ui-sans-serif,system-ui;background:#f8fafc;color:#1e293b}
+    .card{background:white;border:1px solid #e2e8f0;border-radius:20px;box-shadow:0 12px 35px #0f172a0d}
+    .btn{border-radius:12px;padding:12px 16px;font-weight:650}
+    .primary{background:#4f46e5;color:white}.primary:hover{background:#4338ca}
+    .muted{background:#f1f5f9;color:#334155}
+    .field{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;outline:none}
+    .field:focus{border-color:#6366f1;box-shadow:0 0 0 3px #6366f122}
+    .hidden{display:none!important}
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<header class="bg-white border-b border-slate-200 px-5 py-4">
+  <div class="max-w-5xl mx-auto flex justify-between items-center">
+    <div class="font-extrabold text-xl">🧠 NeuroEval <span class="text-indigo-600">Pro</span></div>
+    <div id="session-label" class="text-sm text-slate-500"></div>
+  </div>
+</header>
+<main class="w-full max-w-4xl mx-auto p-4 sm:p-6 flex-1">
+  <section id="auth-view" class="card max-w-xl mx-auto p-6 sm:p-9 mt-8">
+    <h1 class="text-2xl font-bold text-center">Bienvenido a NeuroEval Pro</h1>
+    <p class="text-center text-slate-500 text-sm mt-2">Inicia sesión o crea tu cuenta con tu correo electrónico.</p>
+    <div class="flex gap-2 mt-6">
+      <button id="show-login" class="btn primary flex-1">Iniciar sesión</button>
+      <button id="show-register" class="btn muted flex-1">Registrarme</button>
+    </div>
+    <form id="login-form" class="space-y-3 mt-5">
+      <input id="login-email" class="field" type="email" placeholder="Correo electrónico" required autocomplete="email">
+      <input id="login-password" class="field" type="password" placeholder="Contraseña" required autocomplete="current-password">
+      <button class="btn primary w-full">Entrar con correo</button>
+      <button type="button" id="google-login" class="btn muted w-full">Continuar con Google</button>
+      <button type="button" id="forgot-open" class="text-sm text-indigo-600 w-full">¿Olvidaste tu contraseña?</button>
+    </form>
+    <form id="register-form" class="space-y-3 mt-5 hidden">
+      <input id="reg-name" class="field" placeholder="Nombre completo" required maxlength="120">
+      <input id="reg-email" class="field" type="email" placeholder="Correo electrónico personal" required autocomplete="email">
+      <input id="reg-password" class="field" type="password" placeholder="Contraseña (mínimo 8 caracteres)" required minlength="8" autocomplete="new-password">
+      <div class="grid sm:grid-cols-2 gap-3">
+        <input id="reg-age" class="field" type="number" min="12" max="99" placeholder="Edad" required>
+        <select id="reg-goal" class="field"><option>Conocer si mis síntomas encajan con TDAH</option><option>Evaluar problemas de concentración y organización</option><option>Explorar fatiga o estrés</option></select>
+      </div>
+      <label class="text-xs text-slate-600 flex gap-2"><input id="consent" type="checkbox" required> Acepto el tratamiento de mis respuestas para generar y guardar mi informe. He leído el aviso de privacidad.</label>
+      <button class="btn primary w-full">Crear cuenta e iniciar evaluación</button>
+    </form>
+    <p id="auth-message" class="text-sm mt-4 text-center" role="status"></p>
+    <p class="text-xs text-slate-400 mt-5">Los resultados son orientativos y no constituyen un diagnóstico médico.</p>
+  </section>
+
+  <section id="forgot-view" class="card max-w-md mx-auto p-6 mt-8 hidden">
+    <h2 class="text-xl font-bold">Recuperar contraseña</h2>
+    <p class="text-sm text-slate-500 mt-2">Te enviaremos un código de seis dígitos a tu correo.</p>
+    <form id="request-code-form" class="space-y-3 mt-4">
+      <input id="reset-email" class="field" type="email" placeholder="Correo electrónico" required>
+      <button class="btn primary w-full">Enviar código</button>
+    </form>
+    <form id="confirm-reset-form" class="space-y-3 mt-4 hidden">
+      <input id="reset-code" class="field text-center tracking-widest" inputmode="numeric" maxlength="6" placeholder="Código de 6 dígitos" required>
+      <input id="reset-new-password" class="field" type="password" minlength="8" placeholder="Nueva contraseña (mínimo 8)" required>
+      <button class="btn primary w-full">Restablecer contraseña</button>
+    </form>
+    <p id="reset-message" class="text-sm mt-3"></p>
+    <button id="back-login" class="text-sm text-indigo-600 mt-4">Volver al inicio de sesión</button>
+  </section>
+
+  <section id="quiz-view" class="card max-w-2xl mx-auto p-6 sm:p-9 mt-8 hidden">
+    <div class="flex justify-between text-xs font-bold text-indigo-600 mb-2"><span id="progress-label">Pregunta 1 de 15</span><span id="progress-pct">7%</span></div>
+    <div class="h-2 rounded-full bg-slate-100 overflow-hidden"><div id="progress-bar" class="h-full bg-indigo-600" style="width:7%"></div></div>
+    <p id="q-category" class="text-xs font-bold text-indigo-600 mt-7"></p>
+    <h2 id="q-text" class="text-xl font-bold mt-2"></h2>
+    <div id="answers" class="space-y-2 mt-6"></div>
+    <div class="flex justify-between mt-7"><button id="prev-question" class="btn muted">Anterior</button><button id="next-question" class="btn primary">Siguiente</button></div>
+  </section>
+
+  <section id="result-view" class="card max-w-2xl mx-auto p-6 sm:p-9 mt-8 hidden">
+    <h2 class="text-2xl font-bold">Tu informe de autorregistro</h2>
+    <p id="result-name" class="text-sm text-slate-500 mt-1"></p>
+    <div class="bg-indigo-50 rounded-xl p-4 mt-5"><p class="text-xs font-bold text-indigo-700">PERFIL ORIENTATIVO</p><h3 id="result-profile" class="font-bold text-lg mt-1"></h3><p id="result-description" class="text-sm mt-2"></p></div>
+    <div id="score-list" class="space-y-4 mt-6"></div>
+    <h3 class="font-bold mt-6">Recomendaciones</h3><ul id="recommendations" class="list-disc pl-5 text-sm space-y-2 mt-2"></ul>
+    <p class="text-xs text-slate-500 mt-6">Este autorregistro no diagnostica TDAH. La interpretación debe realizarla un profesional cualificado, considerando historia clínica, infancia, contexto y otras posibles causas.</p>
+    <button id="download-own-pdf" class="btn primary w-full mt-5">Descargar informe PDF</button>
+    <button id="logout-result" class="btn muted w-full mt-2">Cerrar sesión</button>
+  </section>
+
+  <section id="admin-view" class="card mx-auto p-5 sm:p-8 mt-8 hidden">
+    <div class="flex flex-wrap justify-between gap-3 items-center"><div><h2 class="text-2xl font-bold">Panel de desarrollador</h2><p class="text-sm text-slate-500">Administración de NeuroEval Pro</p></div><button id="admin-refresh" class="btn muted">Actualizar</button></div>
+    <div class="grid sm:grid-cols-2 gap-3 mt-6">
+      <div class="bg-indigo-50 rounded-xl p-4"><p class="text-sm text-indigo-700">Clientes registrados</p><strong id="stat-users" class="text-3xl">0</strong></div>
+      <div class="bg-emerald-50 rounded-xl p-4"><p class="text-sm text-emerald-700">Pruebas completadas</p><strong id="stat-evals" class="text-3xl">0</strong></div>
+    </div>
+    <h3 class="font-bold mt-7 mb-3">Evaluaciones de clientes</h3>
+    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead><tr class="border-b text-slate-500"><th class="p-2">Fecha</th><th class="p-2">Cliente</th><th class="p-2">Correo</th><th class="p-2">Perfil</th><th class="p-2">Informe</th></tr></thead><tbody id="admin-rows"></tbody></table></div>
+    <button id="admin-logout" class="btn muted mt-6">Cerrar sesión</button>
+  </section>
+</main>
+<footer class="text-center text-xs text-slate-400 py-6">NeuroEval Pro · Autorregistro cognitivo responsable</footer>
+<script type="module" src="/app.js"></script>
+</body></html>
