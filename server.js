@@ -14,11 +14,13 @@ const PORT = Number(process.env.PORT || 3000);
 const projectId = process.env.FIREBASE_PROJECT_ID;
 
 if (!admin.apps.length) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  // En Render, la cuenta de servicio se configura como variable privada.
+  // Nunca publiques el contenido de esta variable en GitHub ni en el navegador.
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
   admin.initializeApp({
-    credential: serviceAccount
-      ? admin.credential.cert(JSON.parse(serviceAccount))
+    credential: serviceAccountJson
+      ? admin.credential.cert(JSON.parse(serviceAccountJson))
       : admin.credential.applicationDefault(),
     ...(projectId ? { projectId } : {})
   });
@@ -26,7 +28,12 @@ if (!admin.apps.length) {
 const auth = admin.auth();
 const db = admin.firestore();
 
-app.use(helmet({ crossOriginEmbedderPolicy: false }));
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  // Temporalmente desactivada para permitir los módulos CDN de Firebase
+  // y el script CDN de Tailwind usados por el frontend.
+  contentSecurityPolicy: false
+}));
 app.use(cors({
   origin(origin, callback) {
     const allowed = (process.env.CORS_ORIGINS || process.env.APP_ORIGIN || "http://localhost:3000")
@@ -88,13 +95,22 @@ app.get("/api/health", (_req, res) => res.json({ ok: true, service: "NeuroEval P
 app.post("/api/profile", authLimiter, requireUser, async (req, res) => {
   try {
     const name = cleanText(req.body.name, 120);
-    const age = Number(req.body.age);
+    const ageRaw = req.body.age;
+    // Permitir null/undefined (usuarios Google sin edad). Solo validar si se envía un valor.
+    const age = (ageRaw === null || ageRaw === undefined || ageRaw === "") ? null : Number(ageRaw);
     const goal = cleanText(req.body.goal, 300);
-    if (!name || (age !== null && age !== undefined && (!Number.isInteger(age) || age < 12 || age > 99))) {
-      return res.status(400).json({ error: "Nombre o edad no válidos." });
+    if (!name) {
+      return res.status(400).json({ error: "El nombre es obligatorio." });
+    }
+    if (age !== null && (!Number.isInteger(age) || age < 12 || age > 99)) {
+      return res.status(400).json({ error: "Edad no válida (debe estar entre 12 y 99)." });
     }
     await db.collection("users").doc(req.user.uid).set({
-      uid: req.user.uid, name, email: req.user.email.toLowerCase(), age: age ?? null, goal,
+      uid: req.user.uid,
+      name,
+      email: req.user.email.toLowerCase(),
+      age,
+      goal,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
     res.json({ ok: true });

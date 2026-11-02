@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="description" content="NeuroEval Pro — Autorregistro cognitivo orientativo. No constituye diagnóstico médico.">
+  <title>NeuroEval Pro | Evaluación de autorregistro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81'
+            }
+          },
+          boxShadow: {
+            soft: '0 10px 40px -10px rgba(15, 23, 42, 0.12)',
+            card: '0 4px 24px -4px rgba(15, 23, 42, 0.08)'
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.35s ease-out',
+            'slide-up': 'slideUp 0.4s ease-out'
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+            slideUp: { '0%': { opacity: '0', transform: 'translateY(12px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: linear-gradient(160deg, #f8fafc 0%, #eef2ff 45%, #f1f5f9 100%);
+      color: #0f172a;
+      min-height: 100dvh;
+    }
+    .card {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(226,232,240,0.9);
+      border-radius: 1.25rem;
+      box-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.08);
+    }
+    .btn {
+      border-radius: 0.75rem;
+      padding: 0.75rem 1.15rem;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      transition: all 0.18s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .primary {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: white;
+      box-shadow: 0 4px 14px -3px rgba(79, 70, 229, 0.45);
+    }
+    .primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #4338ca, #4f46e5);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px -3px rgba(79, 70, 229, 0.5);
+    }
+    .muted {
+      background: #f1f5f9;
+      color: #334155;
+    }
+    .muted:hover:not(:disabled) {
+      background: #e2e8f0;
+    }
+    .outline-btn {
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      color: #334155;
+    }
+    .outline-btn:hover:not(:disabled) {
+      border-color: #c7d2fe;
+      background: #f8fafc;
+    }
+    .field {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 0.75rem;
+      outline: none;
+      background: white;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      font-size: 0.95rem;
+    }
+    .field:focus {
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+    .hidden { display: none !important; }
+    .answer-btn {
+      width: 100%;
+      text-align: left;
+      padding: 0.85rem 1.1rem;
+      border-radius: 0.85rem;
+      border: 1.5px solid #e2e8f0;
+      background: white;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .answer-btn:hover {
+      border-color: #a5b4fc;
+      background: #f8fafc;
+    }
+    .answer-btn.selected {
+      border-color: #4f46e5;
+      background: #eef2ff;
+      color: #312e81;
+      box-shadow: 0 0 0 1px #4f46e5;
+    }
+    .progress-track {
+      height: 0.5rem;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #4f46e5, #818cf8);
+      transition: width 0.35s ease;
+    }
+    .score-bar {
+      height: 0.55rem;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+    .score-fill {
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #4f46e5, #6366f1);
+    }
+    .spinner {
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 2.5px solid rgba(255,255,255,0.35);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.85rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      box-shadow: 0 10px 30px -5px rgba(0,0,0,0.15);
+      animation: slideUp 0.3s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
+      <div class="font-extrabold text-lg sm:text-xl tracking-tight">
+        🧠 NeuroEval <span class="text-brand-600">Pro</span>
+      </div>
+      <div id="session-label" class="text-xs sm:text-sm text-slate-500 truncate max-w-[45%]"></div>
+    </div>
+  </header>
+
+  <main class="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1">
+
+    <!-- AUTH -->
+    <section id="auth-view" class="card max-w-md mx-auto p-6 sm:p-8 mt-4 sm:mt-8 animate-fade-in">
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-50 text-3xl mb-3">🧠</div>
+        <h1 class="text-2xl font-bold tracking-tight">Bienvenido a NeuroEval Pro</h1>
+        <p class="text-slate-500 text-sm mt-2 leading-relaxed">Autorregistro cognitivo orientativo. Inicia sesión o crea tu cuenta.</p>
+      </div>
+
+      <div class="flex gap-2 p-1 bg-slate-100 rounded-xl mb-5">
+        <button id="show-login" class="btn primary flex-1 !py-2.5 text-sm">Iniciar sesión</button>
+        <button id="show-register" class="btn muted flex-1 !py-2.5 text-sm">Registrarme</button>
+      </div>
+
+      <form id="login-form" class="space-y-3">
+        <input id="login-email" class="field" type="email" placeholder="Correo electrónico" required autocomplete="email">
+        <input id="login-password" class="field" type="password" placeholder="Contraseña" required autocomplete="current-password">
+        <button type="submit" class="btn primary w-full" id="login-btn">
+          <span class="btn-text">Entrar con correo</span>
+        </button>
+        <button type="button" id="google-login" class="btn outline-btn w-full">
+          <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continuar con Google
+        </button>
+        <button type="button" id="forgot-open" class="text-sm text-brand-600 hover:text-brand-700 w-full py-1 font-medium">¿Olvidaste tu contraseña?</button>
+      </form>
+
+      <form id="register-form" class="space-y-3 hidden">
+        <input id="reg-name" class="field" placeholder="Nombre completo" required maxlength="120" autocomplete="name">
+        <input id="reg-email" class="field" type="email" placeholder="Correo electrónico personal" required autocomplete="email">
+        <input id="reg-password" class="field" type="password" placeholder="Contraseña (mínimo 8 caracteres)" required minlength="8" autocomplete="new-password">
+        <div class="grid sm:grid-cols-2 gap-3">
+          <input id="reg-age" class="field" type="number" min="12" max="99" placeholder="Edad" required>
+          <select id="reg-goal" class="field">
+            <option>Conocer si mis síntomas encajan con TDAH</option>
+            <option>Evaluar problemas de concentración y organización</option>
+            <option>Explorar fatiga o estrés</option>
+          </select>
+        </div>
+        <label class="text-xs text-slate-600 flex gap-2.5 items-start leading-snug cursor-pointer">
+          <input id="consent" type="checkbox" required class="mt-0.5 accent-brand-600">
+          <span>Acepto el tratamiento de mis respuestas para generar y guardar mi informe. He leído el aviso de privacidad.</span>
+        </label>
+        <button type="submit" class="btn primary w-full" id="register-btn">
+          <span class="btn-text">Crear cuenta e iniciar evaluación</span>
+        </button>
+      </form>
+
+      <p id="auth-message" class="text-sm mt-4 text-center min-h-[1.25rem]" role="status"></p>
+      <p class="text-xs text-slate-400 mt-5 text-center leading-relaxed">Los resultados son orientativos y no constituyen un diagnóstico médico.</p>
+    </section>
+
+    <!-- FORGOT PASSWORD -->
+    <section id="forgot-view" class="card max-w-md mx-auto p-6 sm:p-8 mt-8 hidden animate-fade-in">
+      <h2 class="text-xl font-bold">Recuperar contraseña</h2>
+      <p class="text-sm text-slate-500 mt-2">Te enviaremos un código de seis dígitos a tu correo.</p>
+      <form id="request-code-form" class="space-y-3 mt-5">
+        <input id="reset-email" class="field" type="email" placeholder="Correo electrónico" required>
+        <button type="submit" class="btn primary w-full">Enviar código</button>
+      </form>
+      <form id="confirm-reset-form" class="space-y-3 mt-5 hidden">
+        <input id="reset-code" class="field text-center tracking-[0.35em] text-lg font-semibold" inputmode="numeric" maxlength="6" placeholder="••••••" required>
+        <input id="reset-new-password" class="field" type="password" minlength="8" placeholder="Nueva contraseña (mínimo 8)" required>
+        <button type="submit" class="btn primary w-full">Restablecer contraseña</button>
+      </form>
+      <p id="reset-message" class="text-sm mt-4 min-h-[1.25rem]"></p>
+      <button id="back-login" class="text-sm text-brand-600 font-medium mt-4 hover:underline">← Volver al inicio de sesión</button>
+    </section>
+
+    <!-- DASHBOARD / PREVIOUS RESULT -->
+    <section id="dashboard-view" class="card max-w-2xl mx-auto p-6 sm:p-8 mt-6 hidden animate-slide-up">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-bold">Tu espacio</h2>
+          <p id="dash-greeting" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+        <button id="logout-dash" class="btn muted text-sm !py-2">Cerrar sesión</button>
+      </div>
+
+      <div id="dash-last-result" class="mt-6 hidden">
+        <div class="bg-brand-50 rounded-2xl p-5 border border-brand-100">
+          <p class="text-xs font-bold text-brand-700 uppercase tracking-wide">Último informe</p>
+          <h3 id="dash-profile" class="font-bold text-lg mt-1.5 text-slate-900"></h3>
+          <p id="dash-date" class="text-xs text-slate-500 mt-1"></p>
+          <div id="dash-scores" class="space-y-3 mt-4"></div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 mt-5">
+          <button id="view-last-pdf" class="btn primary flex-1">Descargar último PDF</button>
+          <button id="retake-quiz" class="btn outline-btn flex-1">Realizar nueva evaluación</button>
+        </div>
+      </div>
+
+      <div id="dash-empty" class="mt-6 text-center py-8 hidden">
+        <div class="text-4xl mb-3">📋</div>
+        <p class="text-slate-600 font-medium">Aún no tienes evaluaciones</p>
+        <p class="text-sm text-slate-500 mt-1">Completa el autorregistro para obtener tu informe orientativo.</p>
+        <button id="start-first-quiz" class="btn primary mt-5">Comenzar evaluación</button>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section id="quiz-view" class="card max-w-2xl mx-auto p-6 sm:p-8 mt-6 hidden animate-slide-up">
+      <div class="flex justify-between text-xs font-semibold text-brand-600 mb-2">
+        <span id="progress-label">Pregunta 1 de 15</span>
+        <span id="progress-pct">7%</span>
+      </div>
+      <div class="progress-track"><div id="progress-bar" class="progress-fill" style="width:7%"></div></div>
+      <p id="q-category" class="text-xs font-bold text-brand-600 uppercase tracking-wide mt-7"></p>
+      <h2 id="q-text" class="text-xl sm:text-[1.35rem] font-bold mt-2 leading-snug text-slate-900"></h2>
+      <div id="answers" class="space-y-2.5 mt-6"></div>
+      <div class="flex justify-between mt-8 gap-3">
+        <button id="prev-question" class="btn muted">Anterior</button>
+        <button id="next-question" class="btn primary min-w-[140px]">Siguiente</button>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="result-view" class="card max-w-2xl mx-auto p-6 sm:p-8 mt-6 hidden animate-slide-up">
+      <h2 class="text-2xl font-bold tracking-tight">Tu informe de autorregistro</h2>
+      <p id="result-name" class="text-sm text-slate-500 mt-1"></p>
+      <div class="bg-brand-50 rounded-2xl p-5 mt-5 border border-brand-100">
+        <p class="text-xs font-bold text-brand-700 uppercase tracking-wide">Perfil orientativo</p>
+        <h3 id="result-profile" class="font-bold text-lg mt-1.5"></h3>
+        <p id="result-description" class="text-sm mt-2 text-slate-600 leading-relaxed"></p>
+      </div>
+      <div id="score-list" class="space-y-4 mt-6"></div>
+      <h3 class="font-bold mt-7 text-slate-900">Recomendaciones</h3>
+      <ul id="recommendations" class="list-disc pl-5 text-sm space-y-2 mt-2 text-slate-700"></ul>
+      <p class="text-xs text-slate-500 mt-6 leading-relaxed bg-slate-50 rounded-xl p-3.5">
+        Este autorregistro no diagnostica TDAH. La interpretación debe realizarla un profesional cualificado, considerando historia clínica, infancia, contexto y otras posibles causas.
+      </p>
+      <button id="download-own-pdf" class="btn primary w-full mt-5">Descargar informe PDF</button>
+      <button id="go-dashboard" class="btn muted w-full mt-2">Volver a mi espacio</button>
+      <button id="logout-result" class="btn outline-btn w-full mt-2">Cerrar sesión</button>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="admin-view" class="card mx-auto p-5 sm:p-8 mt-6 hidden animate-fade-in">
+      <div class="flex flex-wrap justify-between gap-3 items-center">
+        <div>
+          <h2 class="text-2xl font-bold">Panel de administración</h2>
+          <p class="text-sm text-slate-500">NeuroEval Pro · Vista desarrollador</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="admin-refresh" class="btn muted text-sm">Actualizar</button>
+          <button id="admin-logout" class="btn outline-btn text-sm">Cerrar sesión</button>
+        </div>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-3 mt-6">
+        <div class="bg-brand-50 rounded-2xl p-5 border border-brand-100">
+          <p class="text-sm text-brand-700 font-medium">Clientes registrados</p>
+          <strong id="stat-users" class="text-3xl font-bold text-slate-900 mt-1 block">0</strong>
+        </div>
+        <div class="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
+          <p class="text-sm text-emerald-700 font-medium">Pruebas completadas</p>
+          <strong id="stat-evals" class="text-3xl font-bold text-slate-900 mt-1 block">0</strong>
+        </div>
+      </div>
+      <h3 class="font-bold mt-8 mb-3 text-slate-900">Evaluaciones de clientes</h3>
+      <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="w-full text-sm text-left">
+          <thead>
+            <tr class="bg-slate-50 border-b text-slate-500">
+              <th class="p-3 font-semibold">Fecha</th>
+              <th class="p-3 font-semibold">Cliente</th>
+              <th class="p-3 font-semibold">Correo</th>
+              <th class="p-3 font-semibold">Perfil</th>
+              <th class="p-3 font-semibold">Informe</th>
+            </tr>
+          </thead>
+          <tbody id="admin-rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="text-center text-xs text-slate-400 py-6 px-4">
+    NeuroEval Pro · Autorregistro cognitivo responsable · No es una herramienta de diagnóstico
+  </footer>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
