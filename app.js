@@ -17,12 +17,26 @@ const config = match ? JSON.parse(match[1]) : {};
 
 if (!config.apiKey || !config.projectId || !config.authDomain || !config.appId) {
   const el = document.getElementById("auth-message");
-  if (el) el.textContent = "Falta configurar Firebase. Sigue las instrucciones del README.";
-  throw new Error("Configuración Firebase incompleta");
+  if (el) {
+    el.textContent = "Falta configurar Firebase en el servidor (FIREBASE_API_KEY, AUTH_DOMAIN, PROJECT_ID, APP_ID).";
+    el.className = "text-sm mt-4 text-center text-rose-600";
+  }
+  console.error("Configuración Firebase incompleta", config);
+  // No lanzar: evita que el módulo muera sin listeners; el login fallará con mensaje claro
 }
 
-const firebaseApp = initializeApp(config);
-const auth = getAuth(firebaseApp);
+let firebaseApp, auth;
+try {
+  firebaseApp = initializeApp(config);
+  auth = getAuth(firebaseApp);
+} catch (e) {
+  console.error("Firebase init failed", e);
+  const el = document.getElementById("auth-message");
+  if (el) {
+    el.textContent = "No se pudo iniciar Firebase. Revisa las variables FIREBASE_* en Render.";
+    el.className = "text-sm mt-4 text-center text-rose-600";
+  }
+}
 const $ = (id) => document.getElementById(id);
 
 let currentUser = null;
@@ -123,19 +137,37 @@ function switchAuth(mode) {
 $("show-login").onclick = () => switchAuth("login");
 $("show-register").onclick = () => switchAuth("register");
 
-$("login-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
+async function doEmailLogin() {
   const btn = $("login-btn");
+  const email = ($("login-email")?.value || "").trim();
+  const password = $("login-password")?.value || "";
+  if (!email || !password) {
+    message("auth-message", "Escribe tu correo y contraseña.", true);
+    return;
+  }
   setLoading(btn, true);
+  message("auth-message", "Iniciando sesión…");
   try {
-    await signInWithEmailAndPassword(auth, $("login-email").value.trim(), $("login-password").value);
-    message("auth-message", "Acceso correcto.");
+    await signInWithEmailAndPassword(auth, email, password);
+    message("auth-message", "Acceso correcto. Cargando…");
   } catch (err) {
+    console.error("Login error:", err);
     message("auth-message", friendlyAuthError(err), true);
   } finally {
     setLoading(btn, false);
   }
+}
+$("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  await doEmailLogin();
 });
+if ($("login-btn")) {
+  $("login-btn").addEventListener("click", async (e) => {
+    // Por si el submit del form no dispara en algunos móviles
+    if (e.target.closest("form")?.id === "login-form") return;
+  });
+}
 
 $("register-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -163,12 +195,19 @@ $("register-form").addEventListener("submit", async (e) => {
 $("google-login").onclick = async () => {
   const btn = $("google-login");
   btn.disabled = true;
+  message("auth-message", "Abriendo Google…");
   try {
     const provider = new GoogleAuthProvider();
+    provider.addScope("email");
+    provider.addScope("profile");
     provider.setCustomParameters({ prompt: "select_account" });
-    await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    if (result?.user) {
+      message("auth-message", "Acceso con Google correcto. Cargando…");
+    }
   } catch (err) {
     console.error("Google login error:", err);
+    // No confundir cierre de popup con "sesión cerrada"
     message("auth-message", friendlyAuthError(err), true);
   } finally {
     btn.disabled = false;
@@ -177,18 +216,26 @@ $("google-login").onclick = async () => {
 
 function friendlyAuthError(err) {
   const map = {
-    "auth/email-already-in-use": "Ese correo ya tiene una cuenta.",
+    "auth/email-already-in-use": "Ese correo ya tiene una cuenta. Usa Iniciar sesión.",
     "auth/invalid-email": "El correo no es válido.",
+    "auth/user-not-found": "No existe una cuenta con ese correo.",
+    "auth/wrong-password": "Contraseña incorrecta.",
     "auth/weak-password": "La contraseña debe tener al menos 8 caracteres.",
     "auth/invalid-credential": "Correo o contraseña incorrectos.",
-    "auth/popup-closed-by-user": "Se cerró la ventana de Google. Inténtalo de nuevo.",
-    "auth/popup-blocked": "El navegador bloqueó la ventana de Google. Permite ventanas emergentes.",
-    "auth/cancelled-popup-request": "Se canceló el inicio con Google.",
-    "auth/network-request-failed": "Error de red. Revisa tu conexión.",
-    "auth/too-many-requests": "Demasiados intentos. Espera un momento.",
-    "auth/unauthorized-domain": "Este dominio no está autorizado en Firebase. Añádelo en Authentication → Settings → Authorized domains."
+    "auth/popup-closed-by-user": "Cerraste la ventana de Google antes de terminar. Vuelve a intentarlo y no cierres la ventana emergente.",
+    "auth/popup-blocked": "El navegador bloqueó la ventana de Google. Permite ventanas emergentes para este sitio.",
+    "auth/cancelled-popup-request": "Se canceló el inicio con Google. Inténtalo otra vez.",
+    "auth/network-request-failed": "Error de red. Revisa tu conexión a internet.",
+    "auth/too-many-requests": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    "auth/unauthorized-domain": "Este dominio no está autorizado en Firebase. En Firebase Console → Authentication → Settings → Authorized domains, agrega tu dominio de Render (ej: tu-app.onrender.com).",
+    "auth/internal-error": "Error interno de autenticación. Revisa la configuración de Firebase."
   };
-  return map[err.code] || err.message || "No se pudo completar la operación.";
+  if (err?.code && map[err.code]) return map[err.code];
+  const msg = err?.message || "";
+  if (/session|sesión/i.test(msg) && /closed|cerr/i.test(msg)) {
+    return "La ventana de Google se cerró antes de completar el acceso. Inténtalo de nuevo.";
+  }
+  return msg || "No se pudo completar la operación.";
 }
 
 // Password recovery
@@ -258,18 +305,27 @@ onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   if (!user) {
     $("session-label").textContent = "";
+    currentIsAdmin = false;
     show("auth-view");
     return;
   }
+
+  // Usuario autenticado: NUNCA volver a auth-view por errores secundarios
+  $("session-label").textContent = user.email || "";
+
   try {
-    // Forzar refresh del token para obtener claims admin actualizados
-    const tokenResult = await getIdTokenResult(user, true);
+    let tokenResult;
+    try {
+      tokenResult = await getIdTokenResult(user, true);
+    } catch (tokenErr) {
+      console.warn("No se pudo refrescar token, usando claims en caché", tokenErr);
+      tokenResult = await getIdTokenResult(user, false);
+    }
     currentIsAdmin = tokenResult.claims.admin === true && user.email?.toLowerCase() === ADMIN_EMAIL;
-    $("session-label").textContent = user.email || "";
 
     if (currentIsAdmin) {
       show("admin-view");
-      await loadAdmin();
+      try { await loadAdmin(); } catch (e) { console.error(e); toast("Panel admin: " + e.message, true); }
       return;
     }
 
@@ -281,7 +337,7 @@ onAuthStateChanged(auth, async (user) => {
       console.warn("Perfil no disponible aún", e);
     }
 
-    const displayName = profileData?.name || user.displayName || user.email?.split("@")[0] || "Usuario";
+    const displayName = profileData?.name || user.displayName || (user.email ? user.email.split("@")[0] : "Usuario");
     const age = profileData?.age ?? null;
     const goal = profileData?.goal || "Evaluación cognitiva";
 
@@ -317,9 +373,11 @@ onAuthStateChanged(auth, async (user) => {
     }
   } catch (e) {
     console.error("onAuthStateChanged error:", e);
-    // No botar al usuario a login si ya autenticó; mostrar mensaje
-    message("auth-message", "Hubo un problema al cargar tu sesión: " + (e.message || "error desconocido"), true);
-    show("auth-view");
+    // Mantener sesión: mostrar dashboard mínimo en lugar de cerrar
+    const fallbackName = user.displayName || (user.email ? user.email.split("@")[0] : "Usuario");
+    window.profileData = window.profileData || { name: fallbackName, age: null, goal: "Evaluación cognitiva" };
+    showDashboard(fallbackName, lastEvaluation);
+    toast("Algunos datos no cargaron, pero tu sesión sigue activa.", true);
   }
 });
 

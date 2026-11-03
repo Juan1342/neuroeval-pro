@@ -101,7 +101,12 @@ async function requireAdmin(req, res, next) {
   next();
 }
 
-app.get("/api/health", (_req, res) => res.json({ ok: true, service: "NeuroEval Pro" }));
+app.get("/api/health", (_req, res) => res.json({
+  ok: true,
+  service: "NeuroEval Pro",
+  smtpConfigured: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS),
+  firebaseProject: process.env.FIREBASE_PROJECT_ID || null
+}));
 
 // Perfil
 app.post("/api/profile", authLimiter, requireUser, async (req, res) => {
@@ -543,8 +548,17 @@ app.post("/api/password/request", resetLimiter, async (req, res) => {
     });
     res.json({ ok: true, message: "Si la cuenta existe, recibirás instrucciones." });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "No se pudo enviar el correo. Revisa la configuración SMTP." });
+    console.error("password/request error:", e);
+    const msg = String(e && e.message || e);
+    let friendly = "No se pudo enviar el correo. Revisa la configuración SMTP en Render.";
+    if (/Invalid login|EAUTH|Username and Password not accepted/i.test(msg)) {
+      friendly = "Gmail rechazó el acceso. Usa una Contraseña de aplicación (no la contraseña normal) en SMTP_PASS.";
+    } else if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|connect/i.test(msg)) {
+      friendly = "No se pudo conectar al servidor SMTP. Revisa SMTP_HOST y SMTP_PORT.";
+    } else if (/no está configurado|SMTP/i.test(msg)) {
+      friendly = "Faltan variables SMTP en Render (SMTP_HOST, SMTP_USER, SMTP_PASS).";
+    }
+    res.status(500).json({ error: friendly });
   }
 });
 
