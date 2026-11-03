@@ -10,7 +10,6 @@ import {
   getIdTokenResult
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
-// Configuración pública servida por el backend (sin secretos)
 const configResponse = await fetch("/firebase-config.js");
 const configText = await configResponse.text();
 const match = configText.match(/window\.FIREBASE_CONFIG\s*=\s*(\{[\s\S]*?\});/);
@@ -35,6 +34,7 @@ let lastEvaluationId = null;
 let lastEvaluation = null;
 
 const ADMIN_EMAIL = "jzamorazapata@gmail.com";
+const PRICE_LABEL = "$19.900 COP";
 
 const bank = [
   ["Atención y enfoque", "¿Te cuesta mantener la atención en tareas que requieren esfuerzo mental prolongado?", "inattention"],
@@ -56,31 +56,26 @@ const bank = [
   ["Diagnóstico diferencial", "¿Los problemas varían mucho según tu descanso o carga de trabajo?", "differential"],
   ["Organización", "¿Te cuesta calcular cuánto tiempo necesitas para completar actividades?", "inattention"]
 ];
-
 const choices = ["Nunca", "Raramente", "A veces", "A menudo", "Muy a menudo"];
 const points = [0, 1, 2, 3, 4];
-
-const VIEWS = ["auth-view", "forgot-view", "dashboard-view", "quiz-view", "result-view", "admin-view"];
+const VIEWS = ["auth-view", "forgot-view", "dashboard-view", "quiz-view", "result-view", "receipt-view", "admin-view"];
 
 function show(id) {
-  VIEWS.forEach((x) => $(x).classList.toggle("hidden", x !== id));
+  VIEWS.forEach((x) => $(x)?.classList.toggle("hidden", x !== id));
 }
-
 function message(id, text, error = false) {
   const el = $(id);
   if (!el) return;
   el.textContent = text;
   el.className = `text-sm mt-4 text-center min-h-[1.25rem] ${error ? "text-rose-600" : "text-emerald-700"}`;
 }
-
 function toast(text, error = false) {
   const el = $("toast");
   el.textContent = text;
   el.className = `toast ${error ? "bg-rose-600 text-white" : "bg-slate-900 text-white"}`;
   el.classList.remove("hidden");
-  setTimeout(() => el.classList.add("hidden"), 3200);
+  setTimeout(() => el.classList.add("hidden"), 3500);
 }
-
 function setLoading(btn, loading) {
   if (!btn) return;
   const text = btn.querySelector(".btn-text");
@@ -95,7 +90,12 @@ function setLoading(btn, loading) {
     else if (btn.dataset.original) btn.textContent = btn.dataset.original;
   }
 }
-
+async function parseResponse(r) {
+  const raw = await r.text();
+  let d = {};
+  try { d = JSON.parse(raw); } catch { d = { error: raw || "Error del servidor" }; }
+  return { ok: r.ok, status: r.status, data: d };
+}
 async function api(url, options = {}) {
   const token = currentUser ? await currentUser.getIdToken() : null;
   const response = await fetch(url, {
@@ -107,7 +107,7 @@ async function api(url, options = {}) {
     }
   });
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
+    const { data } = await parseResponse(response);
     throw new Error(data.error || "Ocurrió un error.");
   }
   return response;
@@ -120,7 +120,6 @@ function switchAuth(mode) {
   $("show-register").className = `btn flex-1 !py-2.5 text-sm ${mode === "register" ? "primary" : "muted"}`;
   message("auth-message", "");
 }
-
 $("show-login").onclick = () => switchAuth("login");
 $("show-register").onclick = () => switchAuth("register");
 
@@ -148,16 +147,11 @@ $("register-form").addEventListener("submit", async (e) => {
     const age = Number($("reg-age").value);
     const goal = $("reg-goal").value;
     if (!$("consent").checked) throw new Error("Debes aceptar el aviso de privacidad.");
-    if (email === ADMIN_EMAIL) {
-      throw new Error("El correo reservado para administración no puede registrarse como cliente.");
-    }
+    if (email === ADMIN_EMAIL) throw new Error("El correo reservado para administración no puede registrarse como cliente.");
     const cred = await createUserWithEmailAndPassword(auth, email, $("reg-password").value);
     currentUser = cred.user;
     window.profileData = { name, age, goal };
-    await api("/api/profile", {
-      method: "POST",
-      body: JSON.stringify({ name, age, goal })
-    });
+    await api("/api/profile", { method: "POST", body: JSON.stringify({ name, age, goal }) });
     startQuiz(name, age, goal);
   } catch (err) {
     message("auth-message", friendlyAuthError(err), true);
@@ -167,10 +161,17 @@ $("register-form").addEventListener("submit", async (e) => {
 });
 
 $("google-login").onclick = async () => {
+  const btn = $("google-login");
+  btn.disabled = true;
   try {
-    await signInWithPopup(auth, new GoogleAuthProvider());
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    await signInWithPopup(auth, provider);
   } catch (err) {
+    console.error("Google login error:", err);
     message("auth-message", friendlyAuthError(err), true);
+  } finally {
+    btn.disabled = false;
   }
 };
 
@@ -180,8 +181,12 @@ function friendlyAuthError(err) {
     "auth/invalid-email": "El correo no es válido.",
     "auth/weak-password": "La contraseña debe tener al menos 8 caracteres.",
     "auth/invalid-credential": "Correo o contraseña incorrectos.",
-    "auth/popup-closed-by-user": "Se cerró la ventana de Google.",
-    "auth/too-many-requests": "Demasiados intentos. Espera un momento."
+    "auth/popup-closed-by-user": "Se cerró la ventana de Google. Inténtalo de nuevo.",
+    "auth/popup-blocked": "El navegador bloqueó la ventana de Google. Permite ventanas emergentes.",
+    "auth/cancelled-popup-request": "Se canceló el inicio con Google.",
+    "auth/network-request-failed": "Error de red. Revisa tu conexión.",
+    "auth/too-many-requests": "Demasiados intentos. Espera un momento.",
+    "auth/unauthorized-domain": "Este dominio no está autorizado en Firebase. Añádelo en Authentication → Settings → Authorized domains."
   };
   return map[err.code] || err.message || "No se pudo completar la operación.";
 }
@@ -197,6 +202,8 @@ $("back-login").onclick = () => show("auth-view");
 
 $("request-code-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const btn = e.target.querySelector("button[type=submit]");
+  if (btn) { btn.disabled = true; btn.textContent = "Enviando…"; }
   try {
     const email = $("reset-email").value.trim().toLowerCase();
     const r = await fetch("/api/password/request", {
@@ -204,18 +211,25 @@ $("request-code-form").addEventListener("submit", async (e) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
     });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
+    const { ok, status, data } = await parseResponse(r);
+    if (!ok) {
+      if (status === 429) throw new Error(data.error || "Demasiados intentos. Espera un minuto.");
+      throw new Error(data.error || "No se pudo enviar el código.");
+    }
     $("request-code-form").classList.add("hidden");
     $("confirm-reset-form").classList.remove("hidden");
     message("reset-message", "Si la cuenta existe, recibirás un código. Revisa también la carpeta de spam.");
   } catch (err) {
     message("reset-message", err.message, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Enviar código"; }
   }
 });
 
 $("confirm-reset-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const btn = e.target.querySelector("button[type=submit]");
+  if (btn) { btn.disabled = true; btn.textContent = "Restableciendo…"; }
   try {
     const r = await fetch("/api/password/confirm", {
       method: "POST",
@@ -226,16 +240,20 @@ $("confirm-reset-form").addEventListener("submit", async (e) => {
         newPassword: $("reset-new-password").value
       })
     });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    message("reset-message", d.message);
+    const { ok, status, data } = await parseResponse(r);
+    if (!ok) {
+      if (status === 429) throw new Error(data.error || "Demasiados intentos.");
+      throw new Error(data.error || "No se pudo restablecer la contraseña.");
+    }
+    message("reset-message", data.message || "Contraseña actualizada.");
     $("confirm-reset-form").classList.add("hidden");
   } catch (err) {
     message("reset-message", err.message, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Restablecer contraseña"; }
   }
 });
 
-// Auth state
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   if (!user) {
@@ -244,11 +262,9 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   try {
+    // Forzar refresh del token para obtener claims admin actualizados
     const tokenResult = await getIdTokenResult(user, true);
-    currentIsAdmin =
-      tokenResult.claims.admin === true &&
-      user.email?.toLowerCase() === ADMIN_EMAIL;
-
+    currentIsAdmin = tokenResult.claims.admin === true && user.email?.toLowerCase() === ADMIN_EMAIL;
     $("session-label").textContent = user.email || "";
 
     if (currentIsAdmin) {
@@ -257,52 +273,63 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    // Perfil del cliente
     let profileData = null;
     try {
       const profileResponse = await api("/api/profile");
       profileData = (await profileResponse.json()).profile;
-    } catch (_) {}
+    } catch (e) {
+      console.warn("Perfil no disponible aún", e);
+    }
 
     const displayName = profileData?.name || user.displayName || user.email?.split("@")[0] || "Usuario";
     const age = profileData?.age ?? null;
     const goal = profileData?.goal || "Evaluación cognitiva";
 
     if (!profileData) {
-      // Crear perfil mínimo (edad puede ser null)
-      await api("/api/profile", {
-        method: "POST",
-        body: JSON.stringify({ name: displayName, age: null, goal })
-      });
+      try {
+        await api("/api/profile", {
+          method: "POST",
+          body: JSON.stringify({ name: displayName, age: null, goal })
+        });
+      } catch (e) {
+        console.warn("No se pudo crear perfil mínimo", e);
+      }
     }
 
     window.profileData = { name: displayName, age, goal };
 
-    // Cargar evaluaciones previas
     let evaluations = [];
     try {
       const evRes = await api("/api/my-evaluations");
       evaluations = (await evRes.json()).evaluations || [];
-    } catch (_) {}
+    } catch (e) {
+      console.warn("No se pudieron cargar evaluaciones", e);
+    }
 
     if (evaluations.length > 0) {
       lastEvaluation = evaluations[0];
       lastEvaluationId = lastEvaluation.id;
       showDashboard(displayName, lastEvaluation);
     } else {
+      lastEvaluation = null;
+      lastEvaluationId = null;
       showDashboard(displayName, null);
     }
   } catch (e) {
-    console.error(e);
+    console.error("onAuthStateChanged error:", e);
+    // No botar al usuario a login si ya autenticó; mostrar mensaje
+    message("auth-message", "Hubo un problema al cargar tu sesión: " + (e.message || "error desconocido"), true);
     show("auth-view");
-    message("auth-message", "No se pudo validar la sesión.", true);
   }
 });
+
+function isPaid(ev) {
+  return ev && ev.paymentStatus === "paid";
+}
 
 function showDashboard(name, lastEval) {
   $("dash-greeting").textContent = `Hola, ${name}`;
   show("dashboard-view");
-
   if (lastEval) {
     $("dash-last-result").classList.remove("hidden");
     $("dash-empty").classList.add("hidden");
@@ -311,28 +338,74 @@ function showDashboard(name, lastEval) {
       ? `Realizado el ${new Date(lastEval.createdAt).toLocaleString("es-CO")}`
       : "";
 
+    const badge = $("dash-pay-badge");
+    if (isPaid(lastEval)) {
+      badge.textContent = "Pagado";
+      badge.className = "badge badge-paid";
+      $("dash-locked").classList.add("hidden");
+      $("pay-report-btn").classList.add("hidden");
+      $("view-last-pdf").classList.remove("hidden");
+      $("view-receipt-btn").classList.remove("hidden");
+    } else {
+      badge.textContent = "Pendiente de pago";
+      badge.className = "badge badge-pending";
+      $("dash-locked").classList.remove("hidden");
+      $("pay-report-btn").classList.remove("hidden");
+      $("pay-report-btn").textContent = `Pagar informe y desbloquear (${PRICE_LABEL})`;
+      $("view-last-pdf").classList.add("hidden");
+      $("view-receipt-btn").classList.add("hidden");
+    }
+
     const scores = lastEval.scores || {};
     $("dash-scores").innerHTML = "";
-    [
-      ["Inatención y función ejecutiva", "inattention"],
-      ["Hiperactividad e impulsividad", "hyperactivity"],
-      ["Indicadores diferenciales", "differential"]
-    ].forEach(([label, key]) => {
-      const val = scores[key] ?? 0;
-      const div = document.createElement("div");
-      div.innerHTML = `
-        <div class="flex justify-between text-sm mb-1">
-          <span class="text-slate-600">${label}</span>
-          <b class="text-slate-900">${val}%</b>
-        </div>
-        <div class="score-bar"><div class="score-fill" style="width:${val}%"></div></div>`;
-      $("dash-scores").appendChild(div);
-    });
+    if (isPaid(lastEval)) {
+      [["Inatención y función ejecutiva", "inattention"], ["Hiperactividad e impulsividad", "hyperactivity"], ["Indicadores diferenciales", "differential"]].forEach(([label, key]) => {
+        const val = scores[key] ?? 0;
+        const div = document.createElement("div");
+        div.innerHTML = `<div class="flex justify-between text-sm mb-1"><span class="text-slate-600">${label}</span><b>${val}%</b></div><div class="score-bar"><div class="score-fill" style="width:${val}%"></div></div>`;
+        $("dash-scores").appendChild(div);
+      });
+    } else {
+      $("dash-scores").innerHTML = `<p class="text-sm text-slate-500">Los puntajes detallados se muestran tras el pago.</p>`;
+    }
   } else {
     $("dash-last-result").classList.add("hidden");
     $("dash-empty").classList.remove("hidden");
   }
 }
+
+async function processPayment(evalId) {
+  try {
+    toast("Procesando pago…");
+    const r = await api(`/api/my-evaluations/${evalId}/pay`, {
+      method: "POST",
+      body: JSON.stringify({ method: "online" })
+    });
+    const d = await r.json();
+    lastEvaluation = { ...lastEvaluation, paymentStatus: "paid", paymentRef: d.paymentRef, paidAt: new Date().toISOString() };
+    toast("Pago confirmado. Informe desbloqueado.");
+    return d;
+  } catch (e) {
+    toast(e.message, true);
+    throw e;
+  }
+}
+
+$("pay-report-btn").onclick = async () => {
+  if (!lastEvaluationId) return;
+  try {
+    await processPayment(lastEvaluationId);
+    showDashboard(window.profileData?.name || "Usuario", lastEvaluation);
+    openResultView(lastEvaluation, true);
+  } catch (_) {}
+};
+$("pay-from-result").onclick = async () => {
+  if (!lastEvaluationId) return;
+  try {
+    await processPayment(lastEvaluationId);
+    openResultView(lastEvaluation, true);
+  } catch (_) {}
+};
 
 $("start-first-quiz").onclick = () => {
   const p = window.profileData || {};
@@ -347,15 +420,31 @@ $("view-last-pdf").onclick = async () => {
   try {
     const r = await api(`/api/my-evaluations/${lastEvaluationId}/pdf`);
     downloadBlob(await r.blob(), "NeuroEval-informe.pdf");
-  } catch (e) {
-    toast(e.message, true);
-  }
+  } catch (e) { toast(e.message, true); }
 };
+$("view-receipt-btn").onclick = () => showReceipt(lastEvaluation);
+$("view-receipt-result").onclick = () => showReceipt(lastEvaluation);
 $("logout-dash").onclick = () => signOut(auth);
-$("go-dashboard").onclick = () => {
-  const p = window.profileData || {};
-  showDashboard(p.name || "Usuario", lastEvaluation);
-};
+$("go-dashboard").onclick = () => showDashboard(window.profileData?.name || "Usuario", lastEvaluation);
+$("receipt-back").onclick = () => showDashboard(window.profileData?.name || "Usuario", lastEvaluation);
+
+function showReceipt(ev) {
+  if (!ev || !isPaid(ev)) {
+    toast("Aún no hay pago registrado.", true);
+    return;
+  }
+  const body = $("receipt-body");
+  body.innerHTML = `
+    <p><strong>Concepto:</strong> Informe de autorregistro NeuroEval Pro</p>
+    <p><strong>Cliente:</strong> ${ev.name || "—"}</p>
+    <p><strong>Correo:</strong> ${ev.email || currentUser?.email || "—"}</p>
+    <p><strong>Referencia:</strong> ${ev.paymentRef || "—"}</p>
+    <p><strong>Monto:</strong> ${PRICE_LABEL}</p>
+    <p><strong>Estado:</strong> Pagado</p>
+    <p><strong>Fecha:</strong> ${ev.paidAt ? new Date(ev.paidAt).toLocaleString("es-CO") : new Date().toLocaleString("es-CO")}</p>
+  `;
+  show("receipt-view");
+}
 
 function startQuiz(name, age, goal) {
   window.profileData = { name, age, goal };
@@ -376,110 +465,76 @@ function renderQuestion() {
   $("q-text").textContent = q[1];
   $("prev-question").disabled = currentIndex === 0;
   $("prev-question").style.opacity = currentIndex === 0 ? "0.4" : "1";
-
   $("answers").innerHTML = "";
   choices.forEach((label, i) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = `answer-btn ${answers[currentIndex] === i ? "selected" : ""}`;
     b.textContent = label + (answers[currentIndex] === i ? "  ✓" : "");
-    b.onclick = () => {
-      answers[currentIndex] = i;
-      renderQuestion();
-    };
+    b.onclick = () => { answers[currentIndex] = i; renderQuestion(); };
     $("answers").appendChild(b);
   });
-
   $("next-question").textContent = currentIndex === 14 ? "Finalizar evaluación" : "Siguiente";
   $("next-question").disabled = answers[currentIndex] === null;
 }
 
-$("prev-question").onclick = () => {
-  if (currentIndex > 0) {
-    currentIndex--;
-    renderQuestion();
-  }
-};
-
+$("prev-question").onclick = () => { if (currentIndex > 0) { currentIndex--; renderQuestion(); } };
 $("next-question").onclick = async () => {
   if (answers[currentIndex] === null) return;
-  if (currentIndex < 14) {
-    currentIndex++;
-    renderQuestion();
-    return;
-  }
+  if (currentIndex < 14) { currentIndex++; renderQuestion(); return; }
   await finishEvaluation();
 };
+
+function buildAnalysisText(scores, profile) {
+  const parts = [];
+  parts.push(`El perfil orientativo obtenido es: “${profile}”.`);
+  if (scores.inattention >= 60) parts.push(`La inatención y función ejecutiva aparecen elevadas (${scores.inattention}%), lo que sugiere dificultades frecuentes para sostener la atención, organizar o concluir tareas.`);
+  else if (scores.inattention >= 40) parts.push(`La inatención se sitúa en rango moderado (${scores.inattention}%).`);
+  else parts.push(`Los indicadores de inatención están en rango bajo (${scores.inattention}%).`);
+  if (scores.hyperactivity >= 60) parts.push(`La hiperactividad/impulsividad está elevada (${scores.hyperactivity}%).`);
+  else if (scores.hyperactivity >= 40) parts.push(`La inquietud e impulsividad se observan en nivel moderado (${scores.hyperactivity}%).`);
+  else parts.push(`Los indicadores de hiperactividad están en rango bajo (${scores.hyperactivity}%).`);
+  if (scores.differential >= 60) parts.push(`Los indicadores de estrés o fatiga están elevados (${scores.differential}%). Conviene valorar sueño, carga y factores emocionales antes de atribuir todo a un patrón atencional.`);
+  else parts.push(`Los indicadores diferenciales de estrés/fatiga no muestran elevación marcada (${scores.differential}%).`);
+  parts.push("Estos resultados son orientativos y no constituyen un diagnóstico de TDAH ni de ningún otro trastorno.");
+  return parts.join(" ");
+}
 
 async function finishEvaluation() {
   const sums = { inattention: 0, hyperactivity: 0, differential: 0 };
   const counts = { inattention: 0, hyperactivity: 0, differential: 0 };
-
   const qa = questions.map((q, i) => ({
-    category: q[0],
-    question: q[1],
-    dimension: q[2],
-    answer: choices[answers[i]],
-    points: points[answers[i]]
+    category: q[0], question: q[1], dimension: q[2],
+    answer: choices[answers[i]], points: points[answers[i]]
   }));
-
-  qa.forEach((a) => {
-    sums[a.dimension] += a.points;
-    counts[a.dimension]++;
-  });
-
+  qa.forEach(a => { sums[a.dimension] += a.points; counts[a.dimension]++; });
   const scores = {};
-  Object.keys(sums).forEach((k) => {
-    scores[k] = Math.round((sums[k] / (counts[k] * 4 || 1)) * 100);
-  });
+  Object.keys(sums).forEach(k => { scores[k] = Math.round((sums[k] / (counts[k] * 4 || 1)) * 100); });
 
   let profile, description, recommendations;
   if (scores.differential >= 60) {
     profile = "Indicadores asociados a estrés o sobrecarga";
-    description =
-      "Las respuestas señalan posibles factores de estrés, fatiga o ansiedad que pueden afectar la atención. Es importante explorar el contexto y otras causas.";
-    recommendations = [
-      "Revisar sueño, descanso y carga de actividades.",
-      "Registrar cuándo aparecen las dificultades y qué las empeora.",
-      "Consultar con un profesional de salud para explorar factores emocionales, médicos y ambientales."
-    ];
+    description = "Las respuestas señalan posibles factores de estrés, fatiga o ansiedad que pueden afectar la atención. Es importante explorar el contexto y otras causas.";
+    recommendations = ["Revisar sueño, descanso y carga de actividades.", "Registrar cuándo aparecen las dificultades y qué las empeora.", "Consultar con un profesional de salud para explorar factores emocionales, médicos y ambientales."];
   } else if (scores.inattention >= 60 && scores.hyperactivity >= 60) {
     profile = "Elevación de indicadores de inatención e hiperactividad";
-    description =
-      "Se observan respuestas frecuentes en ambas dimensiones. Este patrón no confirma TDAH y requiere valoración clínica.";
-    recommendations = [
-      "Solicitar una valoración con psicología clínica o psiquiatría.",
-      "Preparar ejemplos concretos de dificultades en distintos contextos.",
-      "Explorar historia de síntomas desde la infancia y su impacto funcional."
-    ];
+    description = "Se observan respuestas frecuentes en ambas dimensiones. Este patrón no confirma TDAH y requiere valoración clínica.";
+    recommendations = ["Solicitar una valoración con psicología clínica o psiquiatría.", "Preparar ejemplos concretos de dificultades en distintos contextos.", "Explorar historia de síntomas desde la infancia y su impacto funcional."];
   } else if (scores.inattention >= 60) {
     profile = "Elevación de indicadores de inatención";
-    description =
-      "Las respuestas muestran dificultades frecuentes relacionadas con atención y organización. Se requiere evaluación profesional para conocer su origen.";
-    recommendations = [
-      "Usar recordatorios externos y dividir tareas en pasos breves.",
-      "Registrar el impacto en estudio, trabajo y vida cotidiana.",
-      "Consultar con un profesional cualificado."
-    ];
+    description = "Las respuestas muestran dificultades frecuentes relacionadas con atención y organización. Se requiere evaluación profesional para conocer su origen.";
+    recommendations = ["Usar recordatorios externos y dividir tareas en pasos breves.", "Registrar el impacto en estudio, trabajo y vida cotidiana.", "Consultar con un profesional cualificado."];
   } else if (scores.hyperactivity >= 60) {
     profile = "Elevación de indicadores de inquietud e impulsividad";
-    description =
-      "Se observan respuestas frecuentes relacionadas con inquietud o impulsividad. No constituyen por sí solas un diagnóstico.";
-    recommendations = [
-      "Practicar pausas planificadas y estrategias de autorregulación.",
-      "Registrar situaciones que desencadenan inquietud o impulsividad.",
-      "Consultar con un profesional si afecta el funcionamiento diario."
-    ];
+    description = "Se observan respuestas frecuentes relacionadas con inquietud o impulsividad. No constituyen por sí solas un diagnóstico.";
+    recommendations = ["Practicar pausas planificadas y estrategias de autorregulación.", "Registrar situaciones que desencadenan inquietud o impulsividad.", "Consultar con un profesional si afecta el funcionamiento diario."];
   } else {
     profile = "Indicadores bajos o moderados en este autorregistro";
-    description =
-      "Las respuestas no muestran una elevación marcada en las dimensiones exploradas. Esto no descarta dificultades ni sustituye una evaluación si existe preocupación.";
-    recommendations = [
-      "Mantener hábitos de sueño y organización saludables.",
-      "Solicitar orientación profesional si las dificultades persisten o afectan tu vida diaria."
-    ];
+    description = "Las respuestas no muestran una elevación marcada en las dimensiones exploradas. Esto no descarta dificultades ni sustituye una evaluación si existe preocupación.";
+    recommendations = ["Mantener hábitos de sueño y organización saludables.", "Solicitar orientación profesional si las dificultades persisten o afectan tu vida diaria."];
   }
 
+  const analysis = buildAnalysisText(scores, profile);
   const payload = {
     name: window.profileData.name,
     email: currentUser.email,
@@ -488,49 +543,24 @@ async function finishEvaluation() {
     answers: qa,
     scores,
     profile,
-    profileDescription: description,
+    profileDescription: description + " " + analysis,
     recommendations
   };
 
   try {
     $("next-question").disabled = true;
     $("next-question").textContent = "Guardando…";
-    const r = await api("/api/evaluations", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+    const r = await api("/api/evaluations", { method: "POST", body: JSON.stringify(payload) });
     const d = await r.json();
     lastEvaluationId = d.id;
-    lastEvaluation = { ...payload, id: d.id, createdAt: new Date().toISOString() };
-
-    $("result-name").textContent = `${payload.name} · ${currentUser.email}`;
-    $("result-profile").textContent = profile;
-    $("result-description").textContent = description;
-
-    $("score-list").innerHTML = "";
-    [
-      ["Inatención y función ejecutiva", "inattention"],
-      ["Hiperactividad e impulsividad", "hyperactivity"],
-      ["Indicadores diferenciales", "differential"]
-    ].forEach(([label, key]) => {
-      const div = document.createElement("div");
-      div.innerHTML = `
-        <div class="flex justify-between text-sm mb-1">
-          <span class="text-slate-600">${label}</span>
-          <b class="text-slate-900">${scores[key]}%</b>
-        </div>
-        <div class="score-bar"><div class="score-fill" style="width:${scores[key]}%"></div></div>`;
-      $("score-list").appendChild(div);
-    });
-
-    $("recommendations").innerHTML = "";
-    recommendations.forEach((x) => {
-      const li = document.createElement("li");
-      li.textContent = x;
-      $("recommendations").appendChild(li);
-    });
-
-    show("result-view");
+    lastEvaluation = {
+      ...payload,
+      id: d.id,
+      paymentStatus: d.paymentStatus || "pending",
+      paymentRef: d.paymentRef,
+      createdAt: new Date().toISOString()
+    };
+    openResultView(lastEvaluation, false);
   } catch (e) {
     toast("No se pudo guardar tu evaluación: " + e.message, true);
     $("next-question").disabled = false;
@@ -538,25 +568,48 @@ async function finishEvaluation() {
   }
 }
 
+function openResultView(ev, paid) {
+  paid = paid || isPaid(ev);
+  $("result-name").textContent = `${ev.name || ""} · ${currentUser?.email || ""}`;
+  if (!paid) {
+    $("result-pay-banner").classList.remove("hidden");
+    $("result-content").classList.add("hidden");
+  } else {
+    $("result-pay-banner").classList.add("hidden");
+    $("result-content").classList.remove("hidden");
+    $("result-profile").textContent = ev.profile || "";
+    $("result-description").textContent = (ev.profileDescription || "").split(".")[0] + ".";
+    $("result-analysis").textContent = buildAnalysisText(ev.scores || {}, ev.profile || "");
+    $("score-list").innerHTML = "";
+    [["Inatención y función ejecutiva", "inattention"], ["Hiperactividad e impulsividad", "hyperactivity"], ["Indicadores diferenciales", "differential"]].forEach(([label, key]) => {
+      const val = (ev.scores || {})[key] ?? 0;
+      const div = document.createElement("div");
+      div.innerHTML = `<div class="flex justify-between text-sm mb-1"><span class="text-slate-600">${label}</span><b>${val}%</b></div><div class="score-bar"><div class="score-fill" style="width:${val}%"></div></div>`;
+      $("score-list").appendChild(div);
+    });
+    $("recommendations").innerHTML = "";
+    (ev.recommendations || []).forEach(x => {
+      const li = document.createElement("li");
+      li.textContent = x;
+      $("recommendations").appendChild(li);
+    });
+  }
+  show("result-view");
+}
+
 $("download-own-pdf").onclick = async () => {
   if (!lastEvaluationId) return;
   try {
     const r = await api(`/api/my-evaluations/${lastEvaluationId}/pdf`);
     downloadBlob(await r.blob(), "NeuroEval-informe.pdf");
-  } catch (e) {
-    toast(e.message, true);
-  }
+  } catch (e) { toast(e.message, true); }
 };
-
 function downloadBlob(blob, name) {
   const a = document.createElement("a");
   const url = URL.createObjectURL(blob);
-  a.href = url;
-  a.download = name;
-  a.click();
+  a.href = url; a.download = name; a.click();
   URL.revokeObjectURL(url);
 }
-
 $("logout-result").onclick = () => signOut(auth);
 
 // Admin
@@ -569,37 +622,66 @@ async function loadAdmin() {
     const data = await r.json();
     $("stat-users").textContent = data.users;
     $("stat-evals").textContent = data.evaluations;
-    $("admin-rows").innerHTML = "";
+    $("stat-paid").textContent = data.paid ?? 0;
+    $("stat-pending").textContent = data.pending ?? 0;
 
-    data.records.forEach((x) => {
+    $("admin-users").innerHTML = "";
+    (data.userList || []).forEach(u => {
       const tr = document.createElement("tr");
-      tr.className = "border-b border-slate-100 hover:bg-slate-50/80";
-      const date = x.createdAt ? new Date(x.createdAt).toLocaleString("es-CO") : "—";
-      [date, x.name || "—", x.email || "—", x.profile || "—"].forEach((v) => {
+      tr.className = "border-b border-slate-100";
+      const date = u.createdAt ? new Date(u.createdAt).toLocaleString("es-CO") : "—";
+      [date, u.name || "—", u.email || "—", u.age ?? "—", u.goal || "—"].forEach(v => {
         const td = document.createElement("td");
         td.className = "p-3";
         td.textContent = v;
         tr.appendChild(td);
       });
-      const td = document.createElement("td");
-      td.className = "p-3";
-      const b = document.createElement("button");
-      b.className = "text-brand-600 font-medium hover:underline";
-      b.textContent = "Ver / PDF";
-      b.onclick = () => downloadAdminPdf(x.id);
-      td.appendChild(b);
-      tr.appendChild(td);
+      $("admin-users").appendChild(tr);
+    });
+    if (!(data.userList || []).length) {
+      $("admin-users").innerHTML = `<tr><td colspan="5" class="p-6 text-slate-500 text-center">Sin clientes registrados.</td></tr>`;
+    }
+
+    $("admin-rows").innerHTML = "";
+    (data.records || []).forEach(x => {
+      const tr = document.createElement("tr");
+      tr.className = "border-b border-slate-100 hover:bg-slate-50/80";
+      const date = x.createdAt ? new Date(x.createdAt).toLocaleString("es-CO") : "—";
+      const tdDate = document.createElement("td"); tdDate.className = "p-3"; tdDate.textContent = date; tr.appendChild(tdDate);
+      const tdName = document.createElement("td"); tdName.className = "p-3";
+      tdName.innerHTML = `<div class="font-medium">${x.name || "—"}</div><div class="text-xs text-slate-500">${x.email || ""}</div>`;
+      tr.appendChild(tdName);
+      const tdProfile = document.createElement("td"); tdProfile.className = "p-3 text-xs"; tdProfile.textContent = x.profile || "—"; tr.appendChild(tdProfile);
+      const tdPay = document.createElement("td"); tdPay.className = "p-3";
+      const st = x.paymentStatus || "pending";
+      tdPay.innerHTML = `<span class="badge ${st === "paid" ? "badge-paid" : st === "failed" ? "badge-failed" : "badge-pending"}">${st === "paid" ? "Pagado" : st === "failed" ? "Fallido" : "Pendiente"}</span>`;
+      tr.appendChild(tdPay);
+      const tdAct = document.createElement("td"); tdAct.className = "p-3";
+      const wrap = document.createElement("div"); wrap.className = "flex flex-col gap-1";
+      const bPdf = document.createElement("button");
+      bPdf.className = "text-brand-600 font-medium hover:underline text-left";
+      bPdf.textContent = "PDF completo";
+      bPdf.onclick = () => downloadAdminPdf(x.id);
+      wrap.appendChild(bPdf);
+      if (st !== "paid") {
+        const bPay = document.createElement("button");
+        bPay.className = "text-emerald-600 font-medium hover:underline text-left";
+        bPay.textContent = "Marcar pagado";
+        bPay.onclick = async () => {
+          try {
+            await api(`/api/admin/evaluations/${x.id}/payment`, { method: "POST", body: JSON.stringify({ status: "paid", method: "admin" }) });
+            toast("Marcado como pagado");
+            loadAdmin();
+          } catch (e) { toast(e.message, true); }
+        };
+        wrap.appendChild(bPay);
+      }
+      tdAct.appendChild(wrap);
+      tr.appendChild(tdAct);
       $("admin-rows").appendChild(tr);
     });
-
-    if (!data.records.length) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 5;
-      td.className = "p-6 text-slate-500 text-center";
-      td.textContent = "Aún no hay evaluaciones.";
-      tr.appendChild(td);
-      $("admin-rows").appendChild(tr);
+    if (!(data.records || []).length) {
+      $("admin-rows").innerHTML = `<tr><td colspan="5" class="p-6 text-slate-500 text-center">Aún no hay evaluaciones.</td></tr>`;
     }
   } catch (e) {
     toast(e.message, true);
@@ -609,7 +691,7 @@ async function loadAdmin() {
 async function downloadAdminPdf(id) {
   try {
     const r = await api(`/api/admin/evaluations/${id}/pdf`);
-    downloadBlob(await r.blob(), `NeuroEval-${id}.pdf`);
+    downloadBlob(await r.blob(), `NeuroEval-admin-${id}.pdf`);
   } catch (e) {
     toast(e.message, true);
   }
