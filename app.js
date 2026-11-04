@@ -150,7 +150,7 @@ $("show-login").onclick = () => switchAuth("login");
 $("show-register").onclick = () => switchAuth("register");
 
 async function doEmailLogin() {
-  const btn = $("login-btn");
+  const btn = $("login-btn") || $("login-form")?.querySelector('button[type="submit"]');
   const email = ($("login-email")?.value || "").trim();
   const password = $("login-password")?.value || "";
 
@@ -216,9 +216,12 @@ $("register-form").addEventListener("submit", async (e) => {
     window.profileData = { name, age, goal };
 
     await api("/api/profile", {
-      method: "POST",
-      body: JSON.stringify({ name, age, goal })
-    });
+  method: "POST",
+  body: JSON.stringify({ name, age, goal })
+});
+
+window.profileData = { name, age, goal };
+showDashboard(name, null);
 
     showDashboard(name, null);
   } catch (err) {
@@ -643,8 +646,10 @@ function renderQuestion() {
   const q = questions[currentIndex];
   const pct = Math.round(((currentIndex + 1) / 15) * 100);
 
-  $("progress-label").textContent = `Pregunta ${currentIndex + 1} de 15`;
-  $("progress-pct").textContent = pct + "%";
+ $("progress-label").textContent =
+  `Pregunta ${currentIndex + 1} de 15 — ${pct}%`;
+
+$("progress-pct").textContent = "";
   $("progress-bar").style.width = pct + "%";
   $("q-category").textContent = q[0];
   $("q-text").textContent = q[1];
