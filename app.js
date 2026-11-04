@@ -220,7 +220,7 @@ $("register-form").addEventListener("submit", async (e) => {
       body: JSON.stringify({ name, age, goal })
     });
 
-    startQuiz(name, age, goal);
+    showDashboard(name, null);
   } catch (err) {
     message("auth-message", friendlyAuthError(err), true);
   } finally {
