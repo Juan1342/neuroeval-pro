@@ -1,4 +1,3 @@
-
 "use strict";
 
 require("dotenv").config();
@@ -39,8 +38,16 @@ const ALLOW_DEMO_PAY =
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "";
 
 const WOMPI_PUBLIC_KEY = process.env.WOMPI_PUBLIC_KEY || "";
-const WOMPI_INTEGRITY_SECRET = process.env.WOMPI_INTEGRITY_SECRET || "";
-const WOMPI_EVENTS_KEY = process.env.WOMPI_EVENTS_KEY || "";
+
+const WOMPI_INTEGRITY_SECRET =
+  process.env.WOMPI_INTEGRITY_SECRET ||
+  process.env.WOMPI_INTEGRITY_KEY ||
+  "";
+
+const WOMPI_EVENTS_SECRET =
+  process.env.WOMPI_EVENTS_SECRET ||
+  process.env.WOMPI_EVENTS_KEY ||
+  "";
 
 /* =========================================================
    2. FIREBASE ADMIN
@@ -57,7 +64,10 @@ if (!admin.apps.length) {
 
       credential = admin.credential.cert(serviceAccount);
     } catch (error) {
-      console.error("FIREBASE_SERVICE_ACCOUNT_JSON no es válido:", error.message);
+      console.error(
+        "FIREBASE_SERVICE_ACCOUNT_JSON no es válido:",
+        error.message
+      );
       process.exit(1);
     }
   } else {
@@ -89,7 +99,6 @@ const configuredOrigins = String(
 app.use(
   cors({
     origin(origin, callback) {
-      // Permite herramientas locales y solicitudes sin Origin.
       if (!origin) return callback(null, true);
 
       const normalized = origin.replace(/\/+$/, "");
@@ -101,7 +110,11 @@ app.use(
       return callback(new Error("Origen no autorizado por CORS"));
     },
     methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Event-Checksum"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Event-Checksum"
+    ],
     credentials: false
   })
 );
@@ -113,8 +126,6 @@ app.use(
   })
 );
 
-// El webhook necesita el JSON normalizado para verificar las propiedades
-// firmadas por Wompi. No se confía en el navegador para confirmar pagos.
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
 
@@ -123,7 +134,9 @@ const generalLimiter = rateLimit({
   limit: 250,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "Demasiadas solicitudes. Intenta nuevamente más tarde." }
+  message: {
+    error: "Demasiadas solicitudes. Intenta nuevamente más tarde."
+  }
 });
 
 const authLimiter = rateLimit({
@@ -131,7 +144,9 @@ const authLimiter = rateLimit({
   limit: 12,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "Demasiados intentos. Espera unos minutos." }
+  message: {
+    error: "Demasiados intentos. Espera unos minutos."
+  }
 });
 
 const passwordLimiter = rateLimit({
@@ -139,7 +154,9 @@ const passwordLimiter = rateLimit({
   limit: 5,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "Has realizado demasiadas solicitudes. Intenta más tarde." }
+  message: {
+    error: "Has realizado demasiadas solicitudes. Intenta más tarde."
+  }
 });
 
 app.use("/api", generalLimiter);
@@ -248,7 +265,11 @@ async function requireUser(req, res, next) {
     const match = header.match(/^Bearer\s+(.+)$/i);
 
     if (!match) {
-      return sendError(res, 401, "Debes iniciar sesión para continuar.");
+      return sendError(
+        res,
+        401,
+        "Debes iniciar sesión para continuar."
+      );
     }
 
     const decoded = await firebaseAuth.verifyIdToken(match[1], true);
@@ -258,7 +279,11 @@ async function requireUser(req, res, next) {
 
   } catch (error) {
     console.error("Token no válido:", error.message);
-    return sendError(res, 401, "Tu sesión no es válida. Inicia sesión nuevamente.");
+    return sendError(
+      res,
+      401,
+      "Tu sesión no es válida. Inicia sesión nuevamente."
+    );
   }
 }
 
@@ -272,14 +297,22 @@ async function requireAdmin(req, res, next) {
     const hasAdminClaim = req.user.admin === true;
 
     if (email !== ADMIN_EMAIL && !hasAdminClaim) {
-      return sendError(res, 403, "No tienes permisos administrativos.");
+      return sendError(
+        res,
+        403,
+        "No tienes permisos administrativos."
+      );
     }
 
     return next();
 
   } catch (error) {
     console.error("Validación administrativa:", error);
-    return sendError(res, 403, "No se pudo validar el permiso administrativo.");
+    return sendError(
+      res,
+      403,
+      "No se pudo validar el permiso administrativo."
+    );
   }
 }
 
@@ -288,6 +321,12 @@ async function requireAdmin(req, res, next) {
 ========================================================= */
 
 app.get("/api/health", (req, res) => {
+  const wompiEnvironment = WOMPI_PUBLIC_KEY.startsWith("pub_test_")
+    ? "sandbox"
+    : WOMPI_PUBLIC_KEY.startsWith("pub_prod_")
+      ? "production"
+      : "not-configured";
+
   res.json({
     ok: true,
     service: "NeuroEval Pro API",
@@ -296,8 +335,9 @@ app.get("/api/health", (req, res) => {
     wompiConfigured: Boolean(
       WOMPI_PUBLIC_KEY &&
       WOMPI_INTEGRITY_SECRET &&
-      WOMPI_EVENTS_KEY
+      WOMPI_EVENTS_SECRET
     ),
+    wompiEnvironment,
     demoPaymentEnabled: ALLOW_DEMO_PAY,
     evaluationPriceCop: EVAL_PRICE_COP,
     time: new Date().toISOString()
@@ -307,7 +347,10 @@ app.get("/api/health", (req, res) => {
 app.get("/firebase-config.js", (req, res) => {
   const config = getPublicFirebaseConfig();
 
-  res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+  res.setHeader(
+    "Content-Type",
+    "application/javascript; charset=utf-8"
+  );
   res.setHeader("Cache-Control", "no-store");
 
   res.send(
@@ -330,7 +373,11 @@ app.get("/api/profile", requireUser, async (req, res) => {
 
   } catch (error) {
     console.error("GET perfil:", error);
-    return sendError(res, 500, "No se pudo consultar el perfil.");
+    return sendError(
+      res,
+      500,
+      "No se pudo consultar el perfil."
+    );
   }
 });
 
@@ -338,6 +385,7 @@ app.post("/api/profile", requireUser, async (req, res) => {
   try {
     const name = cleanText(req.body.name, 120);
     const goal = cleanText(req.body.goal, 120);
+
     const age =
       req.body.age === null || req.body.age === undefined
         ? null
@@ -347,7 +395,10 @@ app.post("/api/profile", requireUser, async (req, res) => {
       return sendError(res, 400, "El nombre es obligatorio.");
     }
 
-    if (age !== null && (!Number.isInteger(age) || age < 18 || age > 99)) {
+    if (
+      age !== null &&
+      (!Number.isInteger(age) || age < 18 || age > 99)
+    ) {
       return sendError(res, 400, "La edad no es válida.");
     }
 
@@ -364,7 +415,8 @@ app.post("/api/profile", requireUser, async (req, res) => {
     };
 
     if (!existing.exists) {
-      profile.createdAt = admin.firestore.FieldValue.serverTimestamp();
+      profile.createdAt =
+        admin.firestore.FieldValue.serverTimestamp();
     }
 
     await userRef.set(profile, { merge: true });
@@ -373,7 +425,11 @@ app.post("/api/profile", requireUser, async (req, res) => {
 
   } catch (error) {
     console.error("POST perfil:", error);
-    return sendError(res, 500, "No se pudo guardar el perfil.");
+    return sendError(
+      res,
+      500,
+      "No se pudo guardar el perfil."
+    );
   }
 });
 
@@ -390,11 +446,19 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
     const email = String(req.user.email || "").toLowerCase();
 
     if (!name) {
-      return sendError(res, 400, "No se encontró el nombre del usuario.");
+      return sendError(
+        res,
+        400,
+        "No se encontró el nombre del usuario."
+      );
     }
 
     if (!Array.isArray(body.answers) || body.answers.length !== 15) {
-      return sendError(res, 400, "La evaluación debe contener 15 respuestas.");
+      return sendError(
+        res,
+        400,
+        "La evaluación debe contener 15 respuestas."
+      );
     }
 
     const validAnswers = body.answers.every((answer) => {
@@ -409,7 +473,11 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
     });
 
     if (!validAnswers) {
-      return sendError(res, 400, "Las respuestas recibidas no son válidas.");
+      return sendError(
+        res,
+        400,
+        "Las respuestas recibidas no son válidas."
+      );
     }
 
     const age =
@@ -417,16 +485,32 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
         ? null
         : Number(body.age);
 
-    if (age !== null && (!Number.isInteger(age) || age < 18 || age > 99)) {
-      return sendError(res, 400, "La edad recibida no es válida.");
+    if (
+      age !== null &&
+      (!Number.isInteger(age) || age < 18 || age > 99)
+    ) {
+      return sendError(
+        res,
+        400,
+        "La edad recibida no es válida."
+      );
     }
 
     const scores = body.scores || {};
 
     const safeScores = {
-      inattention: Math.max(0, Math.min(100, Number(scores.inattention || 0))),
-      hyperactivity: Math.max(0, Math.min(100, Number(scores.hyperactivity || 0))),
-      differential: Math.max(0, Math.min(100, Number(scores.differential || 0)))
+      inattention: Math.max(
+        0,
+        Math.min(100, Number(scores.inattention || 0))
+      ),
+      hyperactivity: Math.max(
+        0,
+        Math.min(100, Number(scores.hyperactivity || 0))
+      ),
+      differential: Math.max(
+        0,
+        Math.min(100, Number(scores.differential || 0))
+      )
     };
 
     const recommendations = Array.isArray(body.recommendations)
@@ -446,7 +530,10 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       answers: body.answers,
       scores: safeScores,
       profile: cleanText(body.profile, 200),
-      profileDescription: cleanText(body.profileDescription, 1500),
+      profileDescription: cleanText(
+        body.profileDescription,
+        1500
+      ),
       recommendations,
       paymentStatus: "pending",
       paymentProvider: "wompi",
@@ -457,7 +544,9 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    const document = await db.collection("evaluations").add(evaluation);
+    const document = await db
+      .collection("evaluations")
+      .add(evaluation);
 
     return res.status(201).json({
       ok: true,
@@ -470,7 +559,11 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
 
   } catch (error) {
     console.error("Crear evaluación:", error);
-    return sendError(res, 500, "No se pudo guardar la evaluación.");
+    return sendError(
+      res,
+      500,
+      "No se pudo guardar la evaluación."
+    );
   }
 });
 
@@ -495,7 +588,11 @@ app.get("/api/my-evaluations", requireUser, async (req, res) => {
 
   } catch (error) {
     console.error("Consultar evaluaciones:", error);
-    return sendError(res, 500, "No se pudieron consultar tus evaluaciones.");
+    return sendError(
+      res,
+      500,
+      "No se pudieron consultar tus evaluaciones."
+    );
   }
 });
 
@@ -515,31 +612,49 @@ async function getOwnedEvaluation(uid, id) {
   };
 }
 
-app.get("/api/my-evaluations/:id", requireUser, async (req, res) => {
-  try {
-    const result = await getOwnedEvaluation(req.user.uid, req.params.id);
+app.get(
+  "/api/my-evaluations/:id",
+  requireUser,
+  async (req, res) => {
+    try {
+      const result = await getOwnedEvaluation(
+        req.user.uid,
+        req.params.id
+      );
 
-    if (!result) {
-      return sendError(res, 404, "No encontramos esa evaluación.");
-    }
-
-    if (result.data.paymentStatus !== "paid") {
-      return sendError(res, 402, "El informe estará disponible cuando se confirme el pago.");
-    }
-
-    return res.json({
-      evaluation: {
-        id: req.params.id,
-        ...result.data
+      if (!result) {
+        return sendError(
+          res,
+          404,
+          "No encontramos esa evaluación."
+        );
       }
-    });
 
-  } catch (error) {
-    console.error("Consultar evaluación individual:", error);
-    return sendError(res, 500, "No se pudo cargar la evaluación.");
+      if (result.data.paymentStatus !== "paid") {
+        return sendError(
+          res,
+          402,
+          "El informe estará disponible cuando se confirme el pago."
+        );
+      }
+
+      return res.json({
+        evaluation: {
+          id: req.params.id,
+          ...result.data
+        }
+      });
+
+    } catch (error) {
+      console.error("Consultar evaluación individual:", error);
+      return sendError(
+        res,
+        500,
+        "No se pudo cargar la evaluación."
+      );
+    }
   }
-});
-
+);
 /* =========================================================
    11. ESTADO DEL PAGO
 ========================================================= */
@@ -640,12 +755,13 @@ app.post(
 ========================================================= */
 
 function validateWompiEvent(event, headerChecksum) {
-  if (!WOMPI_EVENTS_KEY) {
-    throw new Error("Falta configurar WOMPI_EVENTS_KEY.");
+  if (!WOMPI_EVENTS_SECRET) {
+    throw new Error("Falta configurar WOMPI_EVENTS_SECRET.");
   }
 
   const properties = event?.signature?.properties;
   const timestamp = event?.timestamp;
+
   const receivedChecksum =
     headerChecksum || event?.signature?.checksum || "";
 
@@ -662,18 +778,25 @@ function validateWompiEvent(event, headerChecksum) {
     const value = getNestedValue(event.data, propertyPath);
 
     if (value === undefined || value === null) {
-      throw new Error(`No se encontró la propiedad firmada: ${propertyPath}`);
+      throw new Error(
+        `No se encontró la propiedad firmada: ${propertyPath}`
+      );
     }
 
     return String(value);
   });
 
   const concatenated =
-    values.join("") + String(timestamp) + WOMPI_EVENTS_KEY;
+    values.join("") + String(timestamp) + WOMPI_EVENTS_SECRET;
 
   const expectedChecksum = sha256(concatenated);
 
-  if (!safeEqual(expectedChecksum.toLowerCase(), String(receivedChecksum).toLowerCase())) {
+  if (
+    !safeEqual(
+      expectedChecksum.toLowerCase(),
+      String(receivedChecksum).toLowerCase()
+    )
+  ) {
     throw new Error("La firma del evento no coincide.");
   }
 
@@ -717,7 +840,6 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
       .get();
 
     if (query.empty) {
-      // La referencia no existe en nuestra plataforma.
       return res.status(200).json({
         ok: true,
         ignored: true,
@@ -728,8 +850,6 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
     const document = query.docs[0];
     const evaluation = document.data();
 
-    // No aceptamos valores ni monedas diferentes a los establecidos
-    // por el servidor al crear la evaluación.
     if (
       amountInCents !== EVAL_PRICE_COP * 100 ||
       currency !== CURRENCY
@@ -761,7 +881,6 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
       );
 
     } else if (["DECLINED", "VOIDED", "ERROR"].includes(status)) {
-      // No degradar un pago ya aprobado por un evento posterior.
       if (evaluation.paymentStatus !== "paid") {
         await document.ref.set(
           {
@@ -788,7 +907,9 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
 
   } catch (error) {
     console.error("Webhook Wompi rechazado:", error.message);
-    return res.status(400).json({ error: "No se pudo validar el evento." });
+    return res.status(400).json({
+      error: "No se pudo validar el evento."
+    });
   }
 });
 
@@ -801,11 +922,18 @@ app.post(
   requireUser,
   async (req, res) => {
     if (!ALLOW_DEMO_PAY) {
-      return sendError(res, 403, "Los pagos de demostración están desactivados.");
+      return sendError(
+        res,
+        403,
+        "Los pagos de demostración están desactivados."
+      );
     }
 
     try {
-      const result = await getOwnedEvaluation(req.user.uid, req.params.id);
+      const result = await getOwnedEvaluation(
+        req.user.uid,
+        req.params.id
+      );
 
       if (!result) {
         return sendError(res, 404, "No encontramos esa evaluación.");
@@ -821,11 +949,18 @@ app.post(
         { merge: true }
       );
 
-      return res.json({ ok: true, paymentStatus: "paid" });
+      return res.json({
+        ok: true,
+        paymentStatus: "paid"
+      });
 
     } catch (error) {
       console.error("Pago de demostración:", error);
-      return sendError(res, 500, "No se pudo completar la demostración.");
+      return sendError(
+        res,
+        500,
+        "No se pudo completar la demostración."
+      );
     }
   }
 );
@@ -898,7 +1033,8 @@ function buildEvaluationPdf(evaluation, options = {}) {
         ["Objetivo", evaluation.goal || "No especificado"],
         [
           "Fecha",
-          asDate(evaluation.createdAt)?.toLocaleString("es-CO") || "No disponible"
+          asDate(evaluation.createdAt)?.toLocaleString("es-CO") ||
+            "No disponible"
         ]
       ];
 
@@ -937,10 +1073,13 @@ function buildEvaluationPdf(evaluation, options = {}) {
         .font("Helvetica")
         .fontSize(10)
         .fillColor(muted)
-        .text(evaluation.profileDescription || "Sin descripción disponible.", {
-          width: 485,
-          lineGap: 4
-        });
+        .text(
+          evaluation.profileDescription || "Sin descripción disponible.",
+          {
+            width: 485,
+            lineGap: 4
+          }
+        );
 
       doc.moveDown(1.2);
 
@@ -961,7 +1100,10 @@ function buildEvaluationPdf(evaluation, options = {}) {
       ];
 
       dimensions.forEach(([label, value]) => {
-        const score = Math.max(0, Math.min(100, Number(value || 0)));
+        const score = Math.max(
+          0,
+          Math.min(100, Number(value || 0))
+        );
 
         doc
           .font("Helvetica-Bold")
@@ -994,7 +1136,9 @@ function buildEvaluationPdf(evaluation, options = {}) {
 
       doc.moveDown(0.5);
 
-      const recommendations = Array.isArray(evaluation.recommendations)
+      const recommendations = Array.isArray(
+        evaluation.recommendations
+      )
         ? evaluation.recommendations
         : [];
 
@@ -1029,7 +1173,9 @@ function buildEvaluationPdf(evaluation, options = {}) {
             .font("Helvetica-Bold")
             .fontSize(9)
             .fillColor(purple)
-            .text(`Pregunta ${index + 1} · ${answer.category || "General"}`);
+            .text(
+              `Pregunta ${index + 1} · ${answer.category || "General"}`
+            );
 
           doc
             .font("Helvetica")
@@ -1082,35 +1228,6 @@ function buildEvaluationPdf(evaluation, options = {}) {
     }
   });
 }
-
-app.get("/api/my-evaluations/:id/pdf", requireUser, async (req, res) => {
-  try {
-    const result = await getOwnedEvaluation(req.user.uid, req.params.id);
-
-    if (!result) {
-      return sendError(res, 404, "No encontramos esa evaluación.");
-    }
-
-    if (result.data.paymentStatus !== "paid") {
-      return sendError(res, 402, "Debes completar el pago para descargar el informe.");
-    }
-
-    const pdf = await buildEvaluationPdf(result.data);
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      'attachment; filename="NeuroEval-Pro-informe.pdf"'
-    );
-
-    return res.send(pdf);
-
-  } catch (error) {
-    console.error("PDF del usuario:", error);
-    return sendError(res, 500, "No se pudo generar el informe PDF.");
-  }
-});
-
 /* =========================================================
    16. PANEL ADMINISTRATIVO
 ========================================================= */
