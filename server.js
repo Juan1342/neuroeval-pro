@@ -1,19 +1,8 @@
-/**
- * NeuroEval Pro — Backend (Express + Firebase Admin + PDF + SMTP)
- * Versión reforzada: 5 nov 2026
- *
- * Cambios principales respecto a la versión anterior:
- *  - Pago demo protegido por ALLOW_DEMO_PAY (nunca activo en producción real)
- *  - Endpoint para generar firma de integridad Wompi (checkout)
- *  - Webhook Wompi con validación de checksum (esqueleto listo)
- *  - CORS más limpio
- *  - requireAdmin más flexible (email o claim)
- *  - Mejor manejo de emails nulos y logs
- *  - trust proxy ya presente
- */
+
+"use strict";
 
 require("dotenv").config();
-const path = require("path");
+
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -22,840 +11,1421 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const admin = require("firebase-admin");
 const PDFDocument = require("pdfkit");
+const path = require("path");
+
+/* =========================================================
+   1. CONFIGURACIÓN GENERAL
+========================================================= */
 
 const app = express();
-app.set("trust proxy", 1); // Obligatorio detrás del proxy de Render
+
+app.set("trust proxy", 1);
 
 const PORT = Number(process.env.PORT || 3000);
-const projectId = process.env.FIREBASE_PROJECT_ID;
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "jzamorazapata@gmail.com").toLowerCase();
-const ALLOW_DEMO_PAY = String(process.env.ALLOW_DEMO_PAY || "false").toLowerCase() === "true";
-const EVAL_PRICE_COP = Number(process.env.EVAL_PRICE_COP || 19900);
+const ADMIN_EMAIL = String(
+  process.env.ADMIN_EMAIL || "jzamorazapata@gmail.com"
+).trim().toLowerCase();
 
-// ─── Firebase Admin ───────────────────────────────────────────────────────────
+const APP_ORIGIN = String(
+  process.env.APP_ORIGIN || `http://localhost:${PORT}`
+).replace(/\/+$/, "");
+
+const EVAL_PRICE_COP = 4000;
+const CURRENCY = "COP";
+
+const ALLOW_DEMO_PAY =
+  String(process.env.ALLOW_DEMO_PAY || "false").toLowerCase() === "true";
+
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "";
+
+const WOMPI_PUBLIC_KEY = process.env.WOMPI_PUBLIC_KEY || "";
+const WOMPI_INTEGRITY_SECRET = process.env.WOMPI_INTEGRITY_SECRET || "";
+const WOMPI_EVENTS_KEY = process.env.WOMPI_EVENTS_KEY || "";
+
+/* =========================================================
+   2. FIREBASE ADMIN
+========================================================= */
+
 if (!admin.apps.length) {
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  let credential;
+
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    try {
+      const serviceAccount = JSON.parse(
+        process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+      );
+
+      credential = admin.credential.cert(serviceAccount);
+    } catch (error) {
+      console.error("FIREBASE_SERVICE_ACCOUNT_JSON no es válido:", error.message);
+      process.exit(1);
+    }
+  } else {
+    credential = admin.credential.applicationDefault();
+  }
+
   admin.initializeApp({
-    credential: serviceAccountJson
-      ? admin.credential.cert(JSON.parse(serviceAccountJson))
-      : admin.credential.applicationDefault(),
-    ...(projectId ? { projectId } : {})
+    credential,
+    ...(FIREBASE_PROJECT_ID
+      ? { projectId: FIREBASE_PROJECT_ID }
+      : {})
   });
 }
-const auth = admin.auth();
+
 const db = admin.firestore();
+const firebaseAuth = admin.auth();
 
-// ─── Seguridad base ───────────────────────────────────────────────────────────
-app.use(helmet({
-  crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: false // SPA con scripts inline / Firebase
-}));
+/* =========================================================
+   3. CORS, SEGURIDAD Y MIDDLEWARE
+========================================================= */
 
-app.use(cors({
-  origin(origin, callback) {
-    const allowed = (process.env.CORS_ORIGINS || process.env.APP_ORIGIN || "http://localhost:3000")
-      .split(",")
-      .map(x => x.trim())
-      .filter(Boolean);
+const configuredOrigins = String(
+  process.env.CORS_ORIGINS || APP_ORIGIN
+)
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
 
-    // Permitir requests sin Origin (health checks, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (allowed.includes(origin) || allowed.includes("*")) return callback(null, true);
-    return callback(null, false); // Rechazo limpio (sin throw)
-  },
-  credentials: true
-}));
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Permite herramientas locales y solicitudes sin Origin.
+      if (!origin) return callback(null, true);
 
+      const normalized = origin.replace(/\/+$/, "");
+
+      if (configuredOrigins.includes(normalized)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origen no autorizado por CORS"));
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Event-Checksum"],
+    credentials: false
+  })
+);
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+  })
+);
+
+// El webhook necesita el JSON normalizado para verificar las propiedades
+// firmadas por Wompi. No se confía en el navegador para confirmar pagos.
 app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false }));
 
-// Config Firebase para el frontend (público)
-app.get("/firebase-config.js", (_req, res) => {
-  res.type("application/javascript").send(
-    "window.FIREBASE_CONFIG = " + JSON.stringify({
-      apiKey: process.env.FIREBASE_API_KEY || "",
-      authDomain: process.env.FIREBASE_AUTH_DOMAIN || "",
-      projectId: process.env.FIREBASE_PROJECT_ID || "",
-      appId: process.env.FIREBASE_APP_ID || ""
-    }) + ";"
-  );
-});
-
-app.use(express.static(path.join(__dirname, "public")));
-
-// ─── Rate limits ──────────────────────────────────────────────────────────────
-const resetLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 30,
-  standardHeaders: true,
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 250,
+  standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "Demasiados intentos seguidos. Espera un minuto." }
+  message: { error: "Demasiadas solicitudes. Intenta nuevamente más tarde." }
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 60,
-  standardHeaders: true,
+  limit: 12,
+  standardHeaders: "draft-7",
   legacyHeaders: false,
   message: { error: "Demasiados intentos. Espera unos minutos." }
 });
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function cleanText(value, max = 300) {
-  return String(value ?? "").trim().slice(0, max);
-}
+const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Has realizado demasiadas solicitudes. Intenta más tarde." }
+});
 
-function sha256(value) {
-  return crypto.createHash("sha256").update(String(value)).digest("hex");
-}
+app.use("/api", generalLimiter);
 
-function mailer() {
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    throw new Error("El servicio de correo no está configurado. Completa las variables SMTP.");
-  }
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: String(process.env.SMTP_SECURE || "true") === "true",
+/* =========================================================
+   4. CORREO ELECTRÓNICO
+========================================================= */
+
+let mailer = null;
+
+const SMTP_HOST = process.env.SMTP_HOST || "";
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_USER = process.env.SMTP_USER || "";
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD || "";
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
+
+if (SMTP_HOST && SMTP_USER && SMTP_PASSWORD) {
+  mailer = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
+      user: SMTP_USER,
+      pass: SMTP_PASSWORD
     }
   });
 }
 
-function safeEmail(user) {
-  return (user?.email || "").toLowerCase();
+/* =========================================================
+   5. FUNCIONES AUXILIARES
+========================================================= */
+
+function sha256(value) {
+  return crypto
+    .createHash("sha256")
+    .update(String(value))
+    .digest("hex");
 }
 
-// ─── Middlewares de autenticación ─────────────────────────────────────────────
+function safeEqual(a, b) {
+  const first = Buffer.from(String(a || ""));
+  const second = Buffer.from(String(b || ""));
+
+  if (first.length !== second.length) return false;
+
+  return crypto.timingSafeEqual(first, second);
+}
+
+function makeReference() {
+  return `NEURO-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+}
+
+function getPublicFirebaseConfig() {
+  return {
+    apiKey: process.env.FIREBASE_API_KEY || "",
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN || "",
+    projectId: process.env.FIREBASE_PROJECT_ID || "",
+    appId: process.env.FIREBASE_APP_ID || ""
+  };
+}
+
+function sendError(res, status, message) {
+  return res.status(status).json({ error: message });
+}
+
+function asDate(value) {
+  if (!value) return null;
+
+  if (typeof value.toDate === "function") {
+    return value.toDate();
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function cleanText(value, maxLength = 500) {
+  if (typeof value !== "string") return "";
+  return value.trim().slice(0, maxLength);
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
+}
+
+function getNestedValue(object, propertyPath) {
+  return String(propertyPath)
+    .split(".")
+    .reduce((value, key) => {
+      if (value === null || value === undefined) return undefined;
+      return value[key];
+    }, object);
+}
+
+/* =========================================================
+   6. AUTENTICACIÓN Y PERMISOS
+========================================================= */
+
 async function requireUser(req, res, next) {
   try {
     const header = req.headers.authorization || "";
-    if (!header.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Debes iniciar sesión." });
+    const match = header.match(/^Bearer\s+(.+)$/i);
+
+    if (!match) {
+      return sendError(res, 401, "Debes iniciar sesión para continuar.");
     }
-    req.user = await auth.verifyIdToken(header.slice(7), true);
-    next();
-  } catch {
-    return res.status(401).json({ error: "Sesión inválida o vencida. Inicia sesión nuevamente." });
+
+    const decoded = await firebaseAuth.verifyIdToken(match[1], true);
+
+    req.user = decoded;
+    return next();
+
+  } catch (error) {
+    console.error("Token no válido:", error.message);
+    return sendError(res, 401, "Tu sesión no es válida. Inicia sesión nuevamente.");
   }
 }
 
 async function requireAdmin(req, res, next) {
-  // Acepta custom claim "admin" O email del administrador configurado
-  const isClaimAdmin = !!req.user?.admin;
-  const isEmailAdmin = safeEmail(req.user) === ADMIN_EMAIL;
+  try {
+    if (!req.user) {
+      return sendError(res, 401, "Debes iniciar sesión.");
+    }
 
-  if (!isClaimAdmin && !isEmailAdmin) {
-    return res.status(403).json({ error: "No tienes permisos de administrador." });
+    const email = String(req.user.email || "").toLowerCase();
+    const hasAdminClaim = req.user.admin === true;
+
+    if (email !== ADMIN_EMAIL && !hasAdminClaim) {
+      return sendError(res, 403, "No tienes permisos administrativos.");
+    }
+
+    return next();
+
+  } catch (error) {
+    console.error("Validación administrativa:", error);
+    return sendError(res, 403, "No se pudo validar el permiso administrativo.");
   }
-  next();
 }
 
-// ─── Health ───────────────────────────────────────────────────────────────────
-app.get("/api/health", (_req, res) => {
+/* =========================================================
+   7. ESTADO DEL SERVIDOR Y CONFIGURACIÓN FIREBASE
+========================================================= */
+
+app.get("/api/health", (req, res) => {
   res.json({
     ok: true,
-    service: "NeuroEval Pro",
-    smtpConfigured: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS),
-    firebaseProject: process.env.FIREBASE_PROJECT_ID || null,
-    demoPayEnabled: ALLOW_DEMO_PAY
+    service: "NeuroEval Pro API",
+    firebaseProject: FIREBASE_PROJECT_ID || null,
+    smtpConfigured: Boolean(mailer),
+    wompiConfigured: Boolean(
+      WOMPI_PUBLIC_KEY &&
+      WOMPI_INTEGRITY_SECRET &&
+      WOMPI_EVENTS_KEY
+    ),
+    demoPaymentEnabled: ALLOW_DEMO_PAY,
+    evaluationPriceCop: EVAL_PRICE_COP,
+    time: new Date().toISOString()
   });
 });
 
-// ─── Perfil ───────────────────────────────────────────────────────────────────
-app.post("/api/profile", authLimiter, requireUser, async (req, res) => {
-  try {
-    const name = cleanText(req.body.name, 120);
-    const ageRaw = req.body.age;
-    const age = (ageRaw === null || ageRaw === undefined || ageRaw === "")
-      ? null
-      : Number(ageRaw);
-    const goal = cleanText(req.body.goal, 300);
+app.get("/firebase-config.js", (req, res) => {
+  const config = getPublicFirebaseConfig();
 
-    if (!name) return res.status(400).json({ error: "El nombre es obligatorio." });
-    if (age !== null && (!Number.isInteger(age) || age < 12 || age > 99)) {
-      return res.status(400).json({ error: "Edad no válida (debe estar entre 12 y 99)." });
-    }
+  res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
 
-    await db.collection("users").doc(req.user.uid).set({
-      uid: req.user.uid,
-      name,
-      email: safeEmail(req.user),
-      age,
-      goal,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-
-    res.json({ ok: true });
-  } catch (e) {
-    console.error("[profile POST]", e);
-    res.status(500).json({ error: "No fue posible guardar el perfil." });
-  }
+  res.send(
+    `window.FIREBASE_CONFIG = ${JSON.stringify(config)};`
+  );
 });
+
+/* =========================================================
+   8. PERFIL DE USUARIO
+========================================================= */
 
 app.get("/api/profile", requireUser, async (req, res) => {
   try {
-    const doc = await db.collection("users").doc(req.user.uid).get();
-    res.json({ profile: doc.exists ? doc.data() : null });
-  } catch (e) {
-    console.error("[profile GET]", e);
-    res.status(500).json({ error: "No se pudo cargar el perfil." });
+    const ref = db.collection("users").doc(req.user.uid);
+    const snapshot = await ref.get();
+
+    return res.json({
+      profile: snapshot.exists ? snapshot.data() : null
+    });
+
+  } catch (error) {
+    console.error("GET perfil:", error);
+    return sendError(res, 500, "No se pudo consultar el perfil.");
   }
 });
 
-// ─── Evaluaciones ─────────────────────────────────────────────────────────────
-app.post("/api/evaluations", requireUser, async (req, res) => {
+app.post("/api/profile", requireUser, async (req, res) => {
   try {
-    const { answers, scores, profile, recommendations, age, goal } = req.body || {};
+    const name = cleanText(req.body.name, 120);
+    const goal = cleanText(req.body.goal, 120);
+    const age =
+      req.body.age === null || req.body.age === undefined
+        ? null
+        : Number(req.body.age);
 
-    if (
-      !Array.isArray(answers) ||
-      answers.length !== 15 ||
-      !scores ||
-      !profile ||
-      !Array.isArray(recommendations)
-    ) {
-      return res.status(400).json({ error: "La evaluación está incompleta." });
+    if (!name) {
+      return sendError(res, 400, "El nombre es obligatorio.");
     }
 
-    const safeAnswers = answers.map(a => ({
-      question: cleanText(a.question, 600),
-      category: cleanText(a.category, 100),
-      dimension: cleanText(a.dimension, 40),
-      answer: cleanText(a.answer, 40),
-      points: Math.max(0, Math.min(4, Number(a.points) || 0))
-    }));
+    if (age !== null && (!Number.isInteger(age) || age < 18 || age > 99)) {
+      return sendError(res, 400, "La edad no es válida.");
+    }
 
-    const ref = db.collection("evaluations").doc();
-    const paymentRef = `NE-${ref.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+    const userRef = db.collection("users").doc(req.user.uid);
+    const existing = await userRef.get();
 
-    await ref.set({
+    const profile = {
       uid: req.user.uid,
-      name: cleanText(req.body.name, 120),
-      email: safeEmail(req.user),
-      age: Number(age) || null,
-      goal: cleanText(goal, 300),
-      answers: safeAnswers,
-      scores: {
-        inattention: Number(scores.inattention) || 0,
-        hyperactivity: Number(scores.hyperactivity) || 0,
-        differential: Number(scores.differential) || 0
-      },
-      profile: cleanText(profile, 250),
-      profileDescription: cleanText(req.body.profileDescription, 2000),
-      recommendations: recommendations.map(x => cleanText(x, 500)),
-      paymentStatus: "pending",
-      paymentRef,
-      paidAt: null,
-      amount: EVAL_PRICE_COP,
-      currency: "COP",
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+      name,
+      email: String(req.user.email || "").toLowerCase(),
+      age,
+      goal: goal || "Autoconocimiento",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
 
-    res.json({
-      ok: true,
-      id: ref.id,
-      paymentRef,
-      paymentStatus: "pending",
-      amount: EVAL_PRICE_COP
-    });
-  } catch (e) {
-    console.error("[evaluations POST]", e);
-    res.status(500).json({ error: "No fue posible guardar la evaluación." });
+    if (!existing.exists) {
+      profile.createdAt = admin.firestore.FieldValue.serverTimestamp();
+    }
+
+    await userRef.set(profile, { merge: true });
+
+    return res.json({ ok: true, profile });
+
+  } catch (error) {
+    console.error("POST perfil:", error);
+    return sendError(res, 500, "No se pudo guardar el perfil.");
   }
 });
+
+/* =========================================================
+   9. CREAR EVALUACIÓN
+========================================================= */
+
+app.post("/api/evaluations", requireUser, async (req, res) => {
+  try {
+    const body = req.body || {};
+
+    const name = cleanText(body.name, 120);
+    const goal = cleanText(body.goal, 120);
+    const email = String(req.user.email || "").toLowerCase();
+
+    if (!name) {
+      return sendError(res, 400, "No se encontró el nombre del usuario.");
+    }
+
+    if (!Array.isArray(body.answers) || body.answers.length !== 15) {
+      return sendError(res, 400, "La evaluación debe contener 15 respuestas.");
+    }
+
+    const validAnswers = body.answers.every((answer) => {
+      return (
+        answer &&
+        typeof answer.question === "string" &&
+        typeof answer.answer === "string" &&
+        Number.isInteger(answer.points) &&
+        answer.points >= 0 &&
+        answer.points <= 4
+      );
+    });
+
+    if (!validAnswers) {
+      return sendError(res, 400, "Las respuestas recibidas no son válidas.");
+    }
+
+    const age =
+      body.age === null || body.age === undefined
+        ? null
+        : Number(body.age);
+
+    if (age !== null && (!Number.isInteger(age) || age < 18 || age > 99)) {
+      return sendError(res, 400, "La edad recibida no es válida.");
+    }
+
+    const scores = body.scores || {};
+
+    const safeScores = {
+      inattention: Math.max(0, Math.min(100, Number(scores.inattention || 0))),
+      hyperactivity: Math.max(0, Math.min(100, Number(scores.hyperactivity || 0))),
+      differential: Math.max(0, Math.min(100, Number(scores.differential || 0)))
+    };
+
+    const recommendations = Array.isArray(body.recommendations)
+      ? body.recommendations
+          .slice(0, 10)
+          .map((item) => cleanText(item, 300))
+      : [];
+
+    const reference = makeReference();
+
+    const evaluation = {
+      uid: req.user.uid,
+      name,
+      email,
+      age,
+      goal,
+      answers: body.answers,
+      scores: safeScores,
+      profile: cleanText(body.profile, 200),
+      profileDescription: cleanText(body.profileDescription, 1500),
+      recommendations,
+      paymentStatus: "pending",
+      paymentProvider: "wompi",
+      paymentReference: reference,
+      amountCop: EVAL_PRICE_COP,
+      currency: CURRENCY,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    const document = await db.collection("evaluations").add(evaluation);
+
+    return res.status(201).json({
+      ok: true,
+      id: document.id,
+      reference,
+      paymentStatus: "pending",
+      amountCop: EVAL_PRICE_COP,
+      currency: CURRENCY
+    });
+
+  } catch (error) {
+    console.error("Crear evaluación:", error);
+    return sendError(res, 500, "No se pudo guardar la evaluación.");
+  }
+});
+
+/* =========================================================
+   10. CONSULTAR EVALUACIONES DEL USUARIO
+========================================================= */
 
 app.get("/api/my-evaluations", requireUser, async (req, res) => {
   try {
-    const snap = await db.collection("evaluations")
+    const snapshot = await db
+      .collection("evaluations")
       .where("uid", "==", req.user.uid)
+      .limit(50)
       .get();
 
-    const rows = snap.docs.map(d => {
-      const x = d.data();
-      return {
-        id: d.id,
-        name: x.name,
-        email: x.email,
-        profile: x.profile,
-        profileDescription: x.profileDescription,
-        scores: x.scores || {},
-        recommendations: x.recommendations || [],
-        paymentStatus: x.paymentStatus || "pending",
-        paymentRef: x.paymentRef || null,
-        paidAt: x.paidAt?.toDate?.().toISOString?.() || null,
-        amount: x.amount || EVAL_PRICE_COP,
-        currency: x.currency || "COP",
-        createdAt: x.createdAt?.toDate?.().toISOString() || null
-      };
-    });
-
-    rows.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-    res.json({ evaluations: rows });
-  } catch (e) {
-    console.error("[my-evaluations]", e);
-    res.status(500).json({ error: "No se pudieron cargar tus informes." });
-  }
-});
-
-app.get("/api/my-evaluations/:id", requireUser, async (req, res) => {
-  try {
-    const doc = await db.collection("evaluations").doc(req.params.id).get();
-    if (!doc.exists || doc.data().uid !== req.user.uid) {
-      return res.status(404).json({ error: "Informe no encontrado." });
-    }
-    const x = doc.data();
-    res.json({
+    const evaluations = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...x,
-      createdAt: x.createdAt?.toDate?.().toISOString() || null,
-      paidAt: x.paidAt?.toDate?.().toISOString() || null
-    });
-  } catch (e) {
-    console.error("[my-evaluations/:id]", e);
-    res.status(500).json({ error: "No se pudo cargar el informe." });
+      ...doc.data()
+    }));
+
+    return res.json({ evaluations });
+
+  } catch (error) {
+    console.error("Consultar evaluaciones:", error);
+    return sendError(res, 500, "No se pudieron consultar tus evaluaciones.");
   }
 });
 
-// ─── Pago ─────────────────────────────────────────────────────────────────────
-/**
- * IMPORTANTE DE SEGURIDAD:
- * Este endpoint solo debe usarse en desarrollo / pruebas.
- * En producción real el pago se confirma ÚNICAMENTE vía webhook de Wompi
- * (firmado). Por eso está protegido por ALLOW_DEMO_PAY.
- */
-app.post("/api/my-evaluations/:id/pay", requireUser, async (req, res) => {
-  try {
-    if (!ALLOW_DEMO_PAY) {
-      return res.status(403).json({
-        error: "El pago demo está desactivado. Usa el flujo real de Wompi."
-      });
-    }
+async function getOwnedEvaluation(uid, id) {
+  const ref = db.collection("evaluations").doc(id);
+  const snapshot = await ref.get();
 
-    const ref = db.collection("evaluations").doc(req.params.id);
-    const doc = await ref.get();
-    if (!doc.exists || doc.data().uid !== req.user.uid) {
-      return res.status(404).json({ error: "Informe no encontrado." });
-    }
+  if (!snapshot.exists) return null;
 
-    const data = doc.data();
-    if (data.paymentStatus === "paid") {
-      return res.json({
-        ok: true,
-        paymentStatus: "paid",
-        paymentRef: data.paymentRef,
-        receipt: buildReceipt(doc.id, data)
-      });
-    }
+  const evaluation = snapshot.data();
 
-    const paymentRef = data.paymentRef || `NE-${doc.id.slice(0, 8).toUpperCase()}`;
-    await ref.update({
-      paymentStatus: "paid",
-      paymentRef,
-      paidAt: admin.firestore.FieldValue.serverTimestamp(),
-      paymentMethod: cleanText(req.body.method || "demo", 40)
-    });
+  if (evaluation.uid !== uid) return null;
 
-    const updated = (await ref.get()).data();
-    res.json({
-      ok: true,
-      paymentStatus: "paid",
-      paymentRef,
-      receipt: buildReceipt(doc.id, updated)
-    });
-  } catch (e) {
-    console.error("[pay]", e);
-    res.status(500).json({ error: "No se pudo procesar el pago." });
-  }
-});
-
-/**
- * Genera la firma de integridad que el frontend necesita para abrir el Widget de Wompi.
- * Documentación Wompi: SHA256(reference + amountInCents + currency + integritySecret)
- */
-app.post("/api/payments/wompi-signature", requireUser, async (req, res) => {
-  try {
-    const { evaluationId } = req.body || {};
-    if (!evaluationId) {
-      return res.status(400).json({ error: "Falta evaluationId." });
-    }
-
-    const doc = await db.collection("evaluations").doc(evaluationId).get();
-    if (!doc.exists || doc.data().uid !== req.user.uid) {
-      return res.status(404).json({ error: "Evaluación no encontrada." });
-    }
-
-    const data = doc.data();
-    if (data.paymentStatus === "paid") {
-      return res.status(400).json({ error: "Esta evaluación ya está pagada." });
-    }
-
-    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET;
-    const publicKey = process.env.WOMPI_PUBLIC_KEY;
-
-    if (!integritySecret || !publicKey) {
-      return res.status(500).json({
-        error: "Wompi no está configurado (faltan WOMPI_PUBLIC_KEY o WOMPI_INTEGRITY_SECRET)."
-      });
-    }
-
-    const reference = data.paymentRef;
-    const amountInCents = Math.round((data.amount || EVAL_PRICE_COP) * 100); // COP → centavos
-    const currency = "COP";
-
-    const integrityString = `${reference}${amountInCents}${currency}${integritySecret}`;
-    const signature = crypto.createHash("sha256").update(integrityString).digest("hex");
-
-    res.json({
-      publicKey,
-      currency,
-      amountInCents,
-      reference,
-      signature,
-      redirectUrl: process.env.WOMPI_REDIRECT_URL || process.env.APP_ORIGIN || ""
-    });
-  } catch (e) {
-    console.error("[wompi-signature]", e);
-    res.status(500).json({ error: "No se pudo generar la firma de pago." });
-  }
-});
-
-/**
- * Webhook de Wompi.
- * Valida el checksum según la documentación oficial y marca la evaluación como pagada.
- * Configura esta URL en el dashboard de Wompi: https://TU-DOMINIO/api/payments/wompi-webhook
- */
-app.post("/api/payments/wompi-webhook", async (req, res) => {
-  try {
-    const event = req.body || {};
-    const eventsKey = process.env.WOMPI_EVENTS_KEY || process.env.WOMPI_INTEGRITY_SECRET;
-
-    // Validación básica de estructura
-    if (!event?.data?.transaction || !event?.signature) {
-      console.warn("[wompi-webhook] Payload incompleto");
-      return res.status(400).json({ error: "Payload incompleto" });
-    }
-
-    const { id, status, amount_in_cents, reference } = event.data.transaction;
-    const checksum = event.signature?.checksum;
-    const timestamp = event.timestamp || event.signature?.timestamp;
-
-    if (!eventsKey) {
-      console.error("[wompi-webhook] Falta WOMPI_EVENTS_KEY / WOMPI_INTEGRITY_SECRET");
-      return res.status(500).json({ error: "Configuración incompleta" });
-    }
-
-    // Validación de integridad (adaptada a la fórmula más común de Wompi)
-    // Ajusta según la documentación exacta de tu cuenta (properties pueden variar)
-    const integrityString = `${id}${status}${amount_in_cents}${timestamp}${eventsKey}`;
-    const expected = crypto.createHash("sha256").update(integrityString).digest("hex");
-
-    if (expected !== checksum) {
-      console.warn("[wompi-webhook] Checksum inválido", { expected, received: checksum });
-      return res.status(400).json({ error: "Firma inválida" });
-    }
-
-    // Solo procesamos pagos aprobados
-    if (status !== "APPROVED") {
-      console.log(`[wompi-webhook] Estado ignorado: ${status} ref=${reference}`);
-      return res.status(200).json({ ok: true, ignored: true });
-    }
-
-    // Buscamos la evaluación por paymentRef
-    const snap = await db.collection("evaluations")
-      .where("paymentRef", "==", reference)
-      .limit(1)
-      .get();
-
-    if (snap.empty) {
-      console.warn(`[wompi-webhook] No se encontró evaluación con ref ${reference}`);
-      return res.status(200).json({ ok: true, notFound: true });
-    }
-
-    const evalDoc = snap.docs[0];
-    const current = evalDoc.data();
-
-    if (current.paymentStatus === "paid") {
-      return res.status(200).json({ ok: true, alreadyPaid: true });
-    }
-
-    // Validamos monto (seguridad extra)
-    const expectedCents = Math.round((current.amount || EVAL_PRICE_COP) * 100);
-    if (Number(amount_in_cents) !== expectedCents) {
-      console.error(`[wompi-webhook] Monto no coincide. Esperado ${expectedCents}, recibido ${amount_in_cents}`);
-      return res.status(400).json({ error: "Monto incorrecto" });
-    }
-
-    await evalDoc.ref.update({
-      paymentStatus: "paid",
-      paidAt: admin.firestore.FieldValue.serverTimestamp(),
-      paymentMethod: "wompi",
-      wompiTransactionId: id,
-      wompiStatus: status
-    });
-
-    console.log(`[wompi-webhook] Pago confirmado: ${reference} → ${evalDoc.id}`);
-    res.status(200).json({ ok: true });
-  } catch (e) {
-    console.error("[wompi-webhook]", e);
-    res.status(500).json({ error: "Error interno del webhook" });
-  }
-});
-
-function buildReceipt(id, data) {
   return {
-    evaluationId: id,
-    paymentRef: data.paymentRef,
-    name: data.name,
-    email: data.email,
-    amount: data.amount || EVAL_PRICE_COP,
-    currency: data.currency || "COP",
-    status: data.paymentStatus || "paid",
-    paidAt: data.paidAt?.toDate?.().toISOString?.() || new Date().toISOString(),
-    concept: "Informe de autorregistro NeuroEval Pro"
+    ref,
+    data: evaluation
   };
 }
 
-// ─── PDF cliente (sin respuestas) ─────────────────────────────────────────────
-app.get("/api/my-evaluations/:id/pdf", requireUser, async (req, res) => {
+app.get("/api/my-evaluations/:id", requireUser, async (req, res) => {
   try {
-    const doc = await db.collection("evaluations").doc(req.params.id).get();
-    if (!doc.exists || doc.data().uid !== req.user.uid) {
-      return res.status(404).json({ error: "Informe no encontrado." });
+    const result = await getOwnedEvaluation(req.user.uid, req.params.id);
+
+    if (!result) {
+      return sendError(res, 404, "No encontramos esa evaluación.");
     }
-    const x = doc.data();
-    if (x.paymentStatus !== "paid") {
-      return res.status(402).json({ error: "Debes completar el pago para descargar el informe." });
+
+    if (result.data.paymentStatus !== "paid") {
+      return sendError(res, 402, "El informe estará disponible cuando se confirme el pago.");
     }
-    makePdf({
-      ...x,
-      createdAt: x.createdAt?.toDate?.().toLocaleString("es-CO")
-    }, res, { includeAnswers: false });
-  } catch (e) {
-    console.error("[pdf cliente]", e);
-    res.status(500).json({ error: "No se pudo generar el PDF." });
-  }
-});
 
-app.get("/api/my-evaluations/:id/receipt", requireUser, async (req, res) => {
-  try {
-    const doc = await db.collection("evaluations").doc(req.params.id).get();
-    if (!doc.exists || doc.data().uid !== req.user.uid) {
-      return res.status(404).json({ error: "No encontrado." });
-    }
-    const x = doc.data();
-    if (x.paymentStatus !== "paid") {
-      return res.status(402).json({ error: "Aún no hay pago registrado." });
-    }
-    res.json({ receipt: buildReceipt(doc.id, x) });
-  } catch (e) {
-    console.error("[receipt]", e);
-    res.status(500).json({ error: "No se pudo obtener el comprobante." });
-  }
-});
-
-// ─── Admin ────────────────────────────────────────────────────────────────────
-app.get("/api/admin/overview", requireUser, requireAdmin, async (_req, res) => {
-  try {
-    const [usersSnap, evalSnap] = await Promise.all([
-      db.collection("users").get(),
-      db.collection("evaluations").get()
-    ]);
-
-    const users = usersSnap.docs.map(d => {
-      const x = d.data();
-      return {
-        uid: d.id,
-        name: x.name,
-        email: x.email,
-        age: x.age ?? null,
-        goal: x.goal || null,
-        createdAt: x.createdAt?.toDate?.().toISOString() || null
-      };
-    }).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-
-    const records = evalSnap.docs.map(d => {
-      const x = d.data();
-      return {
-        id: d.id,
-        name: x.name,
-        email: x.email,
-        age: x.age ?? null,
-        profile: x.profile,
-        scores: x.scores || {},
-        paymentStatus: x.paymentStatus || "pending",
-        paymentRef: x.paymentRef || null,
-        amount: x.amount || EVAL_PRICE_COP,
-        paidAt: x.paidAt?.toDate?.().toISOString() || null,
-        createdAt: x.createdAt?.toDate?.().toISOString() || null
-      };
-    }).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-
-    const paid = records.filter(r => r.paymentStatus === "paid").length;
-    const pending = records.filter(r => r.paymentStatus !== "paid").length;
-
-    res.json({
-      users: users.length,
-      evaluations: records.length,
-      paid,
-      pending,
-      userList: users,
-      records
+    return res.json({
+      evaluation: {
+        id: req.params.id,
+        ...result.data
+      }
     });
-  } catch (e) {
-    console.error("[admin/overview]", e);
-    res.status(500).json({ error: "No se pudo cargar el panel." });
+
+  } catch (error) {
+    console.error("Consultar evaluación individual:", error);
+    return sendError(res, 500, "No se pudo cargar la evaluación.");
   }
 });
 
-app.get("/api/admin/evaluations/:id", requireUser, requireAdmin, async (req, res) => {
-  try {
-    const doc = await db.collection("evaluations").doc(req.params.id).get();
-    if (!doc.exists) return res.status(404).json({ error: "Informe no encontrado." });
-    const x = doc.data();
-    res.json({
-      id: doc.id,
-      ...x,
-      createdAt: x.createdAt?.toDate?.().toISOString() || null,
-      paidAt: x.paidAt?.toDate?.().toISOString() || null
-    });
-  } catch (e) {
-    console.error("[admin/evaluations/:id]", e);
-    res.status(500).json({ error: "No se pudo abrir el informe." });
-  }
-});
+/* =========================================================
+   11. ESTADO DEL PAGO
+========================================================= */
 
-app.post("/api/admin/evaluations/:id/payment", requireUser, requireAdmin, async (req, res) => {
-  try {
-    const status = cleanText(req.body.status, 20);
-    if (!["paid", "pending", "failed"].includes(status)) {
-      return res.status(400).json({ error: "Estado de pago no válido." });
+app.get(
+  "/api/my-evaluations/:id/payment-status",
+  requireUser,
+  async (req, res) => {
+    try {
+      const result = await getOwnedEvaluation(req.user.uid, req.params.id);
+
+      if (!result) {
+        return sendError(res, 404, "No encontramos esa evaluación.");
+      }
+
+      return res.json({
+        id: req.params.id,
+        paymentStatus: result.data.paymentStatus || "pending",
+        reference: result.data.paymentReference || null,
+        amountCop: result.data.amountCop || EVAL_PRICE_COP,
+        currency: result.data.currency || CURRENCY
+      });
+
+    } catch (error) {
+      console.error("Estado de pago:", error);
+      return sendError(res, 500, "No se pudo consultar el estado del pago.");
     }
-    const ref = db.collection("evaluations").doc(req.params.id);
-    const doc = await ref.get();
-    if (!doc.exists) return res.status(404).json({ error: "Informe no encontrado." });
+  }
+);
 
-    const update = { paymentStatus: status };
-    if (status === "paid") {
-      update.paidAt = admin.firestore.FieldValue.serverTimestamp();
-      update.paymentMethod = cleanText(req.body.method || "admin", 40);
+/* =========================================================
+   12. FIRMA DE INTEGRIDAD WOMPI
+========================================================= */
+
+app.post(
+  "/api/payments/wompi-signature",
+  requireUser,
+  async (req, res) => {
+    try {
+      if (!WOMPI_PUBLIC_KEY || !WOMPI_INTEGRITY_SECRET) {
+        return sendError(
+          res,
+          503,
+          "La pasarela de pagos todavía no está configurada en el servidor."
+        );
+      }
+
+      const evaluationId = cleanText(req.body.evaluationId, 150);
+
+      if (!evaluationId) {
+        return sendError(res, 400, "Falta el identificador de la evaluación.");
+      }
+
+      const result = await getOwnedEvaluation(req.user.uid, evaluationId);
+
+      if (!result) {
+        return sendError(res, 404, "No encontramos esa evaluación.");
+      }
+
+      if (result.data.paymentStatus === "paid") {
+        return sendError(res, 409, "Esta evaluación ya aparece pagada.");
+      }
+
+      const reference = result.data.paymentReference;
+      const amountInCents = EVAL_PRICE_COP * 100;
+
+      if (!reference) {
+        return sendError(res, 500, "La evaluación no tiene referencia de pago.");
+      }
+
+      const signatureString =
+        `${reference}${amountInCents}${CURRENCY}${WOMPI_INTEGRITY_SECRET}`;
+
+      const signature = sha256(signatureString);
+
+      const redirectUrl =
+        `${APP_ORIGIN}/?evaluation=${encodeURIComponent(evaluationId)}`;
+
+      return res.json({
+        publicKey: WOMPI_PUBLIC_KEY,
+        currency: CURRENCY,
+        amountInCents,
+        reference,
+        signature,
+        redirectUrl
+      });
+
+    } catch (error) {
+      console.error("Firma Wompi:", error);
+      return sendError(res, 500, "No se pudo preparar el pago.");
     }
-    await ref.update(update);
-    res.json({ ok: true, paymentStatus: status });
-  } catch (e) {
-    console.error("[admin/payment]", e);
-    res.status(500).json({ error: "No se pudo actualizar el pago." });
   }
-});
+);
 
-// PDF admin (CON respuestas)
-app.get("/api/admin/evaluations/:id/pdf", requireUser, requireAdmin, async (req, res) => {
-  try {
-    const doc = await db.collection("evaluations").doc(req.params.id).get();
-    if (!doc.exists) return res.status(404).json({ error: "Informe no encontrado." });
-    const x = doc.data();
-    makePdf({
-      ...x,
-      createdAt: x.createdAt?.toDate?.().toLocaleString("es-CO")
-    }, res, { includeAnswers: true });
-  } catch (e) {
-    console.error("[admin/pdf]", e);
-    res.status(500).json({ error: "No se pudo generar el PDF." });
+/* =========================================================
+   13. WEBHOOK WOMPI
+   La notificación firmada por Wompi es la fuente de confirmación.
+========================================================= */
+
+function validateWompiEvent(event, headerChecksum) {
+  if (!WOMPI_EVENTS_KEY) {
+    throw new Error("Falta configurar WOMPI_EVENTS_KEY.");
   }
-});
 
-// ─── Generación de PDF ────────────────────────────────────────────────────────
-function makePdf(record, res, options = { includeAnswers: false }) {
-  const includeAnswers = !!options.includeAnswers;
-  const pdf = new PDFDocument({ size: "A4", margin: 48, info: { Title: "Informe NeuroEval Pro" } });
-  const filename = `NeuroEval-${(record.name || "cliente").replace(/[^a-z0-9-_]/gi, "_")}.pdf`;
+  const properties = event?.signature?.properties;
+  const timestamp = event?.timestamp;
+  const receivedChecksum =
+    headerChecksum || event?.signature?.checksum || "";
 
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  pdf.pipe(res);
+  if (
+    !Array.isArray(properties) ||
+    properties.length === 0 ||
+    timestamp === undefined ||
+    !receivedChecksum
+  ) {
+    throw new Error("El evento no contiene los datos de firma requeridos.");
+  }
 
-  pdf.fontSize(20).fillColor("#111").text("NeuroEval Pro", { continued: false });
-  pdf.moveDown(0.3).fontSize(14).text("Informe de autorregistro cognitivo");
-  pdf.moveDown().fontSize(10).fillColor("#333")
-    .text(`Cliente: ${record.name || "No indicado"}`)
-    .text(`Correo: ${record.email || "No indicado"}`)
-    .text(`Edad: ${record.age ?? "No indicada"}`)
-    .text(`Objetivo: ${record.goal || "No indicado"}`)
-    .text(`Fecha: ${record.createdAt || "No disponible"}`)
-    .text(`Estado de pago: ${record.paymentStatus === "paid" ? "Pagado" : "Pendiente"}`);
-  if (record.paymentRef) pdf.text(`Referencia de pago: ${record.paymentRef}`);
+  const values = properties.map((propertyPath) => {
+    const value = getNestedValue(event.data, propertyPath);
 
-  pdf.moveDown().fontSize(13).fillColor("#111").text("Resultado orientativo");
-  pdf.fontSize(11).text(record.profile || "Sin perfil");
-  pdf.moveDown(0.3).fontSize(10).fillColor("#333").text(record.profileDescription || "");
+    if (value === undefined || value === null) {
+      throw new Error(`No se encontró la propiedad firmada: ${propertyPath}`);
+    }
 
-  const s = record.scores || {};
-  pdf.moveDown().fontSize(12).fillColor("#111").text("Indicadores por dimensión");
-  pdf.fontSize(10).fillColor("#333")
-    .text(`Inatención y función ejecutiva: ${s.inattention ?? 0}%`)
-    .text(`Hiperactividad e impulsividad: ${s.hyperactivity ?? 0}%`)
-    .text(`Indicadores diferenciales (estrés/fatiga): ${s.differential ?? 0}%`);
-
-  pdf.moveDown().fontSize(12).fillColor("#111").text("Interpretación del análisis");
-  pdf.fontSize(10).fillColor("#333").text(buildDetailedAnalysis(record), { align: "justify" });
-
-  pdf.moveDown().fontSize(12).fillColor("#111").text("Recomendaciones");
-  (record.recommendations || []).forEach(r => {
-    pdf.fontSize(10).fillColor("#333").text(`• ${r}`);
+    return String(value);
   });
 
-  if (includeAnswers) {
-    pdf.moveDown().fontSize(12).fillColor("#111").text("Preguntas y respuestas (solo administrador)");
-    (record.answers || []).forEach((a, i) => {
-      if (pdf.y > 720) pdf.addPage();
-      pdf.moveDown(0.35).fontSize(9).fillColor("#111").text(`${i + 1}. ${a.question}`);
-      pdf.fontSize(9).fillColor("#4f46e5").text(`Respuesta: ${a.answer} (${a.points} puntos) · ${a.category || ""}`);
-    });
+  const concatenated =
+    values.join("") + String(timestamp) + WOMPI_EVENTS_KEY;
+
+  const expectedChecksum = sha256(concatenated);
+
+  if (!safeEqual(expectedChecksum.toLowerCase(), String(receivedChecksum).toLowerCase())) {
+    throw new Error("La firma del evento no coincide.");
   }
 
-  pdf.moveDown().fontSize(8).fillColor("#666")
-    .text("Este documento es un autorregistro orientativo; no constituye diagnóstico médico ni sustituye una valoración profesional cualificada.");
-  pdf.end();
+  return true;
 }
 
-function buildDetailedAnalysis(record) {
-  const s = record.scores || {};
-  const parts = [];
-  parts.push(`El perfil obtenido (“${record.profile || "sin clasificar"}”) se calcula a partir de las respuestas del autorregistro en tres dimensiones.`);
-
-  if (s.inattention >= 60) {
-    parts.push(`La dimensión de inatención y función ejecutiva muestra elevación (${s.inattention}%). Esto sugiere dificultades frecuentes para sostener la atención, organizar tareas o completar actividades que requieren esfuerzo mental prolongado.`);
-  } else if (s.inattention >= 40) {
-    parts.push(`La inatención se sitúa en un rango moderado (${s.inattention}%). Pueden existir dificultades ocasionales de concentración u organización, sin llegar a un patrón claramente elevado en este autorregistro.`);
-  } else {
-    parts.push(`Los indicadores de inatención se encuentran en rango bajo o moderado-bajo (${s.inattention}%).`);
-  }
-
-  if (s.hyperactivity >= 60) {
-    parts.push(`La hiperactividad/impulsividad aparece elevada (${s.hyperactivity}%). Puede reflejar inquietud, dificultad para esperar o respuestas precipitadas.`);
-  } else if (s.hyperactivity >= 40) {
-    parts.push(`La inquietud e impulsividad se observan en nivel moderado (${s.hyperactivity}%).`);
-  } else {
-    parts.push(`Los indicadores de hiperactividad e impulsividad están en rango bajo (${s.hyperactivity}%).`);
-  }
-
-  if (s.differential >= 60) {
-    parts.push(`Los indicadores diferenciales de estrés o fatiga están elevados (${s.differential}%). Es relevante considerar sueño, carga laboral, ansiedad u otras causas médicas o contextuales antes de interpretar los síntomas solo como un patrón de atención.`);
-  } else {
-    parts.push(`Los indicadores diferenciales de estrés/fatiga no muestran elevación marcada (${s.differential}%).`);
-  }
-
-  parts.push("Estos resultados son orientativos. No diagnostican TDAH ni ningún otro trastorno. La interpretación clínica debe integrar historia desde la infancia, impacto funcional, entrevista y, si procede, otras pruebas.");
-  return parts.join(" ");
-}
-
-// ─── Recuperación de contraseña ───────────────────────────────────────────────
-app.post("/api/password/request", resetLimiter, async (req, res) => {
-  const email = cleanText(req.body.email, 254).toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ error: "Introduce un correo válido." });
-  }
-
+app.post("/api/payments/wompi-webhook", async (req, res) => {
   try {
-    let user;
-    try {
-      user = await auth.getUserByEmail(email);
-    } catch {
-      // No revelamos si el correo existe o no
-      return res.json({ ok: true, message: "Si la cuenta existe, recibirás instrucciones." });
-    }
+    const event = req.body || {};
+    const headerChecksum = req.get("X-Event-Checksum") || "";
 
-    const code = String(crypto.randomInt(100000, 1000000));
-    const ttl = Math.max(5, Math.min(60, Number(process.env.RESET_CODE_TTL_MINUTES || 15)));
+    validateWompiEvent(event, headerChecksum);
 
-    await db.collection("passwordResets").doc(user.uid).set({
-      codeHash: sha256(code),
-      expiresAt: admin.firestore.Timestamp.fromDate(new Date(Date.now() + ttl * 60000)),
-      attempts: 0,
-      used: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    await mailer().sendMail({
-      from: process.env.MAIL_FROM || process.env.SMTP_USER,
-      to: email,
-      subject: "Tu código de recuperación - NeuroEval Pro",
-      text: `Tu código de recuperación es ${code}. Vence en ${ttl} minutos. Si no solicitaste este cambio, ignora este mensaje.`,
-      html: `<p>Tu código de recuperación de NeuroEval Pro es:</p>
-             <h1 style="letter-spacing:8px;font-family:monospace">${code}</h1>
-             <p>Vence en ${ttl} minutos.</p>`
-    });
-
-    res.json({ ok: true, message: "Si la cuenta existe, recibirás instrucciones." });
-  } catch (e) {
-    console.error("[password/request]", e);
-    const msg = String(e && e.message || e);
-    let friendly = "No se pudo enviar el correo. Revisa la configuración SMTP en Render.";
-    if (/Invalid login|EAUTH|Username and Password not accepted/i.test(msg)) {
-      friendly = "Gmail rechazó el acceso. Usa una Contraseña de aplicación (no la contraseña normal) en SMTP_PASS.";
-    } else if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|connect/i.test(msg)) {
-      friendly = "No se pudo conectar al servidor SMTP. Revisa SMTP_HOST y SMTP_PORT.";
-    } else if (/no está configurado|SMTP/i.test(msg)) {
-      friendly = "Faltan variables SMTP en Render (SMTP_HOST, SMTP_USER, SMTP_PASS).";
-    }
-    res.status(500).json({ error: friendly });
-  }
-});
-
-app.post("/api/password/confirm", resetLimiter, async (req, res) => {
-  const email = cleanText(req.body.email, 254).toLowerCase();
-  const code = cleanText(req.body.code, 6);
-  const password = String(req.body.newPassword || "");
-
-  if (!/^\d{6}$/.test(code) || password.length < 8) {
-    return res.status(400).json({ error: "Código inválido o contraseña menor de 8 caracteres." });
-  }
-
-  try {
-    const user = await auth.getUserByEmail(email);
-    const ref = db.collection("passwordResets").doc(user.uid);
-
-    const result = await db.runTransaction(async tx => {
-      const snap = await tx.get(ref);
-      if (!snap.exists) return "invalid";
-      const d = snap.data();
-      if (d.used || d.expiresAt.toDate() < new Date() || d.attempts >= 8) return "expired";
-      if (d.codeHash !== sha256(code)) {
-        tx.update(ref, { attempts: (d.attempts || 0) + 1 });
-        return "invalid";
-      }
-      tx.update(ref, { used: true, codeHash: "" });
-      return "ok";
-    });
-
-    if (result !== "ok") {
-      return res.status(400).json({
-        error: result === "expired"
-          ? "El código venció. Solicita uno nuevo."
-          : "Código incorrecto."
+    if (event.event !== "transaction.updated") {
+      return res.status(200).json({
+        ok: true,
+        ignored: true,
+        reason: "Evento no relacionado con actualización de transacción."
       });
     }
 
-    await auth.updateUser(user.uid, { password });
-    res.json({ ok: true, message: "Contraseña actualizada. Ya puedes iniciar sesión." });
-  } catch (e) {
-    console.error("[password/confirm]", e);
-    res.status(400).json({
-      error: "No fue posible restablecer la contraseña. Verifica el correo y vuelve a intentarlo."
-    });
+    const transaction = event?.data?.transaction;
+
+    if (!transaction) {
+      return sendError(res, 400, "El evento no contiene la transacción.");
+    }
+
+    const reference = String(transaction.reference || "");
+    const status = String(transaction.status || "").toUpperCase();
+    const amountInCents = Number(transaction.amount_in_cents);
+    const currency = String(transaction.currency || "").toUpperCase();
+
+    if (!reference) {
+      return sendError(res, 400, "La transacción no tiene referencia.");
+    }
+
+    const query = await db
+      .collection("evaluations")
+      .where("paymentReference", "==", reference)
+      .limit(1)
+      .get();
+
+    if (query.empty) {
+      // La referencia no existe en nuestra plataforma.
+      return res.status(200).json({
+        ok: true,
+        ignored: true,
+        reason: "Referencia no encontrada."
+      });
+    }
+
+    const document = query.docs[0];
+    const evaluation = document.data();
+
+    // No aceptamos valores ni monedas diferentes a los establecidos
+    // por el servidor al crear la evaluación.
+    if (
+      amountInCents !== EVAL_PRICE_COP * 100 ||
+      currency !== CURRENCY
+    ) {
+      console.error("Importe o moneda no coinciden:", {
+        reference,
+        amountInCents,
+        currency
+      });
+
+      return res.status(200).json({
+        ok: true,
+        ignored: true,
+        reason: "El importe o la moneda no coinciden."
+      });
+    }
+
+    if (status === "APPROVED") {
+      await document.ref.set(
+        {
+          paymentStatus: "paid",
+          paymentProvider: "wompi",
+          wompiTransactionId: String(transaction.id || ""),
+          wompiTransactionStatus: status,
+          paidAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      );
+
+    } else if (["DECLINED", "VOIDED", "ERROR"].includes(status)) {
+      // No degradar un pago ya aprobado por un evento posterior.
+      if (evaluation.paymentStatus !== "paid") {
+        await document.ref.set(
+          {
+            paymentStatus: "failed",
+            wompiTransactionId: String(transaction.id || ""),
+            wompiTransactionStatus: status,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          },
+          { merge: true }
+        );
+      }
+
+    } else {
+      await document.ref.set(
+        {
+          wompiTransactionStatus: status,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      );
+    }
+
+    return res.status(200).json({ ok: true });
+
+  } catch (error) {
+    console.error("Webhook Wompi rechazado:", error.message);
+    return res.status(400).json({ error: "No se pudo validar el evento." });
   }
 });
 
-// ─── SPA fallback ─────────────────────────────────────────────────────────────
-app.get("*", (_req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+/* =========================================================
+   14. PAGO DE DEMOSTRACIÓN (SOLO PARA PRUEBAS)
+========================================================= */
+
+app.post(
+  "/api/my-evaluations/:id/pay",
+  requireUser,
+  async (req, res) => {
+    if (!ALLOW_DEMO_PAY) {
+      return sendError(res, 403, "Los pagos de demostración están desactivados.");
+    }
+
+    try {
+      const result = await getOwnedEvaluation(req.user.uid, req.params.id);
+
+      if (!result) {
+        return sendError(res, 404, "No encontramos esa evaluación.");
+      }
+
+      await result.ref.set(
+        {
+          paymentStatus: "paid",
+          paymentProvider: "demo",
+          paidAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      );
+
+      return res.json({ ok: true, paymentStatus: "paid" });
+
+    } catch (error) {
+      console.error("Pago de demostración:", error);
+      return sendError(res, 500, "No se pudo completar la demostración.");
+    }
+  }
+);
+
+/* =========================================================
+   15. GENERACIÓN DE INFORME PDF
+========================================================= */
+
+function buildEvaluationPdf(evaluation, options = {}) {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: "A4",
+        margins: {
+          top: 55,
+          bottom: 55,
+          left: 55,
+          right: 55
+        },
+        info: {
+          Title: "Informe NeuroEval Pro",
+          Author: "NeuroEval Pro",
+          Subject: "Informe de autorregistro cognitivo"
+        }
+      });
+
+      const chunks = [];
+
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const navy = "#171B3B";
+      const purple = "#6259C9";
+      const muted = "#66708B";
+
+      doc.rect(0, 0, doc.page.width, 150).fill(navy);
+
+      doc
+        .fillColor("#FFFFFF")
+        .font("Helvetica-Bold")
+        .fontSize(22)
+        .text("NeuroEval Pro", 55, 48);
+
+      doc
+        .font("Helvetica")
+        .fontSize(10)
+        .fillColor("#D8D9F3")
+        .text("INFORME DE AUTORREGISTRO COGNITIVO", 55, 82);
+
+      doc
+        .fillColor("#FFFFFF")
+        .fontSize(9)
+        .text("Documento de carácter orientativo", 55, 105);
+
+      doc.moveDown(5);
+
+      doc
+        .fillColor(navy)
+        .font("Helvetica-Bold")
+        .fontSize(17)
+        .text("Información general", 55, 180);
+
+      doc.moveDown(0.7);
+
+      const details = [
+        ["Nombre", evaluation.name || "No registrado"],
+        ["Correo", evaluation.email || "No registrado"],
+        ["Edad", evaluation.age ?? "No registrada"],
+        ["Objetivo", evaluation.goal || "No especificado"],
+        [
+          "Fecha",
+          asDate(evaluation.createdAt)?.toLocaleString("es-CO") || "No disponible"
+        ]
+      ];
+
+      details.forEach(([label, value]) => {
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(9)
+          .fillColor(muted)
+          .text(`${label}:`, 55, doc.y, { continued: true });
+
+        doc
+          .font("Helvetica")
+          .fillColor(navy)
+          .text(` ${value}`);
+      });
+
+      doc.moveDown(1.4);
+
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(15)
+        .fillColor(navy)
+        .text("Resumen del autorregistro");
+
+      doc.moveDown(0.5);
+
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(12)
+        .fillColor(purple)
+        .text(evaluation.profile || "Resultado orientativo");
+
+      doc.moveDown(0.4);
+
+      doc
+        .font("Helvetica")
+        .fontSize(10)
+        .fillColor(muted)
+        .text(evaluation.profileDescription || "Sin descripción disponible.", {
+          width: 485,
+          lineGap: 4
+        });
+
+      doc.moveDown(1.2);
+
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(15)
+        .fillColor(navy)
+        .text("Dimensiones exploradas");
+
+      doc.moveDown(0.7);
+
+      const scores = evaluation.scores || {};
+
+      const dimensions = [
+        ["Atención y función ejecutiva", scores.inattention],
+        ["Inquietud e impulsividad", scores.hyperactivity],
+        ["Indicadores de estrés y contexto", scores.differential]
+      ];
+
+      dimensions.forEach(([label, value]) => {
+        const score = Math.max(0, Math.min(100, Number(value || 0)));
+
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(9)
+          .fillColor(navy)
+          .text(`${label}: ${score}%`);
+
+        const x = 55;
+        const y = doc.y + 4;
+        const width = 480;
+
+        doc
+          .roundedRect(x, y, width, 7, 3)
+          .fill("#E8EAF4");
+
+        doc
+          .roundedRect(x, y, width * score / 100, 7, 3)
+          .fill(purple);
+
+        doc.moveDown(1.3);
+      });
+
+      doc.moveDown(0.5);
+
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(15)
+        .fillColor(navy)
+        .text("Orientaciones generales");
+
+      doc.moveDown(0.5);
+
+      const recommendations = Array.isArray(evaluation.recommendations)
+        ? evaluation.recommendations
+        : [];
+
+      recommendations.forEach((item, index) => {
+        doc
+          .font("Helvetica")
+          .fontSize(9)
+          .fillColor(muted)
+          .text(`${index + 1}. ${item}`, {
+            width: 480,
+            lineGap: 3
+          });
+
+        doc.moveDown(0.35);
+      });
+
+      if (options.includeAnswers) {
+        doc.addPage();
+
+        doc
+          .font("Helvetica-Bold")
+          .fontSize(17)
+          .fillColor(navy)
+          .text("Detalle de respuestas");
+
+        doc.moveDown();
+
+        (evaluation.answers || []).forEach((answer, index) => {
+          if (doc.y > 700) doc.addPage();
+
+          doc
+            .font("Helvetica-Bold")
+            .fontSize(9)
+            .fillColor(purple)
+            .text(`Pregunta ${index + 1} · ${answer.category || "General"}`);
+
+          doc
+            .font("Helvetica")
+            .fontSize(9)
+            .fillColor(navy)
+            .text(answer.question || "");
+
+          doc
+            .font("Helvetica-Bold")
+            .fontSize(9)
+            .fillColor(muted)
+            .text(`Respuesta: ${answer.answer || "Sin respuesta"}`);
+
+          doc.moveDown(0.8);
+        });
+      }
+
+      doc.moveDown(1);
+
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(10)
+        .fillColor(navy)
+        .text("Aviso importante");
+
+      doc
+        .font("Helvetica")
+        .fontSize(8)
+        .fillColor(muted)
+        .text(
+          "Este documento presenta un autorregistro orientativo y no constituye una evaluación clínica, diagnóstico, tratamiento ni concepto médico. Los porcentajes describen las respuestas de este cuestionario y no representan probabilidades diagnósticas. No sustituye la valoración de un profesional cualificado.",
+          { width: 485, lineGap: 3 }
+        );
+
+      doc
+        .font("Helvetica")
+        .fontSize(8)
+        .fillColor("#9AA1B4")
+        .text(
+          "NeuroEval Pro · Documento generado electrónicamente",
+          55,
+          770,
+          { align: "center", width: 485 }
+        );
+
+      doc.end();
+
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+app.get("/api/my-evaluations/:id/pdf", requireUser, async (req, res) => {
+  try {
+    const result = await getOwnedEvaluation(req.user.uid, req.params.id);
+
+    if (!result) {
+      return sendError(res, 404, "No encontramos esa evaluación.");
+    }
+
+    if (result.data.paymentStatus !== "paid") {
+      return sendError(res, 402, "Debes completar el pago para descargar el informe.");
+    }
+
+    const pdf = await buildEvaluationPdf(result.data);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="NeuroEval-Pro-informe.pdf"'
+    );
+
+    return res.send(pdf);
+
+  } catch (error) {
+    console.error("PDF del usuario:", error);
+    return sendError(res, 500, "No se pudo generar el informe PDF.");
+  }
 });
 
-// ─── Arranque ─────────────────────────────────────────────────────────────────
+/* =========================================================
+   16. PANEL ADMINISTRATIVO
+========================================================= */
+
+app.get(
+  "/api/admin/overview",
+  requireUser,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const [usersSnapshot, evaluationsSnapshot] = await Promise.all([
+        db.collection("users").get(),
+        db.collection("evaluations")
+          .orderBy("createdAt", "desc")
+          .limit(100)
+          .get()
+      ]);
+
+      const records = evaluationsSnapshot.docs.map((document) => {
+        const data = document.data();
+
+        return {
+          id: document.id,
+          name: data.name || "",
+          email: data.email || "",
+          profile: data.profile || "",
+          paymentStatus: data.paymentStatus || "pending",
+          createdAt: asDate(data.createdAt)?.toISOString() || null
+        };
+      });
+
+      return res.json({
+        users: usersSnapshot.size,
+        evaluations: evaluationsSnapshot.size,
+        records
+      });
+
+    } catch (error) {
+      console.error("Panel administrativo:", error);
+      return sendError(res, 500, "No se pudo cargar el panel administrativo.");
+    }
+  }
+);
+
+app.get(
+  "/api/admin/evaluations/:id",
+  requireUser,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const snapshot = await db
+        .collection("evaluations")
+        .doc(req.params.id)
+        .get();
+
+      if (!snapshot.exists) {
+        return sendError(res, 404, "No encontramos esa evaluación.");
+      }
+
+      return res.json({
+        evaluation: {
+          id: snapshot.id,
+          ...snapshot.data()
+        }
+      });
+
+    } catch (error) {
+      console.error("Detalle administrativo:", error);
+      return sendError(res, 500, "No se pudo consultar la evaluación.");
+    }
+  }
+);
+
+app.get(
+  "/api/admin/evaluations/:id/pdf",
+  requireUser,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const snapshot = await db
+        .collection("evaluations")
+        .doc(req.params.id)
+        .get();
+
+      if (!snapshot.exists) {
+        return sendError(res, 404, "No encontramos esa evaluación.");
+      }
+
+      const pdf = await buildEvaluationPdf(snapshot.data(), {
+        includeAnswers: true
+      });
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="NeuroEval-Pro-admin-${req.params.id}.pdf"`
+      );
+
+      return res.send(pdf);
+
+    } catch (error) {
+      console.error("PDF administrativo:", error);
+      return sendError(res, 500, "No se pudo generar el PDF administrativo.");
+    }
+  }
+);
+
+/* =========================================================
+   17. RECUPERACIÓN DE CONTRASEÑA CON CÓDIGO DE SEIS DÍGITOS
+========================================================= */
+
+app.post(
+  "/api/password/request",
+  passwordLimiter,
+  async (req, res) => {
+    try {
+      const email = String(req.body.email || "").trim().toLowerCase();
+
+      if (!isValidEmail(email)) {
+        return sendError(res, 400, "Escribe un correo electrónico válido.");
+      }
+
+      // La respuesta no revela si el correo está registrado.
+      const genericMessage =
+        "Si la cuenta existe, recibirás un código de recuperación.";
+
+      if (!mailer) {
+        console.error("Solicitud de recuperación recibida, pero SMTP no está configurado.");
+        return res.json({ ok: true, message: genericMessage });
+      }
+
+      let userRecord;
+
+      try {
+        userRecord = await firebaseAuth.getUserByEmail(email);
+      } catch (error) {
+        if (error.code === "auth/user-not-found") {
+          return res.json({ ok: true, message: genericMessage });
+        }
+        throw error;
+      }
+
+      const code = String(
+        crypto.randomInt(0, 1000000)
+      ).padStart(6, "0");
+
+      const salt = crypto.randomBytes(16).toString("hex");
+      const codeHash = sha256(`${salt}:${code}`);
+
+      const expiresAt = Date.now() + 10 * 60 * 1000;
+
+      await db.collection("passwordResets").doc(userRecord.uid).set({
+        uid: userRecord.uid,
+        email,
+        codeHash,
+        salt,
+        expiresAt,
+        attempts: 0,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      await mailer.sendMail({
+        from: SMTP_FROM,
+        to: email,
+        subject: "Código de recuperación · NeuroEval Pro",
+        text:
+          `Tu código de recuperación es: ${code}\n\n` +
+          "Este código vence en 10 minutos. Si no solicitaste este cambio, ignora este mensaje.",
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:28px;color:#202642">
+            <h2 style="color:#5149bb">NeuroEval Pro</h2>
+            <p>Recibimos una solicitud para cambiar la contraseña de tu cuenta.</p>
+            <p>Tu código de verificación es:</p>
+            <div style="font-size:32px;font-weight:bold;letter-spacing:8px;padding:18px;background:#f1f0ff;border-radius:12px;text-align:center;color:#5149bb">${code}</div>
+            <p>El código vence en 10 minutos y solo puede utilizarse una vez.</p>
+            <p style="color:#77809b;font-size:12px">Si no solicitaste este cambio, puedes ignorar este mensaje.</p>
+          </div>
+        `
+      });
+
+      return res.json({ ok: true, message: genericMessage });
+
+    } catch (error) {
+      console.error("Solicitar recuperación:", error);
+      return sendError(res, 500, "No se pudo procesar la solicitud de recuperación.");
+    }
+  }
+);
+
+app.post(
+  "/api/password/confirm",
+  passwordLimiter,
+  async (req, res) => {
+    try {
+      const email = String(req.body.email || "").trim().toLowerCase();
+      const code = String(req.body.code || "").trim();
+      const newPassword = String(req.body.newPassword || "");
+
+      if (!isValidEmail(email) || !/^\d{6}$/.test(code)) {
+        return sendError(res, 400, "El correo o el código no son válidos.");
+      }
+
+      if (newPassword.length < 8) {
+        return sendError(res, 400, "La contraseña debe tener al menos 8 caracteres.");
+      }
+
+      let userRecord;
+
+      try {
+        userRecord = await firebaseAuth.getUserByEmail(email);
+      } catch (_) {
+        return sendError(res, 400, "El código no es válido o ha vencido.");
+      }
+
+      const resetRef = db.collection("passwordResets").doc(userRecord.uid);
+      const resetSnapshot = await resetRef.get();
+
+      if (!resetSnapshot.exists) {
+        return sendError(res, 400, "El código no es válido o ha vencido.");
+      }
+
+      const reset = resetSnapshot.data();
+
+      if (Date.now() > Number(reset.expiresAt || 0)) {
+        await resetRef.delete();
+        return sendError(res, 400, "El código ha vencido. Solicita uno nuevo.");
+      }
+
+      if (Number(reset.attempts || 0) >= 5) {
+        await resetRef.delete();
+        return sendError(res, 429, "Se superó el número de intentos. Solicita un código nuevo.");
+      }
+
+      const submittedHash = sha256(`${reset.salt}:${code}`);
+
+      if (!safeEqual(submittedHash, reset.codeHash)) {
+        await resetRef.update({
+          attempts: admin.firestore.FieldValue.increment(1)
+        });
+
+        return sendError(res, 400, "El código no es correcto.");
+      }
+
+      await firebaseAuth.updateUser(userRecord.uid, {
+        password: newPassword
+      });
+
+      await resetRef.delete();
+
+      // Revoca las sesiones anteriores para que el usuario vuelva a ingresar.
+      await firebaseAuth.revokeRefreshTokens(userRecord.uid);
+
+      return res.json({
+        ok: true,
+        message: "Tu contraseña fue actualizada. Ya puedes iniciar sesión."
+      });
+
+    } catch (error) {
+      console.error("Confirmar recuperación:", error);
+      return sendError(res, 500, "No se pudo cambiar la contraseña.");
+    }
+  }
+);
+
+/* =========================================================
+   18. RUTAS NO ENCONTRADAS Y FRONTEND
+========================================================= */
+
+app.use("/api", (req, res) => {
+  return sendError(res, 404, "La ruta solicitada no existe.");
+});
+
+const publicDirectory = path.join(__dirname, "public");
+
+app.use(
+  express.static(publicDirectory, {
+    index: "index.html",
+    maxAge: process.env.NODE_ENV === "production" ? "1h" : 0
+  })
+);
+
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(publicDirectory, "index.html"));
+});
+
+/* =========================================================
+   19. MANEJO DE ERRORES
+========================================================= */
+
+app.use((error, req, res, next) => {
+  console.error("Error no controlado:", error);
+
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  if (error.message === "Origen no autorizado por CORS") {
+    return sendError(res, 403, error.message);
+  }
+
+  return sendError(res, 500, "Ocurrió un error interno del servidor.");
+});
+
+/* =========================================================
+   20. INICIAR SERVIDOR
+========================================================= */
+
 app.listen(PORT, () => {
-  console.log(`NeuroEval Pro escuchando en puerto ${PORT}`);
-  console.log(`  · Demo pay: ${ALLOW_DEMO_PAY ? "ACTIVADO (solo pruebas)" : "desactivado"}`);
-  console.log(`  · Firebase project: ${process.env.FIREBASE_PROJECT_ID || "(no definido)"}`);
+  console.log("-----------------------------------------");
+  console.log(" NeuroEval Pro API");
+  console.log(` Puerto: ${PORT}`);
+  console.log(` Entorno: ${process.env.NODE_ENV || "development"}`);
+  console.log(` Precio: $${EVAL_PRICE_COP} COP`);
+  console.log(` Firebase: ${FIREBASE_PROJECT_ID || "No especificado"}`);
+  console.log(` SMTP: ${mailer ? "Configurado" : "Pendiente"}`);
+  console.log(` Wompi: ${WOMPI_PUBLIC_KEY ? "Clave pública detectada" : "Pendiente"}`);
+  console.log("-----------------------------------------");
 });
