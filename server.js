@@ -808,6 +808,30 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
       });
     }
 
+    // Una vez confirmado el pago, los eventos tardíos no deben
+    // sobrescribir el estado o los datos de la transacción aprobada.
+    if (evaluation.paymentStatus === "paid") {
+      const incomingTransactionId = String(transaction.id || "");
+      if (
+        status === "APPROVED" &&
+        evaluation.wompiTransactionId &&
+        incomingTransactionId &&
+        evaluation.wompiTransactionId !== incomingTransactionId
+      ) {
+        console.error("Se recibió otra transacción aprobada para una evaluación ya pagada:", {
+          reference,
+          existingTransactionId: evaluation.wompiTransactionId,
+          incomingTransactionId
+        });
+      }
+
+      return res.status(200).json({
+        ok: true,
+        ignored: true,
+        reason: "La evaluación ya tiene un pago confirmado."
+      });
+    }
+
     if (status === "APPROVED") {
       await document.ref.set(
         {
