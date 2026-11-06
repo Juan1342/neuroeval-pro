@@ -1042,6 +1042,9 @@ function buildEvaluationPdf(evaluation, options = {}) {
       const chunks = [];
 
       const drawFooter = () => {
+        const previousX = doc.x;
+        const previousY = doc.y;
+
         doc.save();
         doc
           .font("Helvetica")
@@ -1054,6 +1057,11 @@ function buildEvaluationPdf(evaluation, options = {}) {
             { align: "center", width: doc.page.width - 110, lineBreak: false }
           );
         doc.restore();
+
+        // El pie se dibuja en coordenadas absolutas sin mover el cursor
+        // que PDFKit utiliza para continuar el contenido del informe.
+        doc.x = previousX;
+        doc.y = previousY;
       };
 
       const ensureSpace = (requiredHeight = 36) => {
@@ -1206,6 +1214,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
 
       doc.moveDown(0.5);
 
+      ensureSpace(48);
       doc
         .font("Helvetica-Bold")
         .fontSize(15)
