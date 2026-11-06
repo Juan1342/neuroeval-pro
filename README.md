@@ -1,112 +1,113 @@
-# NeuroEval Pro — instalación y puesta en marcha
+# NeuroEval Pro — configuración y puesta en marcha
 
-Proyecto inicial completo con frontend, servidor Node.js, Firebase Authentication, Firestore, recuperación de contraseña por código de seis dígitos y generación de informes PDF.
+Plataforma de autorregistro cognitivo con Firebase Authentication, Firestore, recuperación de contraseña por código de seis dígitos, informes PDF y preparación de pagos con Wompi.
 
-## Importante antes de publicar
+## Antes de utilizarla con personas
 
-- No es una herramienta de diagnóstico médico. Los resultados son orientativos y requieren interpretación profesional.
-- Se manejan datos personales y respuestas relacionadas con salud. Antes de usar con clientes reales, publica una política de tratamiento de datos, define consentimiento informado, retención/eliminación, controles de acceso y cumplimiento de la Ley 1581 de 2012 y normas aplicables en Colombia. Considera una revisión legal y de seguridad.
-- No subas `.env`, `service-account.json` ni credenciales a GitHub.
-- La cuenta administrativa no se habilita por conocer el correo: el backend exige un custom claim `admin` y el correo exacto autorizado.
-- El checkout de Wompi y el cobro se dejaron fuera de este paquete. No se debe desbloquear contenido por una URL de retorno; para cobrar se debe verificar el evento/webhook firmado desde el backend.
+- NeuroEval Pro es una herramienta de autorregistro orientativo; **no diagnostica TDAH ni ninguna otra condición**, y sus preguntas y porcentajes no constituyen una escala clínica validada.
+- Se procesan datos personales y respuestas que pueden revelar información sensible. Antes de abrir el servicio al público, publica política de privacidad y tratamiento de datos, consentimiento informado, canales para ejercer derechos, plazos de conservación/eliminación y controles de acceso. Solicita revisión legal y de seguridad conforme a la normativa aplicable.
+- No subas archivos `.env`, claves privadas, JSON de cuentas de servicio ni contraseñas a GitHub.
+- La administración requiere el custom claim `admin: true` asignado desde Firebase Admin SDK. El correo reservado por sí solo **no** concede privilegios.
+- Los pagos solo deben considerarse confirmados mediante el webhook firmado de Wompi; una URL de retorno no demuestra que exista un pago.
 
-## 1. Crear Firebase
+## 1. Preparar Firebase
 
-1. Entra a https://console.firebase.google.com/ e inicia sesión con tu cuenta Google.
-2. Pulsa **Crear un proyecto** y asígnale un nombre, por ejemplo `neuroeval-pro`.
-3. En Authentication > Sign-in method, activa **Correo electrónico/Contraseña** y **Google**.
-4. En Firestore Database, crea una base de datos. Para producción selecciona una ubicación cercana a tus usuarios y aplica `firebase.rules`.
-5. En Configuración del proyecto > General > Tus aplicaciones, agrega una aplicación web (`</>`). Copia `apiKey`, `authDomain`, `projectId` y `appId`.
-6. En Configuración del proyecto > Cuentas de servicio, genera una clave privada para Firebase Admin SDK. Descarga el JSON y guárdalo como `service-account.json` en la raíz del proyecto. No lo compartas ni lo subas a Git.
-7. En Firestore > Rules, pega el contenido de `firebase.rules` y publica.
+1. Crea o abre el proyecto en [Firebase Console](https://console.firebase.google.com/).
+2. En Authentication, activa los proveedores **Correo electrónico/Contraseña** y **Google**.
+3. Crea Firestore Database y aplica las reglas de `firebase.rules`.
+4. Registra una aplicación web y copia sus valores `apiKey`, `authDomain`, `projectId` y `appId`.
+5. Para el servidor, configura Firebase Admin mediante una cuenta de servicio guardada como secreto. En desarrollo puedes usar Application Default Credentials. Nunca publiques el JSON.
 
-## 2. Configurar el proyecto
+## 2. Configurar variables de entorno
 
-Requiere Node.js 20 o superior.
+Se incluye `.env.example` como plantilla. Copia el archivo a `.env` en tu entorno de desarrollo y completa los valores reales. En Render, añade las mismas variables desde el panel **Environment**; no subas el archivo `.env`.
+
+Variables principales:
+
+- Firebase público: `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID`.
+- Firebase Admin: `FIREBASE_SERVICE_ACCOUNT_JSON` (secreto JSON completo) o credenciales ADC; opcionalmente `GOOGLE_APPLICATION_CREDENTIALS` en un entorno que permita montar un archivo seguro.
+- Correo: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`.
+- Aplicación: `APP_ORIGIN`, `CORS_ORIGINS`, `NODE_ENV`, `PORT`.
+- Administrador: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`.
+- Wompi: `WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_EVENTS_SECRET`.
+- Pruebas: `ALLOW_DEMO_PAY=false` fuera de entornos locales controlados.
+
+Para Gmail, utiliza una contraseña de aplicación si tu cuenta y política de seguridad lo permiten. No uses la contraseña normal de la cuenta. La recuperación de contraseña requiere SMTP correctamente configurado; el endpoint de estado informa si el servidor detectó la configuración.
+
+## 3. Preparar la cuenta administradora
+
+El correo reservado actual es `jzamorazapata@gmail.com`. Configura `ADMIN_EMAIL` con ese valor y establece `ADMIN_PASSWORD` solo si necesitas crear la cuenta o cambiar expresamente su contraseña. Usa una contraseña única de al menos 12 caracteres.
+
+En la raíz del proyecto ejecuta:
 
 ```bash
 npm install
-cp .env.example .env
-```
-
-Edita `.env` y completa los valores Firebase del paso 1. Para `GOOGLE_APPLICATION_CREDENTIALS`, usa `./service-account.json`.
-
-### Correo de recuperación
-
-Para Gmail, activa la verificación en dos pasos en la cuenta emisora y crea una **contraseña de aplicación**. Usa esa contraseña en `SMTP_PASS`, no la contraseña normal de Gmail. Configura `SMTP_USER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` y `MAIL_FROM`.
-
-## 3. Crear la cuenta administradora
-
-En `.env`, configura:
-
-- `ADMIN_EMAIL=jzamorazapata@gmail.com`
-- `ADMIN_PASSWORD`: elige una contraseña larga, única y privada (mínimo 12 caracteres).
-- `ADMIN_NAME=Juan Manuel Zamora Zapata`
-
-Después ejecuta una sola vez:
-
-```bash
 npm run admin:create
 ```
 
-El script crea la cuenta si no existe y asigna el permiso administrativo en Firebase. Si la cuenta ya existía, establece el custom claim; si necesitas cambiar la contraseña, hazlo desde Firebase Authentication o actualiza de forma segura el usuario. El correo reservado no puede registrarse como cliente.
+El script está en la raíz como `bootstrap-admin.js`. Conserva otros custom claims de Firebase y asigna `admin: true`. Al terminar, cierra sesión y vuelve a entrar para obtener un token actualizado.
 
-**No uses una contraseña que hayas publicado en un chat, documento o repositorio.** Configura una nueva y activa MFA para el administrador cuando sea posible.
+## 4. Ejecutar el servidor
 
-## 4. Ejecutar localmente
+Requiere Node.js 20 o superior:
 
 ```bash
 npm start
 ```
 
-Abre http://localhost:3000.
+Abre `http://localhost:3000`. Para verificar el estado básico del servidor, consulta `/api/health`. Ese endpoint informa si SMTP y Wompi parecen configurados; no sustituye una prueba real de envío o pago.
 
-## 5. Publicar en un alojamiento Node.js
-
-Elige un proveedor que permita ejecutar una aplicación Node.js persistente (por ejemplo Render, Railway o VPS).
+## 5. Publicación en Render u otro proveedor Node.js
 
 - Build command: `npm install`
 - Start command: `npm start`
-- Node: 20+
-- Añade todas las variables del `.env` en el panel de variables del proveedor.
-- Para Firebase Admin, configura la cuenta de servicio como secreto/archivo seguro. Si el proveedor permite secretos JSON, guarda el contenido del service account en una variable secreta y adapta `server.js` para usar `admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON))`. Nunca incluyas el JSON en el frontend.
-- Configura `APP_ORIGIN` y `CORS_ORIGINS` con el dominio HTTPS real.
-- En Firebase Authentication > Settings > Authorized domains, añade tu dominio de producción.
-- Mantén HTTPS habilitado.
+- Runtime: Node.js 20 o superior.
+- Añade las variables de entorno anteriores en el panel seguro del proveedor.
+- Configura `APP_ORIGIN` con el dominio HTTPS de la aplicación y `CORS_ORIGINS` con los orígenes autorizados separados por comas.
+- Añade el dominio de producción a los dominios autorizados de Firebase Authentication.
+- Configura la cuenta de servicio Firebase Admin como secreto. No la incluyas en el repositorio ni en archivos públicos.
+- Mantén `ALLOW_DEMO_PAY=false` en producción.
 
-## 6. Funciones incluidas
+## 6. Wompi
 
-- Registro e inicio de sesión con correo/contraseña.
-- Inicio con Google.
-- Cuenta administradora con custom claim.
-- Perfil de cliente y almacenamiento en Firestore.
-- Cuestionario de 15 preguntas, respuestas y puntuaciones por dimensión.
-- Panel con total de usuarios y evaluaciones.
-- PDF con datos, preguntas, respuestas, puntuaciones y recomendaciones.
-- Recuperación por código de 6 dígitos con hash, vencimiento, intentos limitados y uso único.
+Configura las tres variables del servidor con las credenciales del mismo entorno (sandbox o producción): clave pública, secreto de integridad y secreto de eventos. Registra el webhook:
 
-## 7. Limitaciones y mejoras antes de producción
+`https://TU-DOMINIO/api/payments/wompi-webhook`
 
-- El banco de preguntas y los umbrales son demostrativos, no una escala clínica validada. No los presentes como prueba diagnóstica ni como instrumento psicométrico validado.
-- La tabla del panel cuenta perfiles creados dentro de esta aplicación; no equivale necesariamente a todas las cuentas de Firebase si existen usuarios externos.
-- Configura copias de seguridad, monitoreo, alertas, políticas de retención y eliminación de datos.
-- Añade verificación de correo y MFA administrativo antes de abrir el registro al público.
-- Para Wompi, integra creación de transacciones y validación de firma del webhook en backend antes de marcar una evaluación como pagada.
-- La interfaz debe revisarse con pruebas de seguridad, accesibilidad y privacidad antes de usar datos reales.
+Suscribe el evento `transaction.updated`. Prueba primero con credenciales sandbox y verifica que el webhook llega y que la firma coincide antes de activar cobros reales. El valor de evaluación está definido actualmente en el servidor: **$4.000 COP**. No cambies el entorno ni actives producción sin pruebas y aprobación.
 
-## Estructura
+## 7. Funciones presentes
+
+- Registro e inicio de sesión por correo y Google.
+- Perfil de usuario.
+- Cuestionario dinámico de 15 preguntas seleccionadas de un banco.
+- Registro de respuestas y resultados orientativos.
+- Flujo de pago Wompi y confirmación mediante webhook.
+- Informe PDF del usuario y consulta administrativa.
+- Panel administrativo protegido por custom claim.
+- Recuperación de contraseña mediante código de seis dígitos, con vencimiento y límite de intentos.
+
+## 8. Estructura principal
 
 ```text
 neuroeval-pro/
 ├── public/
 │   ├── index.html
 │   └── app.js
-├── scripts/
-│   └── bootstrap-admin.js
+├── bootstrap-admin.js
 ├── server.js
+├── package.json
 ├── firebase.rules
 ├── .env.example
 ├── .gitignore
-├── package.json
 └── README.md
 ```
+
+## 9. Pendientes antes de producción
+
+- Ejecutar pruebas funcionales y de seguridad de extremo a extremo.
+- Verificar el envío real de correo y el flujo completo de recuperación.
+- Probar Wompi sandbox, webhook, duplicados, rechazos y reintentos.
+- Revisar la validación de puntuaciones en el servidor: no confiar en resultados calculados únicamente por el navegador.
+- Incorporar verificación de correo, MFA administrativo, monitoreo, copias de seguridad y procedimientos de respuesta a incidentes.
+- Completar revisión de accesibilidad, internacionalización, privacidad y tratamiento de datos.
