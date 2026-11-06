@@ -296,11 +296,12 @@ async function requireAdmin(req, res, next) {
       return sendError(res, 401, "Debes iniciar sesión.");
     }
 
-    // El correo por sí solo nunca concede privilegios.
-    // El permiso debe haber sido asignado por Firebase Admin SDK.
-    const hasAdminClaim = req.user.admin === true;
+    // Consultar el estado actual en Firebase evita aceptar un custom
+    // claim antiguo que siga presente en un token todavía no expirado.
+    const account = await firebaseAuth.getUser(req.user.uid);
+    const hasAdminClaim = account.customClaims?.admin === true;
 
-    if (!hasAdminClaim) {
+    if (account.disabled || !hasAdminClaim) {
       return sendError(
         res,
         403,
