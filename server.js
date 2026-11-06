@@ -1256,7 +1256,51 @@ function buildEvaluationPdf(evaluation, options = {}) {
   });
 }
 /* =========================================================
-   16. PANEL ADMINISTRATIVO
+   16. DESCARGA DEL INFORME PDF PERSONAL
+========================================================= */
+
+app.get(
+  "/api/my-evaluations/:id/pdf",
+  requireUser,
+  async (req, res) => {
+    try {
+      const result = await getOwnedEvaluation(
+        req.user.uid,
+        req.params.id
+      );
+
+      if (!result) {
+        return sendError(res, 404, "No encontramos esa evaluación.");
+      }
+
+      if (result.data.paymentStatus !== "paid") {
+        return sendError(
+          res,
+          402,
+          "El informe estará disponible cuando se confirme el pago."
+        );
+      }
+
+      const pdf = await buildEvaluationPdf(result.data);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="NeuroEval-Pro-informe.pdf"'
+      );
+      res.setHeader("Cache-Control", "private, no-store");
+
+      return res.send(pdf);
+
+    } catch (error) {
+      console.error("PDF personal:", error);
+      return sendError(res, 500, "No se pudo generar tu informe PDF.");
+    }
+  }
+);
+
+/* =========================================================
+   17. PANEL ADMINISTRATIVO
 ========================================================= */
 
 app.get(
