@@ -34,6 +34,7 @@ const CURRENCY = "COP";
 
 const { calculateEvaluationOnServer } = require("./lib/evaluation");
 const { decideWompiTransition } = require("./lib/payment-state");
+const { validateWompiSignature } = require("./lib/wompi-signature");
 
 const ALLOW_DEMO_PAY =
   String(process.env.ALLOW_DEMO_PAY || "false").toLowerCase() === "true";
@@ -775,52 +776,11 @@ app.post(
 ========================================================= */
 
 function validateWompiEvent(event, headerChecksum) {
-  if (!WOMPI_EVENTS_SECRET) {
-    throw new Error("Falta configurar WOMPI_EVENTS_SECRET.");
-  }
-
-  const properties = event?.signature?.properties;
-  const timestamp = event?.timestamp;
-
-  const receivedChecksum =
-    headerChecksum || event?.signature?.checksum || "";
-
-  if (
-    !Array.isArray(properties) ||
-    properties.length === 0 ||
-    timestamp === undefined ||
-    !receivedChecksum
-  ) {
-    throw new Error("El evento no contiene los datos de firma requeridos.");
-  }
-
-  const values = properties.map((propertyPath) => {
-    const value = getNestedValue(event.data, propertyPath);
-
-    if (value === undefined || value === null) {
-      throw new Error(
-        `No se encontró la propiedad firmada: ${propertyPath}`
-      );
-    }
-
-    return String(value);
-  });
-
-  const concatenated =
-    values.join("") + String(timestamp) + WOMPI_EVENTS_SECRET;
-
-  const expectedChecksum = sha256(concatenated);
-
-  if (
-    !safeEqual(
-      expectedChecksum.toLowerCase(),
-      String(receivedChecksum).toLowerCase()
-    )
-  ) {
-    throw new Error("La firma del evento no coincide.");
-  }
-
-  return true;
+  return validateWompiSignature(
+    event,
+    headerChecksum,
+    WOMPI_EVENTS_SECRET
+  );
 }
 
 app.post("/api/payments/wompi-webhook", async (req, res) => {
