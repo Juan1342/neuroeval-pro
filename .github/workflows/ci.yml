@@ -30,6 +30,7 @@ jobs:
           node --check bootstrap-admin.js
           node --check public/app.js
           node --check lib/evaluation.js
+          node --check lib/payment-state.js
 
       - name: Ejecutar pruebas
         run: npm test
