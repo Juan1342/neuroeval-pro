@@ -1412,7 +1412,7 @@ app.post(
               <p style="color:#77809b;font-size:12px">Si no solicitaste este cambio, puedes ignorar este mensaje.</p>
             </div>
           `
-      });
+        });
       } catch (mailError) {
         await db.collection("passwordResets").doc(userRecord.uid).delete().catch(() => {});
         throw mailError;
