@@ -57,6 +57,14 @@ npm start
 
 Abre `http://localhost:3000`. Para verificar el estado básico del servidor, consulta `/api/health`. Ese endpoint informa si SMTP y Wompi parecen configurados; no sustituye una prueba real de envío o pago.
 
+Para ejecutar las pruebas automatizadas del cálculo de evaluaciones:
+
+```bash
+npm test
+```
+
+GitHub Actions también comprueba la sintaxis de los archivos principales y ejecuta estas pruebas al recibir cambios en la rama `mejoras/neuroeval-pro` o una solicitud de integración hacia `main`.
+
 ## 5. Publicación en Render u otro proveedor Node.js
 
 - Build command: `npm install`
@@ -81,7 +89,8 @@ Suscribe el evento `transaction.updated`. Prueba primero con credenciales sandbo
 - Registro e inicio de sesión por correo y Google.
 - Perfil de usuario.
 - Cuestionario dinámico de 15 preguntas seleccionadas de un banco.
-- Registro de respuestas y resultados orientativos.
+- Validación y recálculo de respuestas, puntuaciones, perfil y recomendaciones en el servidor, a partir de un banco canónico de 18 preguntas.
+- Pruebas unitarias del cálculo de evaluaciones y verificación automática mediante GitHub Actions.
 - Flujo de pago Wompi y confirmación mediante webhook.
 - Informe PDF del usuario y consulta administrativa.
 - Panel administrativo protegido por custom claim.
@@ -108,6 +117,6 @@ neuroeval-pro/
 - Ejecutar pruebas funcionales y de seguridad de extremo a extremo.
 - Verificar el envío real de correo y el flujo completo de recuperación.
 - Probar Wompi sandbox, webhook, duplicados, rechazos y reintentos.
-- Revisar la validación de puntuaciones en el servidor: no confiar en resultados calculados únicamente por el navegador.
+- Ejecutar y revisar el resultado de GitHub Actions; las pruebas automatizadas están añadidas, pero todavía no se debe dar por verificada su ejecución hasta que CI termine correctamente.
 - Incorporar verificación de correo, MFA administrativo, monitoreo, copias de seguridad y procedimientos de respuesta a incidentes.
 - Completar revisión de accesibilidad, internacionalización, privacidad y tratamiento de datos.
