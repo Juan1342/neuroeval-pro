@@ -1356,8 +1356,12 @@ app.post(
         "Si la cuenta existe, recibirás un código de recuperación.";
 
       if (!mailer) {
-        console.error("Solicitud de recuperación recibida, pero SMTP no está configurado.");
-        return res.json({ ok: true, message: genericMessage });
+        console.error("Solicitud de recuperación rechazada: SMTP no está configurado.");
+        return sendError(
+          res,
+          503,
+          "La recuperación por correo no está disponible temporalmente. Intenta más tarde."
+        );
       }
 
       let userRecord;
