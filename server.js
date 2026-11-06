@@ -766,30 +766,34 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
     }
 
     const reference = String(transaction.reference || "");
+    const transactionId = String(transaction.id || "");
     const status = String(transaction.status || "").toUpperCase();
     const amountInCents = Number(transaction.amount_in_cents);
     const currency = String(transaction.currency || "").toUpperCase();
+    const expectedEnvironment = WOMPI_PUBLIC_KEY.startsWith("pub_test_")
+      ? "test"
+      : WOMPI_PUBLIC_KEY.startsWith("pub_prod_")
+        ? "prod"
+        : "";
 
-    if (!reference) {
-      return sendError(res, 400, "La transacción no tiene referencia.");
+    if (!reference || !transactionId || !status) {
+      return sendError(res, 400, "La transacción no contiene los datos obligatorios.");
     }
 
-    const query = await db
-      .collection("evaluations")
-      .where("paymentReference", "==", reference)
-      .limit(1)
-      .get();
-
-    if (query.empty) {
+    if (
+      expectedEnvironment &&
+      String(event.environment || "").toLowerCase() !== expectedEnvironment
+    ) {
+      console.error("El ambiente del evento Wompi no coincide con la configuración:", {
+        expectedEnvironment,
+        receivedEnvironment: event.environment
+      });
       return res.status(200).json({
         ok: true,
         ignored: true,
-        reason: "Referencia no encontrada."
+        reason: "El ambiente de la transacción no coincide."
       });
     }
-
-    const document = query.docs[0];
-    const evaluation = document.data();
 
     if (
       amountInCents !== EVAL_PRICE_COP * 100 ||
@@ -808,64 +812,84 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
       });
     }
 
-    // Una vez confirmado el pago, los eventos tardíos no deben
-    // sobrescribir el estado o los datos de la transacción aprobada.
-    if (evaluation.paymentStatus === "paid") {
-      const incomingTransactionId = String(transaction.id || "");
-      if (
-        status === "APPROVED" &&
-        evaluation.wompiTransactionId &&
-        incomingTransactionId &&
-        evaluation.wompiTransactionId !== incomingTransactionId
-      ) {
-        console.error("Se recibió otra transacción aprobada para una evaluación ya pagada:", {
-          reference,
-          existingTransactionId: evaluation.wompiTransactionId,
-          incomingTransactionId
-        });
-      }
+    const query = await db
+      .collection("evaluations")
+      .where("paymentReference", "==", reference)
+      .limit(1)
+      .get();
 
+    if (query.empty) {
       return res.status(200).json({
         ok: true,
         ignored: true,
-        reason: "La evaluación ya tiene un pago confirmado."
+        reason: "Referencia no encontrada."
       });
     }
 
-    if (status === "APPROVED") {
-      await document.ref.set(
-        {
-          paymentStatus: "paid",
-          paymentProvider: "wompi",
-          wompiTransactionId: String(transaction.id || ""),
-          wompiTransactionStatus: status,
-          paidAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        },
-        { merge: true }
-      );
+    const evaluationRef = query.docs[0].ref;
+    const outcome = await db.runTransaction(async (transactionWriter) => {
+      const snapshot = await transactionWriter.get(evaluationRef);
 
-    } else if (["DECLINED", "VOIDED", "ERROR"].includes(status)) {
-      if (evaluation.paymentStatus !== "paid") {
-        await document.ref.set(
-          {
-            paymentStatus: "failed",
-            wompiTransactionId: String(transaction.id || ""),
-            wompiTransactionStatus: status,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          },
-          { merge: true }
-        );
+      if (!snapshot.exists) {
+        return { ignored: true, reason: "La evaluación ya no existe." };
       }
 
-    } else {
-      await document.ref.set(
-        {
-          wompiTransactionStatus: status,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        },
-        { merge: true }
-      );
+      const evaluation = snapshot.data() || {};
+      const existingTransactionId = String(evaluation.wompiTransactionId || "");
+
+      // Una referencia de evaluación queda asociada a una sola transacción.
+      if (existingTransactionId && existingTransactionId !== transactionId) {
+        return {
+          ignored: true,
+          reason: "La referencia ya está asociada a otra transacción."
+        };
+      }
+
+      // La transacción de Firestore evita que dos webhooks simultáneos
+      // sobrescriban entre sí un estado terminal.
+      if (evaluation.paymentStatus === "paid") {
+        return { ignored: true, reason: "La evaluación ya tiene un pago confirmado." };
+      }
+
+      const currentWompiStatus = String(
+        evaluation.wompiTransactionStatus || ""
+      ).toUpperCase();
+      const terminalStatuses = ["APPROVED", "DECLINED", "VOIDED", "ERROR"];
+
+      if (
+        terminalStatuses.includes(currentWompiStatus) &&
+        status !== currentWompiStatus
+      ) {
+        return {
+          ignored: true,
+          reason: "Se ignoró una notificación antigua o fuera de secuencia."
+        };
+      }
+
+      const update = {
+        wompiTransactionId: transactionId,
+        wompiTransactionStatus: status,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (status === "APPROVED") {
+        update.paymentStatus = "paid";
+        update.paymentProvider = "wompi";
+        update.paidAt = admin.firestore.FieldValue.serverTimestamp();
+      } else if (["DECLINED", "VOIDED", "ERROR"].includes(status)) {
+        update.paymentStatus = "failed";
+      }
+
+      transactionWriter.set(evaluationRef, update, { merge: true });
+      return { updated: true };
+    });
+
+    if (outcome.ignored) {
+      return res.status(200).json({
+        ok: true,
+        ignored: true,
+        reason: outcome.reason
+      });
     }
 
     return res.status(200).json({ ok: true });
