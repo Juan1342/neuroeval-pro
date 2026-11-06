@@ -176,7 +176,16 @@ const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASSWORD = process.env.SMTP_PASSWORD || "";
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 
-if (SMTP_HOST && SMTP_USER && SMTP_PASSWORD) {
+let smtpConnectionVerified = false;
+
+if (
+  SMTP_HOST &&
+  SMTP_USER &&
+  SMTP_PASSWORD &&
+  Number.isInteger(SMTP_PORT) &&
+  SMTP_PORT >= 1 &&
+  SMTP_PORT <= 65535
+) {
   mailer = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
@@ -184,8 +193,23 @@ if (SMTP_HOST && SMTP_USER && SMTP_PASSWORD) {
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASSWORD
-    }
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000
   });
+
+  // La presencia de variables no garantiza que el proveedor SMTP acepte
+  // la conexión. Verificarla permite distinguir configuración de conectividad.
+  mailer.verify()
+    .then(() => {
+      smtpConnectionVerified = true;
+      console.log("Conexión SMTP verificada correctamente.");
+    })
+    .catch((error) => {
+      smtpConnectionVerified = false;
+      console.error("No se pudo verificar la conexión SMTP:", error.message);
+    });
 }
 
 /* =========================================================
@@ -337,6 +361,7 @@ app.get("/api/health", (req, res) => {
     service: "NeuroEval Pro API",
     firebaseProject: FIREBASE_PROJECT_ID || null,
     smtpConfigured: Boolean(mailer),
+    smtpConnectionVerified: Boolean(mailer) && smtpConnectionVerified,
     wompiConfigured: Boolean(
       WOMPI_PUBLIC_KEY &&
       WOMPI_INTEGRITY_SECRET &&
@@ -1016,6 +1041,31 @@ function buildEvaluationPdf(evaluation, options = {}) {
 
       const chunks = [];
 
+      const drawFooter = () => {
+        doc.save();
+        doc
+          .font("Helvetica")
+          .fontSize(8)
+          .fillColor("#9AA1B4")
+          .text(
+            "NeuroEval Pro · Documento generado electrónicamente",
+            55,
+            doc.page.height - 34,
+            { align: "center", width: doc.page.width - 110, lineBreak: false }
+          );
+        doc.restore();
+      };
+
+      const ensureSpace = (requiredHeight = 36) => {
+        const bottomLimit = doc.page.height - doc.page.margins.bottom;
+        if (doc.y + requiredHeight > bottomLimit) {
+          doc.addPage();
+        }
+      };
+
+      doc.on("pageAdded", drawFooter);
+      drawFooter();
+
       doc.on("data", (chunk) => chunks.push(chunk));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
@@ -1127,6 +1177,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
       ];
 
       dimensions.forEach(([label, value]) => {
+        ensureSpace(42);
         const score = Math.max(
           0,
           Math.min(100, Number(value || 0))
@@ -1170,6 +1221,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
         : [];
 
       recommendations.forEach((item, index) => {
+        ensureSpace(34);
         doc
           .font("Helvetica")
           .fontSize(9)
@@ -1194,7 +1246,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
         doc.moveDown();
 
         (evaluation.answers || []).forEach((answer, index) => {
-          if (doc.y > 700) doc.addPage();
+          ensureSpace(76);
 
           doc
             .font("Helvetica-Bold")
@@ -1235,17 +1287,6 @@ function buildEvaluationPdf(evaluation, options = {}) {
         .text(
           "Este documento presenta un autorregistro orientativo y no constituye una evaluación clínica, diagnóstico, tratamiento ni concepto médico. Los porcentajes describen las respuestas de este cuestionario y no representan probabilidades diagnósticas. No sustituye la valoración de un profesional cualificado.",
           { width: 485, lineGap: 3 }
-        );
-
-      doc
-        .font("Helvetica")
-        .fontSize(8)
-        .fillColor("#9AA1B4")
-        .text(
-          "NeuroEval Pro · Documento generado electrónicamente",
-          55,
-          770,
-          { align: "center", width: 485 }
         );
 
       doc.end();
