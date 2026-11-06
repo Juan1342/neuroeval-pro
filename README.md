@@ -103,6 +103,13 @@ neuroeval-pro/
 ├── public/
 │   ├── index.html
 │   └── app.js
+├── lib/
+│   ├── evaluation.js
+│   └── payment-state.js
+├── test/
+│   ├── evaluation.test.js
+│   └── payment-state.test.js
+├── .github/workflows/ci.yml
 ├── bootstrap-admin.js
 ├── server.js
 ├── package.json
@@ -116,7 +123,8 @@ neuroeval-pro/
 
 - Ejecutar pruebas funcionales y de seguridad de extremo a extremo.
 - Verificar el envío real de correo y el flujo completo de recuperación.
-- Probar Wompi sandbox, webhook, duplicados, rechazos y reintentos.
+- Completar pruebas integrales de Wompi sandbox: firma real, webhook, duplicados, rechazos, reintentos y confirmación en Firestore.
 - Ejecutar y revisar el resultado de GitHub Actions; las pruebas automatizadas están añadidas, pero todavía no se debe dar por verificada su ejecución hasta que CI termine correctamente.
 - Incorporar verificación de correo, MFA administrativo, monitoreo, copias de seguridad y procedimientos de respuesta a incidentes.
+- Confirmar que la versión instalada de Firebase Admin SDK soporta los conteos agregados usados en el panel administrativo y probarlos con Firestore.
 - Completar revisión de accesibilidad, internacionalización, privacidad y tratamiento de datos.
