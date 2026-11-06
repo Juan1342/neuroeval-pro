@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "admin:create": "node scripts/bootstrap-admin.js"
+    "admin:create": "node bootstrap-admin.js"
   },
   "engines": { "node": ">=20" },
   "dependencies": {
