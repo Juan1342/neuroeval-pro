@@ -20,7 +20,6 @@ import {
 
 const $ = (id) => document.getElementById(id);
 
-const ADMIN_EMAIL = "jzamorazapata@gmail.com";
 const EVALUATION_PRICE_COP = 4000;
 
 let auth;
@@ -327,10 +326,9 @@ async function handleAuthState(user) {
     $("session-label").textContent = user.email || "";
 
     const tokenResult = await getIdTokenResult(user, true);
-    const tokenAdmin = tokenResult.claims.admin === true;
-    const emailAdmin = user.email?.toLowerCase() === ADMIN_EMAIL;
-
-    currentIsAdmin = tokenAdmin || emailAdmin;
+    // La interfaz sigue el mismo permiso que valida el backend.
+    // Un correo coincidente no concede acceso administrativo.
+    currentIsAdmin = tokenResult.claims.admin === true;
 
     if (currentIsAdmin) {
       show("admin-view");
