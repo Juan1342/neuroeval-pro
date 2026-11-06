@@ -1529,7 +1529,9 @@ app.post(
             </div>
           `
         });
+        smtpConnectionVerified = true;
       } catch (mailError) {
+        smtpConnectionVerified = false;
         await db.collection("passwordResets").doc(userRecord.uid).delete().catch(() => {});
         throw mailError;
       }
