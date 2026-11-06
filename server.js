@@ -656,22 +656,74 @@ app.post(
         return sendError(res, 404, "No encontramos esa evaluación.");
       }
 
-      if (result.data.paymentStatus === "paid") {
+      const payment = await db.runTransaction(async (transactionWriter) => {
+        const snapshot = await transactionWriter.get(result.ref);
+
+        if (!snapshot.exists) {
+          return { error: "not-found" };
+        }
+
+        const evaluation = snapshot.data() || {};
+
+        if (evaluation.paymentStatus === "paid") {
+          return { error: "already-paid" };
+        }
+
+        const wompiStatus = String(
+          evaluation.wompiTransactionStatus || ""
+        ).toUpperCase();
+
+        if (wompiStatus === "APPROVED") {
+          return { error: "reconciliation-required" };
+        }
+
+        const hasFinalFailure = ["DECLINED", "VOIDED", "ERROR"].includes(wompiStatus);
+        const mustCreateNewReference =
+          !evaluation.paymentReference ||
+          evaluation.paymentStatus === "failed" ||
+          hasFinalFailure;
+
+        const reference = mustCreateNewReference
+          ? makeReference()
+          : String(evaluation.paymentReference);
+
+        if (mustCreateNewReference) {
+          transactionWriter.set(
+            result.ref,
+            {
+              paymentReference: reference,
+              paymentStatus: "pending",
+              paymentProvider: "wompi",
+              wompiTransactionId: admin.firestore.FieldValue.delete(),
+              wompiTransactionStatus: admin.firestore.FieldValue.delete(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            },
+            { merge: true }
+          );
+        }
+
+        return { reference };
+      });
+
+      if (payment.error === "already-paid") {
         return sendError(res, 409, "Esta evaluación ya aparece pagada.");
       }
-
-      const reference = result.data.paymentReference;
-      const amountInCents = EVAL_PRICE_COP * 100;
-
-      if (!reference) {
-        return sendError(res, 500, "La evaluación no tiene referencia de pago.");
+      if (payment.error === "reconciliation-required") {
+        return sendError(
+          res,
+          409,
+          "La transacción aparece aprobada y requiere reconciliación del pago."
+        );
+      }
+      if (payment.error) {
+        return sendError(res, 404, "No encontramos esa evaluación.");
       }
 
+      const reference = payment.reference;
+      const amountInCents = EVAL_PRICE_COP * 100;
       const signatureString =
         `${reference}${amountInCents}${CURRENCY}${WOMPI_INTEGRITY_SECRET}`;
-
       const signature = sha256(signatureString);
-
       const redirectUrl =
         `${APP_ORIGIN}/?evaluation=${encodeURIComponent(evaluationId)}`;
 
@@ -836,6 +888,16 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
       }
 
       const evaluation = snapshot.data() || {};
+
+      // La referencia debe seguir siendo la activa: una notificación de un
+      // intento anterior no puede afectar un reintento con nueva referencia.
+      if (evaluation.paymentReference !== reference) {
+        return {
+          ignored: true,
+          reason: "La referencia ya no corresponde al intento de pago activo."
+        };
+      }
+
       const decision = decideWompiTransition(evaluation, {
         status,
         transactionId
