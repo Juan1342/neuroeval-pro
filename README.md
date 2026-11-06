@@ -32,7 +32,7 @@ Variables principales:
 - Wompi: `WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_EVENTS_SECRET`.
 - Pruebas: `ALLOW_DEMO_PAY=false` fuera de entornos locales controlados.
 
-Para Gmail, utiliza una contraseña de aplicación si tu cuenta y política de seguridad lo permiten. No uses la contraseña normal de la cuenta. La recuperación de contraseña requiere SMTP correctamente configurado; el endpoint de estado informa si el servidor detectó la configuración.
+Para Gmail, utiliza una contraseña de aplicación si tu cuenta y política de seguridad lo permiten; no uses la contraseña normal de la cuenta. Configura el puerto **587** para STARTTLS (o **465** para TLS implícito), y deja que `SMTP_FROM` sea la dirección remitente autorizada por el proveedor. El servidor comprueba la conexión SMTP al iniciar y el endpoint `/api/health` distingue entre `smtpConfigured` (variables presentes y puerto válido) y `smtpConnectionVerified` (conexión verificada). Un valor `false` en la segunda propiedad indica que aún debe revisarse la conectividad, el usuario, la contraseña de aplicación, el puerto o las restricciones del proveedor. La confirmación definitiva del envío se obtiene al completar una solicitud real de recuperación; no se deben introducir credenciales reales en GitHub ni compartirlas en el chat.
 
 ## 3. Preparar la cuenta administradora
 
