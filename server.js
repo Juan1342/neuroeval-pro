@@ -1451,6 +1451,7 @@ app.get(
         "Content-Disposition",
         `attachment; filename="NeuroEval-Pro-admin-${req.params.id}.pdf"`
       );
+      res.setHeader("Cache-Control", "private, no-store");
 
       return res.send(pdf);
 
