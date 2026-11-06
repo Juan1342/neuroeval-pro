@@ -91,3 +91,41 @@ test("rechaza entradas incompletas", () => {
 
   assert.equal(result.ignored, true);
 });
+
+test("trata VOIDED y ERROR como pagos fallidos terminales", () => {
+  for (const status of ["VOIDED", "ERROR"]) {
+    const result = decideWompiTransition(
+      { paymentStatus: "pending", wompiTransactionStatus: "PENDING" },
+      { status, transactionId: `tx-${status.toLowerCase()}` }
+    );
+    assert.equal(result.ignored, false);
+    assert.equal(result.update.paymentStatus, "failed");
+    assert.equal(result.update.wompiTransactionStatus, status);
+  }
+});
+
+test("no permite convertir un rechazo terminal en aprobación con el mismo ID", () => {
+  const result = decideWompiTransition(
+    {
+      paymentStatus: "failed",
+      wompiTransactionId: "tx-declined",
+      wompiTransactionStatus: "DECLINED"
+    },
+    { status: "APPROVED", transactionId: "tx-declined" }
+  );
+  assert.equal(result.ignored, true);
+  assert.match(result.reason, /fuera de secuencia/);
+});
+
+test("no vuelve a aplicar una confirmación de una evaluación ya pagada", () => {
+  const result = decideWompiTransition(
+    {
+      paymentStatus: "paid",
+      wompiTransactionId: "tx-paid",
+      wompiTransactionStatus: "APPROVED"
+    },
+    { status: "APPROVED", transactionId: "tx-paid" }
+  );
+  assert.equal(result.ignored, true);
+  assert.match(result.reason, /pago confirmado/);
+});
