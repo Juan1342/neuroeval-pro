@@ -73,6 +73,16 @@ test("acepta una transición pendiente a rechazada", () => {
   assert.equal(result.update.wompiTransactionStatus, "DECLINED");
 });
 
+test("ignora estados de transacción que Wompi no reconoce", () => {
+  const result = decideWompiTransition(
+    { paymentStatus: "pending" },
+    { status: "CUSTOM_STATUS", transactionId: "tx-003" }
+  );
+
+  assert.equal(result.ignored, true);
+  assert.match(result.reason, /no reconocido/);
+});
+
 test("rechaza entradas incompletas", () => {
   const result = decideWompiTransition(
     {},
