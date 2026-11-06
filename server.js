@@ -1441,37 +1441,74 @@ app.post(
       }
 
       const resetRef = db.collection("passwordResets").doc(userRecord.uid);
-      const resetSnapshot = await resetRef.get();
+      const verification = await db.runTransaction(async (transactionWriter) => {
+        const resetSnapshot = await transactionWriter.get(resetRef);
 
-      if (!resetSnapshot.exists) {
+        if (!resetSnapshot.exists) {
+          return { error: "invalid" };
+        }
+
+        const reset = resetSnapshot.data() || {};
+
+        if (reset.consumedAt || reset.status === "processing") {
+          return { error: "used" };
+        }
+
+        if (Date.now() > Number(reset.expiresAt || 0)) {
+          transactionWriter.delete(resetRef);
+          return { error: "expired" };
+        }
+
+        if (Number(reset.attempts || 0) >= 5) {
+          transactionWriter.delete(resetRef);
+          return { error: "locked" };
+        }
+
+        const submittedHash = sha256(`${reset.salt}:${code}`);
+
+        if (!safeEqual(submittedHash, reset.codeHash)) {
+          transactionWriter.update(resetRef, {
+            attempts: Number(reset.attempts || 0) + 1
+          });
+          return { error: "wrong" };
+        }
+
+        // Reservar el código dentro de una transacción evita que dos
+        // solicitudes simultáneas puedan utilizarlo a la vez.
+        transactionWriter.update(resetRef, {
+          status: "processing",
+          consumedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return { valid: true };
+      });
+
+      if (verification.error === "expired") {
+        return sendError(res, 400, "El código ha vencido. Solicita uno nuevo.");
+      }
+      if (verification.error === "locked") {
+        return sendError(res, 429, "Se superó el número de intentos. Solicita un código nuevo.");
+      }
+      if (verification.error === "wrong") {
+        return sendError(res, 400, "El código no es correcto.");
+      }
+      if (verification.error === "used") {
+        return sendError(res, 400, "Este código ya fue utilizado. Solicita uno nuevo.");
+      }
+      if (!verification.valid) {
         return sendError(res, 400, "El código no es válido o ha vencido.");
       }
 
-      const reset = resetSnapshot.data();
-
-      if (Date.now() > Number(reset.expiresAt || 0)) {
-        await resetRef.delete();
-        return sendError(res, 400, "El código ha vencido. Solicita uno nuevo.");
-      }
-
-      if (Number(reset.attempts || 0) >= 5) {
-        await resetRef.delete();
-        return sendError(res, 429, "Se superó el número de intentos. Solicita un código nuevo.");
-      }
-
-      const submittedHash = sha256(`${reset.salt}:${code}`);
-
-      if (!safeEqual(submittedHash, reset.codeHash)) {
-        await resetRef.update({
-          attempts: admin.firestore.FieldValue.increment(1)
+      try {
+        await firebaseAuth.updateUser(userRecord.uid, {
+          password: newPassword
         });
-
-        return sendError(res, 400, "El código no es correcto.");
+      } catch (passwordError) {
+        // El código queda consumido por seguridad. El usuario puede
+        // solicitar uno nuevo si Firebase no pudo actualizar la contraseña.
+        await resetRef.delete().catch(() => {});
+        throw passwordError;
       }
-
-      await firebaseAuth.updateUser(userRecord.uid, {
-        password: newPassword
-      });
 
       await resetRef.delete();
 
