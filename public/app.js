@@ -21,6 +21,8 @@ import {
 const $ = (id) => document.getElementById(id);
 
 const EVALUATION_PRICE_COP = 4000;
+// Solo bloquea el registro público de la cuenta reservada; no concede permisos.
+const ADMIN_EMAIL = "jzamorazapata@gmail.com";
 
 let auth;
 let currentUser = null;
