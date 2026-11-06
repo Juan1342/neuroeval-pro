@@ -1396,22 +1396,22 @@ app.post(
 
       try {
         await mailer.sendMail({
-        from: SMTP_FROM,
-        to: email,
-        subject: "Código de recuperación · NeuroEval Pro",
-        text:
-          `Tu código de recuperación es: ${code}\n\n` +
-          "Este código vence en 10 minutos. Si no solicitaste este cambio, ignora este mensaje.",
-        html: `
-          <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:28px;color:#202642">
-            <h2 style="color:#5149bb">NeuroEval Pro</h2>
-            <p>Recibimos una solicitud para cambiar la contraseña de tu cuenta.</p>
-            <p>Tu código de verificación es:</p>
-            <div style="font-size:32px;font-weight:bold;letter-spacing:8px;padding:18px;background:#f1f0ff;border-radius:12px;text-align:center;color:#5149bb">${code}</div>
-            <p>El código vence en 10 minutos y solo puede utilizarse una vez.</p>
-            <p style="color:#77809b;font-size:12px">Si no solicitaste este cambio, puedes ignorar este mensaje.</p>
-          </div>
-        `
+          from: SMTP_FROM,
+          to: email,
+          subject: "Código de recuperación · NeuroEval Pro",
+          text:
+            `Tu código de recuperación es: ${code}\n\n` +
+            "Este código vence en 10 minutos. Si no solicitaste este cambio, ignora este mensaje.",
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:28px;color:#202642">
+              <h2 style="color:#5149bb">NeuroEval Pro</h2>
+              <p>Recibimos una solicitud para cambiar la contraseña de tu cuenta.</p>
+              <p>Tu código de verificación es:</p>
+              <div style="font-size:32px;font-weight:bold;letter-spacing:8px;padding:18px;background:#f1f0ff;border-radius:12px;text-align:center;color:#5149bb">${code}</div>
+              <p>El código vence en 10 minutos y solo puede utilizarse una vez.</p>
+              <p style="color:#77809b;font-size:12px">Si no solicitaste este cambio, puedes ignorar este mensaje.</p>
+            </div>
+          `
       });
       } catch (mailError) {
         await db.collection("passwordResets").doc(userRecord.uid).delete().catch(() => {});
