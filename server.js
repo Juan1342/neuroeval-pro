@@ -1394,7 +1394,8 @@ app.post(
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      await mailer.sendMail({
+      try {
+        await mailer.sendMail({
         from: SMTP_FROM,
         to: email,
         subject: "Código de recuperación · NeuroEval Pro",
@@ -1412,6 +1413,10 @@ app.post(
           </div>
         `
       });
+      } catch (mailError) {
+        await db.collection("passwordResets").doc(userRecord.uid).delete().catch(() => {});
+        throw mailError;
+      }
 
       return res.json({ ok: true, message: genericMessage });
 
