@@ -33,6 +33,7 @@ const EVAL_PRICE_COP = 4000;
 const CURRENCY = "COP";
 
 const { calculateEvaluationOnServer } = require("./lib/evaluation");
+const { decideWompiTransition } = require("./lib/payment-state");
 
 const ALLOW_DEMO_PAY =
   String(process.env.ALLOW_DEMO_PAY || "false").toLowerCase() === "true";
@@ -835,49 +836,23 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
       }
 
       const evaluation = snapshot.data() || {};
-      const existingTransactionId = String(evaluation.wompiTransactionId || "");
+      const decision = decideWompiTransition(evaluation, {
+        status,
+        transactionId
+      });
 
-      // Una referencia de evaluación queda asociada a una sola transacción.
-      if (existingTransactionId && existingTransactionId !== transactionId) {
-        return {
-          ignored: true,
-          reason: "La referencia ya está asociada a otra transacción."
-        };
-      }
-
-      // La transacción de Firestore evita que dos webhooks simultáneos
-      // sobrescriban entre sí un estado terminal.
-      if (evaluation.paymentStatus === "paid") {
-        return { ignored: true, reason: "La evaluación ya tiene un pago confirmado." };
-      }
-
-      const currentWompiStatus = String(
-        evaluation.wompiTransactionStatus || ""
-      ).toUpperCase();
-      const terminalStatuses = ["APPROVED", "DECLINED", "VOIDED", "ERROR"];
-
-      if (
-        terminalStatuses.includes(currentWompiStatus) &&
-        status !== currentWompiStatus
-      ) {
-        return {
-          ignored: true,
-          reason: "Se ignoró una notificación antigua o fuera de secuencia."
-        };
+      if (decision.ignored) {
+        return decision;
       }
 
       const update = {
-        wompiTransactionId: transactionId,
-        wompiTransactionStatus: status,
+        ...decision.update,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
 
-      if (status === "APPROVED") {
-        update.paymentStatus = "paid";
-        update.paymentProvider = "wompi";
+      if (decision.update.setPaidAt) {
         update.paidAt = admin.firestore.FieldValue.serverTimestamp();
-      } else if (["DECLINED", "VOIDED", "ERROR"].includes(status)) {
-        update.paymentStatus = "failed";
+        delete update.setPaidAt;
       }
 
       transactionWriter.set(evaluationRef, update, { merge: true });
