@@ -1553,14 +1553,31 @@ app.post(
         throw passwordError;
       }
 
-      await resetRef.delete();
+      // La contraseña ya fue actualizada. La limpieza del código y la
+      // revocación de sesiones son tareas posteriores: un fallo en ellas
+      // no debe informar falsamente que el cambio de contraseña fracasó.
+      let sessionsRevoked = true;
 
-      // Revoca las sesiones anteriores para que el usuario vuelva a ingresar.
-      await firebaseAuth.revokeRefreshTokens(userRecord.uid);
+      try {
+        await resetRef.delete();
+      } catch (cleanupError) {
+        console.error("No se pudo limpiar el código de recuperación consumido:", cleanupError);
+      }
+
+      try {
+        // Revoca las sesiones anteriores para que el usuario vuelva a ingresar.
+        await firebaseAuth.revokeRefreshTokens(userRecord.uid);
+      } catch (revokeError) {
+        sessionsRevoked = false;
+        console.error("La contraseña cambió, pero no se pudieron revocar todas las sesiones:", revokeError);
+      }
 
       return res.json({
         ok: true,
-        message: "Tu contraseña fue actualizada. Ya puedes iniciar sesión."
+        sessionsRevoked,
+        message: sessionsRevoked
+          ? "Tu contraseña fue actualizada. Ya puedes iniciar sesión."
+          : "Tu contraseña fue actualizada. Por seguridad, cierra las demás sesiones si siguen abiertas y vuelve a iniciar sesión."
       });
 
     } catch (error) {
