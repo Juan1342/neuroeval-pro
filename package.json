@@ -6,9 +6,12 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "admin:create": "node bootstrap-admin.js"
+    "admin:create": "node bootstrap-admin.js",
+    "test": "node --test"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
