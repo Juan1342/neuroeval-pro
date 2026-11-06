@@ -1012,14 +1012,21 @@ async function loadAdmin() {
       });
 
       const actionCell = document.createElement("td");
-      const button = document.createElement("button");
+      actionCell.className = "space-y-2";
+      
+      const detailButton = document.createElement("button");
+      detailButton.type = "button";
+      detailButton.className = "text-indigo-600 underline font-bold block";
+      detailButton.textContent = "Ver detalle";
+      detailButton.addEventListener("click", () => viewAdminEvaluation(record.id));
+      
+      const pdfButton = document.createElement("button");
+      pdfButton.type = "button";
+      pdfButton.className = "text-indigo-600 underline font-bold block";
+      pdfButton.textContent = "Descargar PDF";
+      pdfButton.addEventListener("click", () => downloadAdminPdf(record.id));
 
-      button.type = "button";
-      button.className = "text-indigo-600 underline font-bold";
-      button.textContent = "Descargar PDF";
-      button.addEventListener("click", () => downloadAdminPdf(record.id));
-
-      actionCell.appendChild(button);
+      actionCell.append(detailButton, pdfButton);
       row.appendChild(actionCell);
       tbody.appendChild(row);
     });
@@ -1028,6 +1035,120 @@ async function loadAdmin() {
     console.error("Panel administrativo:", error);
     alert("No se pudo cargar el panel: " + error.message);
   }
+}
+
+function appendAdminDetailLine(container, label, value) {
+  const line = document.createElement("p");
+  line.className = "text-sm text-slate-700 mb-2";
+  const strong = document.createElement("strong");
+  strong.textContent = label + ": ";
+  line.append(strong, document.createTextNode(
+    value === null || value === undefined || value === "" ? "—" : String(value)
+  ));
+  container.appendChild(line);
+}
+
+async function viewAdminEvaluation(id) {
+  if (!currentIsAdmin) {
+    alert("No tienes permisos para consultar esta información.");
+    return;
+  }
+
+  const dialog = $("admin-detail");
+  const content = $("admin-detail-content");
+  content.replaceChildren();
+  const loading = document.createElement("p");
+  loading.textContent = "Cargando información protegida…";
+  content.appendChild(loading);
+  dialog.classList.remove("hidden");
+  dialog.setAttribute("aria-hidden", "false");
+  $("admin-detail-close").focus();
+
+  try {
+    const response = await api(`/api/admin/evaluations/${encodeURIComponent(id)}`);
+    const data = await response.json();
+    const evaluation = data.evaluation;
+
+    if (!evaluation || typeof evaluation !== "object") {
+      throw new Error("La respuesta del servidor no contiene una evaluación válida.");
+    }
+
+    content.replaceChildren();
+    const heading = document.createElement("h3");
+    heading.className = "text-lg font-extrabold mb-3";
+    heading.textContent = "Datos del participante";
+    content.appendChild(heading);
+
+    appendAdminDetailLine(content, "Nombre", evaluation.name);
+    appendAdminDetailLine(content, "Correo", evaluation.email);
+    appendAdminDetailLine(content, "Edad", evaluation.age);
+    appendAdminDetailLine(content, "Objetivo", evaluation.goal);
+    appendAdminDetailLine(content, "Estado del pago", evaluation.paymentStatus);
+    appendAdminDetailLine(content, "Fecha", evaluation.createdAt
+      ? new Date(evaluation.createdAt).toLocaleString("es-CO") : "—");
+
+    const resultHeading = document.createElement("h3");
+    resultHeading.className = "text-lg font-extrabold mt-6 mb-2";
+    resultHeading.textContent = "Resultado del autorregistro";
+    content.appendChild(resultHeading);
+    appendAdminDetailLine(content, "Perfil orientativo", evaluation.profile);
+    appendAdminDetailLine(content, "Descripción", evaluation.profileDescription);
+
+    if (evaluation.scores && typeof evaluation.scores === "object") {
+      const scoreHeading = document.createElement("h4");
+      scoreHeading.className = "font-bold mt-3 mb-2";
+      scoreHeading.textContent = "Dimensiones";
+      content.appendChild(scoreHeading);
+      Object.entries(evaluation.scores).forEach(([dimension, score]) => {
+        appendAdminDetailLine(content, dimension, `${score}%`);
+      });
+    }
+
+    if (Array.isArray(evaluation.recommendations) && evaluation.recommendations.length) {
+      const recHeading = document.createElement("h4");
+      recHeading.className = "font-bold mt-4 mb-2";
+      recHeading.textContent = "Recomendaciones";
+      content.appendChild(recHeading);
+      const list = document.createElement("ul");
+      list.className = "list-disc pl-5 text-sm text-slate-700 space-y-1";
+      evaluation.recommendations.forEach((recommendation) => {
+        const item = document.createElement("li");
+        item.textContent = String(recommendation);
+        list.appendChild(item);
+      });
+      content.appendChild(list);
+    }
+
+    const answersHeading = document.createElement("h3");
+    answersHeading.className = "text-lg font-extrabold mt-6 mb-3";
+    answersHeading.textContent = "Respuestas registradas";
+    content.appendChild(answersHeading);
+
+    if (Array.isArray(evaluation.answers) && evaluation.answers.length) {
+      evaluation.answers.forEach((answer, index) => {
+        const item = document.createElement("div");
+        item.className = "border-b border-slate-200 py-3";
+        appendAdminDetailLine(item, `Pregunta ${index + 1}`, answer.question);
+        appendAdminDetailLine(item, "Respuesta", answer.answer);
+        appendAdminDetailLine(item, "Dimensión", answer.dimension);
+        content.appendChild(item);
+      });
+    } else {
+      appendAdminDetailLine(content, "Respuestas", "No hay respuestas almacenadas.");
+    }
+  } catch (error) {
+    content.replaceChildren();
+    const message = document.createElement("p");
+    message.className = "text-red-600";
+    message.textContent = "No fue posible consultar el detalle: " + error.message;
+    content.appendChild(message);
+  }
+}
+
+function closeAdminDetail() {
+  const dialog = $("admin-detail");
+  dialog.classList.add("hidden");
+  dialog.setAttribute("aria-hidden", "true");
 }
 
 async function downloadAdminPdf(id) {
@@ -1084,6 +1205,16 @@ function registerEventListeners() {
   $("logout-payment").addEventListener("click", logout);
 
   $("logout-result").addEventListener("click", logout);
+
+  $("admin-detail-close").addEventListener("click", closeAdminDetail);
+  $("admin-detail").addEventListener("click", (event) => {
+    if (event.target === $("admin-detail")) closeAdminDetail();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !$("admin-detail").classList.contains("hidden")) {
+      closeAdminDetail();
+    }
+  });
 
   $("admin-refresh").addEventListener("click", loadAdmin);
   $("admin-logout").addEventListener("click", logout);
