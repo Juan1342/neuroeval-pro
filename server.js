@@ -1264,8 +1264,13 @@ app.get(
   requireAdmin,
   async (req, res) => {
     try {
-      const [usersSnapshot, evaluationsSnapshot] = await Promise.all([
-        db.collection("users").get(),
+      const [
+        usersCountSnapshot,
+        evaluationsCountSnapshot,
+        evaluationsSnapshot
+      ] = await Promise.all([
+        db.collection("users").count().get(),
+        db.collection("evaluations").count().get(),
         db.collection("evaluations")
           .orderBy("createdAt", "desc")
           .limit(100)
@@ -1286,8 +1291,8 @@ app.get(
       });
 
       return res.json({
-        users: usersSnapshot.size,
-        evaluations: evaluationsSnapshot.size,
+        users: usersCountSnapshot.data().count,
+        evaluations: evaluationsCountSnapshot.data().count,
         records
       });
 
