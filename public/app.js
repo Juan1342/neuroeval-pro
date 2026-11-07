@@ -119,6 +119,7 @@ function show(viewId) {
   const views = [
     "auth-view",
     "forgot-view",
+    "dashboard-view",
     "quiz-view",
     "payment-view",
     "result-view",
@@ -371,10 +372,12 @@ async function handleAuthState(user) {
     const evaluationIdFromUrl = params.get("evaluation");
 
     if (evaluationIdFromUrl) {
+      // El retorno desde Wompi debe conservar el flujo de pago pendiente.
       lastEvaluationId = evaluationIdFromUrl;
       await showPaymentForExistingEvaluation();
     } else {
-      await startQuiz(profileData.name, profileData.age, profileData.goal);
+      // El usuario siempre llega primero al panel y elige qué evaluación iniciar.
+      showDashboard(profileData.name);
     }
 
   } catch (error) {
@@ -384,6 +387,32 @@ async function handleAuthState(user) {
   } finally {
     isHandlingAuth = false;
   }
+}
+
+/* =========================================================
+   8. PANEL PRINCIPAL Y CATÁLOGO DE EVALUACIONES
+========================================================= */
+
+function showDashboard(name) {
+  const displayName = (name || "bienvenido").trim();
+  $("dashboard-greeting").textContent = displayName
+    ? `Hola, ${displayName}`
+    : "Bienvenido a NeuroEval Pro";
+  show("dashboard-view");
+}
+
+function startAdhdEvaluation() {
+  if (!currentUser) {
+    show("auth-view");
+    showMessage("auth-message", "Inicia sesión para comenzar una evaluación.", true);
+    return;
+  }
+
+  startQuiz(
+    profileData?.name || currentUser.displayName || currentUser.email,
+    profileData?.age ?? null,
+    profileData?.goal || "Autoconocimiento"
+  );
 }
 
 /* =========================================================
@@ -1195,6 +1224,9 @@ function registerEventListeners() {
 
   $("request-code-form").addEventListener("submit", requestPasswordCode);
   $("confirm-reset-form").addEventListener("submit", confirmPasswordReset);
+
+  $("start-adhd-evaluation").addEventListener("click", startAdhdEvaluation);
+  $("dashboard-logout").addEventListener("click", logout);
 
   $("prev-question").addEventListener("click", previousQuestion);
   $("next-question").addEventListener("click", nextQuestion);
