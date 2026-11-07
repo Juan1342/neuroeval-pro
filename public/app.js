@@ -170,7 +170,6 @@ function friendlyAuthError(error) {
     "auth/invalid-credential": "Correo o contraseña incorrectos.",
     "auth/user-not-found": "No encontramos una cuenta con ese correo.",
     "auth/wrong-password": "La contraseña es incorrecta.",
-    "auth/popup-closed-by-user": "Se cerró la ventana de Google.",
     "auth/network-request-failed": "No se pudo conectar. Verifica tu internet.",
     "auth/too-many-requests": "Demasiados intentos. Espera un momento."
   };
