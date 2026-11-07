@@ -560,20 +560,15 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
 
     const document = await db.collection("evaluations").add(evaluation);
 
+    // No devolver respuestas ni resultados antes del pago confirmado.
+    // El informe completo solo se entrega mediante el endpoint protegido.
     return res.status(201).json({
       ok: true,
       id: document.id,
       reference,
       paymentStatus: "pending",
       amountCop: EVAL_PRICE_COP,
-      currency: CURRENCY,
-      result: {
-        answers: calculated.answers,
-        scores: calculated.scores,
-        profile: calculated.profile,
-        profileDescription: calculated.profileDescription,
-        recommendations: calculated.recommendations
-      }
+      currency: CURRENCY
     });
   } catch (error) {
     console.error("Crear evaluación:", error);
@@ -593,10 +588,20 @@ app.get("/api/my-evaluations", requireUser, async (req, res) => {
       .limit(50)
       .get();
 
-    const evaluations = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    // El historial del usuario solo expone metadatos de pago.
+    // Nunca incluir respuestas, puntajes, perfil ni recomendaciones aquí.
+    const evaluations = snapshot.docs.map((doc) => {
+      const data = doc.data() || {};
+      return {
+        id: doc.id,
+        name: data.name || "",
+        goal: data.goal || "",
+        paymentStatus: data.paymentStatus || "pending",
+        amountCop: data.amountCop || EVAL_PRICE_COP,
+        currency: data.currency || CURRENCY,
+        createdAt: data.createdAt || null
+      };
+    });
 
     return res.json({ evaluations });
 
