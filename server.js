@@ -11,12 +11,57 @@ const crypto = require("crypto");
 const admin = require("firebase-admin");
 const PDFDocument = require("pdfkit");
 const path = require("path");
+const https = require("https");
 
 /* =========================================================
    1. CONFIGURACIÓN GENERAL
 ========================================================= */
 
 const app = express();
+
+// Firebase recomienda servir el helper de autenticación bajo el mismo
+// dominio de la aplicación para evitar bloqueos de almacenamiento de terceros.
+app.use("/__/auth", (req, res) => {
+  if (!FIREBASE_PROJECT_ID) {
+    return res.status(503).send("Firebase project is not configured.");
+  }
+
+  const firebaseHost = `${FIREBASE_PROJECT_ID}.firebaseapp.com`;
+  const upstream = https.request(
+    {
+      hostname: firebaseHost,
+      port: 443,
+      path: req.originalUrl,
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: firebaseHost
+      }
+    },
+    (upstreamResponse) => {
+      res.writeHead(
+        upstreamResponse.statusCode || 502,
+        upstreamResponse.headers
+      );
+      upstreamResponse.pipe(res);
+    }
+  );
+
+  upstream.setTimeout(30000, () => {
+    upstream.destroy(new Error("Firebase auth proxy timed out."));
+  });
+
+  upstream.on("error", (error) => {
+    console.error("Firebase auth proxy:", error.message);
+    if (!res.headersSent) {
+      res.status(502).send("No se pudo conectar con Firebase Authentication.");
+    } else {
+      res.destroy(error);
+    }
+  });
+
+  req.pipe(upstream);
+});
 
 app.set("trust proxy", 1);
 
