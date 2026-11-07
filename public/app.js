@@ -102,11 +102,17 @@ async function initializeFirebase() {
 
     const firebaseApp = initializeApp(config);
     auth = getAuth(firebaseApp);
-    console.info("[NeuroEval Pro] Google redirect build 20261107-4");
+    console.info("[NeuroEval Pro] Google redirect diagnostic build 20261107-6");
 
-    // Recupera y muestra errores que ocurran al volver de Google.
+    // Diagnóstico temporal: registra únicamente estados, nunca tokens ni datos personales.
     try {
-      await getRedirectResult(auth);
+      const redirectResult = await getRedirectResult(auth);
+      console.info("[NeuroEval Pro][Google redirect result]", {
+        resultReceived: Boolean(redirectResult),
+        resultHasUser: Boolean(redirectResult?.user),
+        authCurrentUserPresent: Boolean(auth.currentUser),
+        providerId: redirectResult?.providerId || null
+      });
     } catch (error) {
       console.error("[NeuroEval Pro][Google redirect result]", {
         code: error?.code || "sin-codigo",
@@ -121,7 +127,15 @@ async function initializeFirebase() {
 
     registerEventListeners();
 
-    onAuthStateChanged(auth, handleAuthState);
+    onAuthStateChanged(auth, (user) => {
+      console.info("[NeuroEval Pro][Auth state observer]", {
+        userPresent: Boolean(user),
+        authCurrentUserPresent: Boolean(auth.currentUser),
+        emailVerified: user ? Boolean(user.emailVerified) : null,
+        providerIds: user?.providerData?.map((provider) => provider.providerId) || []
+      });
+      handleAuthState(user);
+    });
 
   } catch (error) {
     console.error("Firebase:", error);
