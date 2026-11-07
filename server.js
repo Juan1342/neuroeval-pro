@@ -1657,7 +1657,14 @@ const publicDirectory = path.join(__dirname, "public");
 app.use(
   express.static(publicDirectory, {
     index: "index.html",
-    maxAge: process.env.NODE_ENV === "production" ? "1h" : 0
+    maxAge: 0,
+    setHeaders: (res, filePath) => {
+      if (/\\.(?:js|html)$/i.test(filePath)) {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      }
+    }
   })
 );
 
