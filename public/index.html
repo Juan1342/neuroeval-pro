@@ -30,6 +30,23 @@
     .brand { display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:-.7px; color:var(--navy); font-size:20px; }
     .brand-mark { width:39px; height:39px; border-radius:13px; display:grid; place-items:center; color:white; background:linear-gradient(140deg,#8d7cff,#4e50bd); box-shadow:0 7px 18px #7467f044; font-size:21px; }
     .topbar-right { display:flex; align-items:center; gap:14px; color:#737b96; font-size:13px; }
+    .account-menu-wrap { position:relative; }
+    .account-menu-toggle { display:flex;align-items:center;gap:9px;border:1px solid #e7e9f2;background:#fff;border-radius:13px;padding:8px 11px;color:#303653;font-weight:700;max-width:min(280px,48vw); }
+    .account-avatar { width:32px;height:32px;border-radius:10px;background:#eeedff;color:#6157d7;display:grid;place-items:center;font-weight:800;flex:none; }
+    .account-toggle-name { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px; }
+    .account-menu { position:absolute;right:0;top:calc(100% + 10px);width:230px;background:#fff;border:1px solid #e8eaf2;border-radius:16px;padding:8px;box-shadow:0 18px 48px #17204422;z-index:60; }
+    .account-menu-head { padding:10px 11px 12px;border-bottom:1px solid #edf0f6;margin-bottom:6px; }
+    .account-menu-head strong { display:block;color:#252b48;font-size:13px;overflow-wrap:anywhere; }
+    .account-menu-head small { display:block;color:#858da4;font-size:11px;margin-top:3px;overflow-wrap:anywhere; }
+    .account-menu button { width:100%;text-align:left;border:0;background:transparent;padding:11px;border-radius:10px;color:#4b5470;font-size:13px;font-weight:600; }
+    .account-menu button:hover { background:#f4f5fb;color:#5146c8; }
+    .account-menu button.danger { color:#c44758; }
+    .account-menu button.danger:hover { background:#fff1f2; }
+    .account-view-card { max-width:720px;margin:0 auto; }
+    .profile-row { display:flex;justify-content:space-between;gap:20px;padding:15px 0;border-bottom:1px solid #edf0f6;font-size:14px; }
+    .profile-row span:first-child { color:#7b849d; }
+    .profile-row strong { color:#29304d;text-align:right;overflow-wrap:anywhere; }
+    @media(max-width:520px) { .account-menu-toggle { padding:6px 8px;gap:6px; }.account-toggle-name { max-width:90px; }.topbar-right { gap:8px; }.account-menu { right:0; } }
     .status-dot { width:8px;height:8px;border-radius:50%;background:#31c89a;display:inline-block;margin-right:7px; }
     .page { width:min(1160px,calc(100% - 36px)); margin:0 auto; padding:42px 0 76px; }
     .hero { background:radial-gradient(circle at 83% 20%,#5d67cb 0,transparent 30%),linear-gradient(120deg,#111733,#25265b 66%,#443b8d); border-radius:30px; padding:clamp(28px,5vw,62px); color:white; position:relative; overflow:hidden; min-height:290px; display:flex; align-items:center; }
@@ -128,7 +145,21 @@
     <div class="brand"><span class="brand-mark">✳</span><span>NeuroEval <span style="color:#7467f0">Pro</span></span></div>
     <div class="topbar-right">
       <span><i class="status-dot"></i>Plataforma segura</span>
-      <span id="session-label"></span>
+      <div class="account-menu-wrap">
+        <button id="account-menu-toggle" class="account-menu-toggle hidden" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="account-menu">
+          <span class="account-avatar" aria-hidden="true">U</span>
+          <span id="account-name" class="account-toggle-name">Mi cuenta</span>
+          <span aria-hidden="true">⌄</span>
+        </button>
+        <div id="account-menu" class="account-menu hidden" role="menu">
+          <div class="account-menu-head"><strong id="account-menu-name">Mi cuenta</strong><small id="account-email"></small></div>
+          <button id="menu-profile" type="button" role="menuitem">👤 &nbsp; Perfil</button>
+          <button id="menu-tests" type="button" role="menuitem">🧠 &nbsp; Pruebas</button>
+          <button id="menu-settings" type="button" role="menuitem">⚙️ &nbsp; Configuración</button>
+          <button id="menu-logout" class="danger" type="button" role="menuitem">↪ &nbsp; Cerrar sesión</button>
+        </div>
+      </div>
+      <span id="session-label" class="hidden"></span>
     </div>
   </header>
 
@@ -266,6 +297,39 @@
       </div>
 
       <div class="notice mt-6">Las evaluaciones disponibles ofrecen información orientativa y no sustituyen una valoración profesional ni constituyen diagnósticos clínicos.</div>
+    </section>
+
+    <!-- PERFIL DE USUARIO -->
+    <section id="profile-view" class="hidden fade-in">
+      <div class="card account-view-card">
+        <div class="eyebrow">Tu cuenta</div>
+        <h1 class="text-2xl font-extrabold mt-2">Mi perfil</h1>
+        <p class="muted-text mt-2">Consulta la información asociada a tu cuenta.</p>
+        <div class="mt-5">
+          <div class="profile-row"><span>Nombre</span><strong id="profile-name">—</strong></div>
+          <div class="profile-row"><span>Correo electrónico</span><strong id="profile-email">—</strong></div>
+          <div class="profile-row"><span>Edad</span><strong id="profile-age">—</strong></div>
+          <div class="profile-row"><span>Objetivo</span><strong id="profile-goal">—</strong></div>
+        </div>
+        <button id="profile-back" class="btn primary mt-6" type="button">Volver a mis pruebas</button>
+      </div>
+    </section>
+
+    <!-- CONFIGURACIÓN -->
+    <section id="settings-view" class="hidden fade-in">
+      <div class="card account-view-card">
+        <div class="eyebrow">Preferencias y seguridad</div>
+        <h1 class="text-2xl font-extrabold mt-2">Configuración</h1>
+        <p class="muted-text mt-2">Administra opciones básicas de acceso y conoce cómo se utiliza tu cuenta.</p>
+        <div class="profile-row mt-5"><span>Cuenta activa</span><strong id="settings-email">—</strong></div>
+        <div class="mt-5 rounded-xl bg-slate-50 p-4">
+          <h2 class="font-bold">Seguridad de la cuenta</h2>
+          <p class="muted-text mt-1">Puedes iniciar el proceso de recuperación para establecer una contraseña nueva mediante el código enviado a tu correo.</p>
+          <button id="settings-password" class="btn outline mt-4" type="button">Cambiar contraseña</button>
+        </div>
+        <div class="notice mt-5">Tus respuestas de evaluación se utilizan para generar el informe orientativo. Evita compartir tu contraseña y cierra sesión si utilizas un dispositivo compartido.</div>
+        <button id="settings-back" class="btn primary mt-6" type="button">Volver a mis pruebas</button>
+      </div>
     </section>
 
     <!-- EVALUACIÓN -->
