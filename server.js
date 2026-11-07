@@ -754,30 +754,23 @@ app.post(
           return { error: "reconciliation-required" };
         }
 
-        const hasFinalFailure = ["DECLINED", "VOIDED", "ERROR"].includes(wompiStatus);
-        const mustCreateNewReference =
-          !evaluation.paymentReference ||
-          evaluation.paymentStatus === "failed" ||
-          hasFinalFailure;
+        // Cada apertura de checkout recibe una referencia nueva. Wompi no permite
+        // reutilizar referencias, incluso si el intento anterior quedó pendiente
+        // porque su webhook no llegó al servidor.
+        const reference = makeReference();
 
-        const reference = mustCreateNewReference
-          ? makeReference()
-          : String(evaluation.paymentReference);
-
-        if (mustCreateNewReference) {
-          transactionWriter.set(
-            result.ref,
-            {
-              paymentReference: reference,
-              paymentStatus: "pending",
-              paymentProvider: "wompi",
-              wompiTransactionId: admin.firestore.FieldValue.delete(),
-              wompiTransactionStatus: admin.firestore.FieldValue.delete(),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            },
-            { merge: true }
-          );
-        }
+        transactionWriter.set(
+          result.ref,
+          {
+            paymentReference: reference,
+            paymentStatus: "pending",
+            paymentProvider: "wompi",
+            wompiTransactionId: admin.firestore.FieldValue.delete(),
+            wompiTransactionStatus: admin.firestore.FieldValue.delete(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          },
+          { merge: true }
+        );
 
         return { reference };
       });
