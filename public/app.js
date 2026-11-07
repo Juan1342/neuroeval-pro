@@ -8,7 +8,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
   getIdTokenResult
@@ -100,6 +101,21 @@ async function initializeFirebase() {
 
     const firebaseApp = initializeApp(config);
     auth = getAuth(firebaseApp);
+
+    // Recupera y muestra errores que ocurran al volver de Google.
+    try {
+      await getRedirectResult(auth);
+    } catch (error) {
+      console.error("[NeuroEval Pro][Google redirect result]", {
+        code: error?.code || "sin-codigo",
+        message: error?.message || "Sin mensaje"
+      });
+      showMessage(
+        "auth-message",
+        `No se pudo completar el acceso con Google. Código: ${error?.code || "sin-codigo"}. Detalle: ${error?.message || "Sin detalles"}`,
+        true
+      );
+    }
 
     registerEventListeners();
 
@@ -298,7 +314,8 @@ async function loginWithGoogle() {
     showMessage("auth-message", "Conectando con Google...");
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
-    await signInWithPopup(auth, provider);
+    showMessage("auth-message", "Redirigiendo a Google para completar el acceso...");
+    await signInWithRedirect(auth, provider);
   } catch (error) {
     // Diagnóstico temporal para identificar fallos de OAuth en staging.
     console.error("[NeuroEval Pro][Google sign-in]", {
