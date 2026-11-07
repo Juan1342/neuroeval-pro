@@ -102,6 +102,18 @@
     table { width:100%;border-collapse:collapse;min-width:650px;font-size:12px; }
     th { text-align:left;color:#7b849d;background:#f7f8fc;padding:13px; }
     td { padding:13px;border-bottom:1px solid #edf0f6;color:#515b77; }
+    .dashboard-intro { margin:10px 0 28px; }
+    .evaluation-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px; }
+    .evaluation-card { background:#fff;border:1px solid #e8ebf4;border-radius:20px;padding:23px;box-shadow:0 10px 30px #202d500c;display:flex;flex-direction:column;min-height:245px; }
+    .evaluation-card.available { border-color:#d8d5ff;box-shadow:0 12px 32px #655bdc12; }
+    .evaluation-icon { width:52px;height:52px;border-radius:16px;background:#f0efff;display:grid;place-items:center;font-size:26px;margin-bottom:16px; }
+    .evaluation-card h3 { font-size:17px;font-weight:800;color:#252b48;margin:0 0 8px; }
+    .evaluation-card p { color:#737c96;font-size:13px;line-height:1.65;margin:0 0 18px; }
+    .evaluation-status { font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#16856d;margin-bottom:9px; }
+    .evaluation-status.soon { color:#8a91a5; }
+    .evaluation-card .btn { margin-top:auto;width:100%; }
+    .dashboard-top { display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px; }
+    @media(max-width:800px) { .evaluation-grid { grid-template-columns:1fr; }.evaluation-card { min-height:unset; }.dashboard-top { align-items:flex-start;flex-direction:column; } }
     .footer { text-align:center;color:#9aa2b5;font-size:11px;padding:24px; }
     .fade-in { animation:fade .35s ease both; }
     @keyframes fade { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
@@ -206,6 +218,54 @@
         <div id="reset-message" class="message" role="status"></div>
         <button id="back-login" class="btn outline w-full mt-4" type="button">Volver al inicio de sesión</button>
       </div>
+    </section>
+
+    <!-- PANEL PRINCIPAL -->
+    <section id="dashboard-view" class="hidden fade-in">
+      <div class="hero mb-7">
+        <div class="hero-copy">
+          <div class="eyebrow">Tu espacio personal</div>
+          <h1 id="dashboard-greeting">Bienvenido a NeuroEval Pro</h1>
+          <p>Elige la evaluación que deseas realizar. Podrás regresar a este panel para consultar las opciones disponibles.</p>
+        </div>
+        <div class="hero-art"><span>🧠</span></div>
+      </div>
+
+      <div class="dashboard-top">
+        <div>
+          <h2 class="text-2xl font-extrabold">Catálogo de evaluaciones</h2>
+          <p class="muted-text">Selecciona una evaluación para conocer sus características y comenzar.</p>
+        </div>
+        <button id="dashboard-logout" class="btn outline" type="button">Cerrar sesión</button>
+      </div>
+
+      <div class="evaluation-grid">
+        <article class="evaluation-card available">
+          <div class="evaluation-icon">🧠</div>
+          <div class="evaluation-status">● Disponible ahora</div>
+          <h3>Autorregistro de atención e indicadores asociados al TDAH</h3>
+          <p>Explora experiencias relacionadas con atención, organización, inquietud e impulsividad. Es orientativo y no constituye un diagnóstico.</p>
+          <button id="start-adhd-evaluation" class="btn primary" type="button">Comenzar evaluación →</button>
+        </article>
+
+        <article class="evaluation-card">
+          <div class="evaluation-icon">🎯</div>
+          <div class="evaluation-status soon">Próximamente</div>
+          <h3>Concentración y organización</h3>
+          <p>Una futura evaluación orientativa sobre atención, planificación y organización de actividades.</p>
+          <button class="btn outline" type="button" disabled>Próximamente</button>
+        </article>
+
+        <article class="evaluation-card">
+          <div class="evaluation-icon">🌿</div>
+          <div class="evaluation-status soon">Próximamente</div>
+          <h3>Estrés, fatiga y sobrecarga</h3>
+          <p>Una futura evaluación orientativa para explorar factores que pueden influir en el bienestar y la concentración.</p>
+          <button class="btn outline" type="button" disabled>Próximamente</button>
+        </article>
+      </div>
+
+      <div class="notice mt-6">Las evaluaciones disponibles ofrecen información orientativa y no sustituyen una valoración profesional ni constituyen diagnósticos clínicos.</div>
     </section>
 
     <!-- EVALUACIÓN -->
