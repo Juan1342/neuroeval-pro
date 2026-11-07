@@ -101,6 +101,7 @@ async function initializeFirebase() {
 
     const firebaseApp = initializeApp(config);
     auth = getAuth(firebaseApp);
+    console.info("[NeuroEval Pro] Google redirect build 20261107-4");
 
     // Recupera y muestra errores que ocurran al volver de Google.
     try {
