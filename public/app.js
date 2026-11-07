@@ -120,6 +120,8 @@ function show(viewId) {
     "auth-view",
     "forgot-view",
     "dashboard-view",
+    "profile-view",
+    "settings-view",
     "quiz-view",
     "payment-view",
     "result-view",
@@ -315,6 +317,9 @@ async function handleAuthState(user) {
 
   try {
     if (!user) {
+      $("account-menu").classList.add("hidden");
+      $("account-menu-toggle").setAttribute("aria-expanded", "false");
+      $("account-menu-toggle").classList.add("hidden");
       stopPaymentPolling();
       lastEvaluationId = null;
       paymentReference = null;
@@ -327,6 +332,10 @@ async function handleAuthState(user) {
     }
 
     $("session-label").textContent = user.email || "";
+    $("account-menu-toggle").classList.remove("hidden");
+    $("account-name").textContent = profileData?.name || user.displayName || user.email || "Mi cuenta";
+    $("account-menu-name").textContent = profileData?.name || user.displayName || "Mi cuenta";
+    $("account-email").textContent = user.email || "";
 
     const tokenResult = await getIdTokenResult(user, true);
     // La interfaz sigue el mismo permiso que valida el backend.
@@ -334,6 +343,9 @@ async function handleAuthState(user) {
     currentIsAdmin = tokenResult.claims.admin === true;
 
     if (currentIsAdmin) {
+      $("account-name").textContent = user.displayName || user.email || "Administración";
+      $("account-menu-name").textContent = user.displayName || "Administración";
+      $("account-email").textContent = user.email || "";
       show("admin-view");
       await loadAdmin();
       isHandlingAuth = false;
@@ -377,6 +389,9 @@ async function handleAuthState(user) {
       await showPaymentForExistingEvaluation();
     } else {
       // El usuario siempre llega primero al panel y elige qué evaluación iniciar.
+      $("account-name").textContent = profileData.name || user.displayName || user.email;
+      $("account-menu-name").textContent = profileData.name || user.displayName || "Mi cuenta";
+      $("account-email").textContent = user.email || "";
       showDashboard(profileData.name);
     }
 
@@ -399,6 +414,35 @@ function showDashboard(name) {
     ? `Hola, ${displayName}`
     : "Bienvenido a NeuroEval Pro";
   show("dashboard-view");
+}
+
+function showProfile() {
+  if (!currentUser) return show("auth-view");
+  $("profile-name").textContent = profileData?.name || currentUser.displayName || "No registrado";
+  $("profile-email").textContent = currentUser.email || "No disponible";
+  $("profile-age").textContent = profileData?.age == null ? "No registrada" : String(profileData.age) + " años";
+  $("profile-goal").textContent = profileData?.goal || "Autoconocimiento";
+  closeAccountMenu();
+  show("profile-view");
+}
+
+function showSettings() {
+  if (!currentUser) return show("auth-view");
+  $("settings-email").textContent = currentUser.email || "No disponible";
+  closeAccountMenu();
+  show("settings-view");
+}
+
+function closeAccountMenu() {
+  $("account-menu").classList.add("hidden");
+  $("account-menu-toggle").setAttribute("aria-expanded", "false");
+}
+
+function toggleAccountMenu() {
+  const menu = $("account-menu");
+  const willOpen = menu.classList.contains("hidden");
+  menu.classList.toggle("hidden", !willOpen);
+  $("account-menu-toggle").setAttribute("aria-expanded", String(willOpen));
 }
 
 function startAdhdEvaluation() {
@@ -1199,11 +1243,20 @@ async function downloadAdminPdf(id) {
 
 async function logout() {
   stopPaymentPolling();
+  closeAccountMenu();
 
   try {
+    if (!auth) throw new Error("La autenticación todavía no está disponible.");
     await signOut(auth);
+    currentUser = null;
+    currentIsAdmin = false;
+    profileData = null;
+    $("session-label").textContent = "";
+    $("account-menu-toggle").classList.add("hidden");
+    show("auth-view");
   } catch (error) {
-    alert("No se pudo cerrar la sesión: " + error.message);
+    console.error("Error al cerrar sesión:", error);
+    alert("No se pudo cerrar la sesión. " + (error.message || "Inténtalo nuevamente."));
   }
 }
 
@@ -1224,6 +1277,30 @@ function registerEventListeners() {
 
   $("request-code-form").addEventListener("submit", requestPasswordCode);
   $("confirm-reset-form").addEventListener("submit", confirmPasswordReset);
+
+  $("account-menu-toggle").addEventListener("click", toggleAccountMenu);
+  $("menu-profile").addEventListener("click", showProfile);
+  $("menu-tests").addEventListener("click", () => {
+    closeAccountMenu();
+    showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email);
+  });
+  $("menu-settings").addEventListener("click", showSettings);
+  $("menu-logout").addEventListener("click", logout);
+  $("profile-back").addEventListener("click", () =>
+    showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email));
+  $("settings-back").addEventListener("click", () =>
+    showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email));
+  $("settings-password").addEventListener("click", () => {
+    if (currentUser?.email) $("reset-email").value = currentUser.email;
+    closeAccountMenu();
+    openForgotPassword();
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".account-menu-wrap")) closeAccountMenu();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeAccountMenu();
+  });
 
   $("start-adhd-evaluation").addEventListener("click", startAdhdEvaluation);
   $("dashboard-logout").addEventListener("click", logout);
