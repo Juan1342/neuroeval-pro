@@ -300,7 +300,20 @@ async function loginWithGoogle() {
     provider.setCustomParameters({ prompt: "select_account" });
     await signInWithPopup(auth, provider);
   } catch (error) {
-    showMessage("auth-message", friendlyAuthError(error), true);
+    // Diagnóstico temporal para identificar fallos de OAuth en staging.
+    console.error("[NeuroEval Pro][Google sign-in]", {
+      code: error?.code || "sin-codigo",
+      message: error?.message || "Sin mensaje",
+      name: error?.name || "Error"
+    });
+
+    const code = error?.code || "sin-codigo";
+    const detail = error?.message || "Firebase no proporcionó detalles adicionales.";
+    showMessage(
+      "auth-message",
+      `No se pudo iniciar sesión con Google. Código: ${code}. Detalle: ${detail}`,
+      true
+    );
   }
 }
 
