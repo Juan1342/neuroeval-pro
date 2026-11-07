@@ -1047,24 +1047,37 @@ function buildEvaluationPdf(evaluation, options = {}) {
       const drawFooter = () => {
         const previousX = doc.x;
         const previousY = doc.y;
+        const page = doc.page;
+        const previousMaxY = page.maxY;
 
-        doc.save();
-        doc
-          .font("Helvetica")
-          .fontSize(8)
-          .fillColor("#9AA1B4")
-          .text(
-            "NeuroEval Pro · Documento generado electrónicamente",
-            55,
-            doc.page.height - 34,
-            { align: "center", width: doc.page.width - 110, lineBreak: false }
-          );
-        doc.restore();
+        // El pie se ubica debajo del margen de contenido. Se amplía
+        // temporalmente el límite de texto para impedir que PDFKit intente
+        // crear otra página desde el propio evento "pageAdded".
+        try {
+          page.maxY = page.height;
 
-        // El pie se dibuja en coordenadas absolutas sin mover el cursor
-        // que PDFKit utiliza para continuar el contenido del informe.
-        doc.x = previousX;
-        doc.y = previousY;
+          doc.save();
+          doc
+            .font("Helvetica")
+            .fontSize(8)
+            .fillColor("#9AA1B4")
+            .text(
+              "NeuroEval Pro · Documento generado electrónicamente",
+              55,
+              page.height - 34,
+              {
+                align: "center",
+                width: page.width - 110,
+                lineBreak: false
+              }
+            );
+          doc.restore();
+        } finally {
+          page.maxY = previousMaxY;
+          // El pie no debe alterar el cursor del contenido del informe.
+          doc.x = previousX;
+          doc.y = previousY;
+        }
       };
 
       const ensureSpace = (requiredHeight = 36) => {
