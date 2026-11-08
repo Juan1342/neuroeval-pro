@@ -1585,8 +1585,14 @@ function renderAdminEvaluations(records,targetId="admin-rows") {
   if(!records.length)return adminEmptyRow(tbody,targetId==="admin-recent-rows"?5:6,"No hay evaluaciones que coincidan con la búsqueda.");
   records.forEach(record=>{
     const row=document.createElement("tr"); adminCell(row,formatAdminDate(record.createdAt)); adminCell(row,record.name); adminCell(row,record.email);
-    if(targetId==="admin-recent-rows") adminCell(row,record.paymentStatus==="paid"?"Pagado":record.paymentStatus||"Pendiente");
-    else {adminCell(row,record.profile||"Pendiente de pago");adminCell(row,record.paymentStatus==="paid"?"Pagado":record.paymentStatus||"Pendiente");}
+    const paymentLabel = record.paymentStatus
+      ? (record.paymentStatus === "paid" ? "Pagado" : record.paymentStatus)
+      : "Sin permiso";
+    if(targetId==="admin-recent-rows") adminCell(row,paymentLabel);
+    else {
+      adminCell(row,record.profile || (hasAdminPermission("evaluations.responses") ? "Sin resultado" : "Restringido"));
+      adminCell(row,paymentLabel);
+    }
     const actions=document.createElement("td"); actions.className="space-x-2 whitespace-nowrap";
     if (hasAdminPermission("evaluations.responses")) {
       const detail=document.createElement("button"); detail.type="button";detail.className="text-indigo-600 font-bold underline";detail.textContent="Ver detalle";detail.addEventListener("click",()=>viewAdminEvaluation(record.id));actions.appendChild(detail);
@@ -1621,7 +1627,7 @@ async function loadAdmin() {
   if(!currentIsAdmin){alert("No tienes permisos para consultar esta sección.");return;}
   try{
     const response=await api("/api/admin/overview");const data=await response.json();adminOverviewCache=data;
-    $("stat-users").textContent=data.users??0;$("stat-evals").textContent=data.evaluations??0;$("stat-paid").textContent=data.paid??0;$("stat-pending").textContent=data.pending??0;$("stat-failed").textContent=data.failed??0;$("stat-revenue").textContent=formatCop(data.revenueCop??0);
+    $("stat-users").textContent=data.users==null?"—":data.users;$("stat-evals").textContent=data.evaluations==null?"—":data.evaluations;$("stat-paid").textContent=data.paid==null?"—":data.paid;$("stat-pending").textContent=data.pending==null?"—":data.pending;$("stat-failed").textContent=data.failed==null?"—":data.failed;$("stat-revenue").textContent=data.revenueCop==null?"Restringido":formatCop(data.revenueCop);
     $("admin-account-name").textContent=currentUser?.displayName||"Administrador";$("admin-account-email").textContent=currentUser?.email||"—";
     const records=Array.isArray(data.records)?data.records:[],users=Array.isArray(data.usersList)?data.usersList:[];
     renderAdminEvaluations(records.slice(0,8),"admin-recent-rows");renderAdminEvaluations(records);renderAdminClients(users);
