@@ -222,6 +222,36 @@ const bank = [
     "history",
     "🏠",
     "No tienen que presentarse igual en todos los lugares."
+  ],
+  [
+    "Reto visual de concentración",
+    "Observa la secuencia y selecciona cuántas estrellas aparecen.",
+    "attentionTask",
+    "👁️",
+    "⭐ 🔺 ⭐ ⚪ 🔺 ⭐",
+    "task",
+    [
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "3"
+  ],
+  [
+    "Reto visual de concentración",
+    "Mira los símbolos y elige cuál aparece más veces.",
+    "attentionTask",
+    "🧠",
+    "🔵 🟡 🟣 🟡 🔵 🟢 🟡",
+    "task",
+    [
+      "Azul",
+      "Amarillo",
+      "Morado",
+      "Verde"
+    ],
+    "Amarillo"
   ]
 ];
 
@@ -773,15 +803,19 @@ function renderQuestion() {
 
   const answersContainer = $("answers");
   answersContainer.innerHTML = "";
-  choices.forEach((label, index) => {
+  const isVisualTask = question[5] === "task";
+  const options = isVisualTask ? question[6] : choices;
+  options.forEach((label, index) => {
+    const value = isVisualTask ? label : index;
+    const selected = answers[currentIndex] === value;
     const button = document.createElement("button");
     button.type = "button";
     button.className = "answer-option";
-    if (answers[currentIndex] === index) button.classList.add("selected");
-    button.textContent = `${answers[currentIndex] === index ? "✓  " : ""}${label}`;
-    button.setAttribute("aria-pressed", String(answers[currentIndex] === index));
+    if (selected) button.classList.add("selected");
+    button.textContent = `${selected ? "✓  " : ""}${label}`;
+    button.setAttribute("aria-pressed", String(selected));
     button.addEventListener("click", () => {
-      answers[currentIndex] = index;
+      answers[currentIndex] = value;
       renderQuestion();
     });
     answersContainer.appendChild(button);
@@ -821,7 +855,7 @@ function calculateEvaluation() {
     category: question[0],
     question: question[1],
     dimension: question[2],
-    answer: choices[answers[index]]
+    answer: question[5] === "task" ? answers[index] : choices[answers[index]]
   }));
   return { answers: qa, scores: {}, recommendations: [] };
 }
@@ -1088,6 +1122,10 @@ async function loadOwnResult(evaluationId) {
       $("result-dimension-explanations").appendChild(explanation);
     });
 
+    const taskSummary = evaluation.attentionTasks;
+    $("attention-task-summary").textContent = taskSummary
+      ? `Retos visuales completados: ${taskSummary.correct} de ${taskSummary.completed} respuestas correctas. ${taskSummary.note}`
+      : "";
     const summary = evaluation.summary || {};
     $("result-summary").innerHTML = "";
     [
