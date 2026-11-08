@@ -1524,6 +1524,7 @@ app.post("/api/admin/administrators", requireUser, requireAdmin, async (req, res
       throw error;
     }
     if (account.disabled) return sendError(res, 400, "La cuenta está deshabilitada.");
+    if (account.emailVerified !== true) return sendError(res, 400, "El correo de esa cuenta debe estar verificado antes de conceder permisos.");
     await db.collection("adminRoles").doc(account.uid).set({
       uid: account.uid,
       email,
