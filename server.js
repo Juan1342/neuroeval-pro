@@ -1645,10 +1645,29 @@ app.get(
           paidAt:asDate(data.paidAt)?.toISOString()||null
         };
       });
+      const permissions = req.adminAccess?.permissions || [];
+      const can = permission => req.adminAccess?.isPrimaryAdmin === true || permissions.includes(permission);
+      const visibleRecords = records.map(record => {
+        const item = { ...record };
+        if (!can("evaluations.results")) delete item.profile;
+        if (!can("payments.view")) {
+          [
+            "paymentStatus", "paymentProvider", "paymentReference",
+            "wompiTransactionId", "wompiTransactionStatus",
+            "amountCop", "currency", "paidAt"
+          ].forEach(key => delete item[key]);
+        }
+        return item;
+      });
       return res.json({
-        users:usersCountSnapshot.data().count,evaluations:evaluationsCountSnapshot.data().count,
-        paid:paidCountSnapshot.data().count,pending:pendingCountSnapshot.data().count,failed:failedCountSnapshot.data().count,
-        revenueCop,usersList,records
+        users:can("clients.view") ? usersCountSnapshot.data().count : null,
+        evaluations:can("evaluations.view") ? evaluationsCountSnapshot.data().count : null,
+        paid:can("payments.view") ? paidCountSnapshot.data().count : null,
+        pending:can("payments.view") ? pendingCountSnapshot.data().count : null,
+        failed:can("payments.view") ? failedCountSnapshot.data().count : null,
+        revenueCop:can("payments.view") ? revenueCop : null,
+        usersList:can("clients.view") ? usersList : [],
+        records:can("evaluations.view") || can("payments.view") ? visibleRecords : []
       });
 
     } catch (error) {
