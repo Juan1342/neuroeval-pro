@@ -1489,6 +1489,8 @@ async function loadOwnResult(evaluationId) {
     $("score-list").innerHTML = "";
     $("result-dimension-explanations").innerHTML = "";
 
+    renderResultRadar(scores, labels);
+
     Object.entries(labels).forEach(([key, label]) => {
       if (typeof scores[key] !== "number") return;
       const value = Math.max(0, Math.min(100, Number(scores[key] || 0)));
@@ -1622,6 +1624,66 @@ async function loadAdminHealth() {
     [["Servidor",data.ok?"Operativo":"No disponible"],["Firebase",data.firebaseProject?"Configurado":"Sin configurar"],["Correo SMTP",data.smtpConnectionVerified?"Conexión verificada":data.smtpConfigured?"Configurado, sin verificación":"No configurado"],["Wompi",data.wompiConfigured?"Configurado":"No configurado"],["Ambiente de pagos",data.wompiEnvironment||"No disponible"],["Precio por evaluación",formatCop(data.evaluationPriceCop)],["Pagos de demostración",data.demoPaymentEnabled?"Activos":"Desactivados"]].forEach(([label,value])=>{const line=document.createElement("div");line.className="profile-row";const left=document.createElement("span");left.textContent=label;const right=document.createElement("strong");right.textContent=value;line.append(left,right);target.appendChild(line);});
   }catch(error){target.textContent="No fue posible consultar los servicios: "+error.message;}
 }
+
+function renderAdminDashboardCharts(records) {
+  const monthly = $("admin-monthly-chart"), donut = $("admin-payment-donut");
+  if (!monthly || !donut) return;
+  monthly.replaceChildren();
+  if (!records.length) {
+    const note=document.createElement("p");note.className="chart-subtitle";note.textContent="No hay registros suficientes o tu rol no tiene acceso a los datos para construir esta gráfica.";
+    monthly.appendChild(note);donut.style.setProperty("--paid","0%");donut.style.setProperty("--pending","0%");
+    donut.innerHTML='<div class="status-donut-center">—<small>Sin datos</small></div>';
+    $("admin-payment-legend").textContent="Datos no disponibles";return;
+  }
+  const now=new Date(), buckets=[];
+  for(let offset=5;offset>=0;offset--){
+    const date=new Date(now.getFullYear(),now.getMonth()-offset,1);
+    buckets.push({key:date.getFullYear()+"-"+date.getMonth(),label:date.toLocaleDateString("es-CO",{month:"short"}).replace(".",""),count:0});
+  }
+  records.forEach(record=>{
+    const date=new Date(record.createdAt);
+    if(Number.isNaN(date.getTime()))return;
+    const bucket=buckets.find(item=>item.key===date.getFullYear()+"-"+date.getMonth());
+    if(bucket)bucket.count++;
+  });
+  const max=Math.max(1,...buckets.map(item=>item.count));
+  buckets.forEach(item=>{
+    const col=document.createElement("div");col.className="chart-bar-col";
+    const bar=document.createElement("div");bar.className="chart-bar";bar.style.height=Math.max(4,item.count/max*100)+"%";bar.title=item.count+" evaluaciones";
+    const label=document.createElement("span");label.className="chart-bar-label";label.textContent=item.label;
+    col.append(bar,label);monthly.appendChild(col);
+  });
+  const paid=records.filter(item=>item.paymentStatus==="paid").length;
+  const pending=records.filter(item=>item.paymentStatus==="pending"||!item.paymentStatus).length;
+  const failed=records.filter(item=>["failed","declined","error"].includes(String(item.paymentStatus||"").toLowerCase())).length;
+  const total=paid+pending+failed;
+  if(total){
+    const p1=paid/total*100,p2=(paid+pending)/total*100;
+    donut.style.background="conic-gradient(#a16bff 0 "+p1+"%,#51d9d1 "+p1+"% "+p2+"%,#f39b66 "+p2+"% 100%)";
+    donut.innerHTML='<div class="status-donut-center">'+total+'<small>pagos evaluados</small></div>';
+    $("admin-payment-legend").innerHTML='<span><i class="legend-dot" style="background:#a16bff"></i>Pagados '+paid+'</span><span><i class="legend-dot" style="background:#51d9d1"></i>Pendientes '+pending+'</span><span><i class="legend-dot" style="background:#f39b66"></i>Fallidos '+failed+'</span>';
+  } else {
+    donut.style.background="conic-gradient(#394363 0 100%)";donut.innerHTML='<div class="status-donut-center">0<small>pagos</small></div>';$("admin-payment-legend").textContent="Sin movimientos";
+  }
+  $("admin-chart-sample-note").textContent="Basado en "+records.length+" registros visibles";
+}
+function renderResultRadar(scores, labels) {
+  const host=$("result-radar"),chart=$("result-radar-chart");
+  if(!host||!chart)return;
+  const entries=Object.entries(labels).filter(([key])=>typeof scores[key]==="number").slice(0,7);
+  if(entries.length<3){host.classList.add("hidden");return;}
+  const n=entries.length,cx=150,cy=135,r=92;
+  const point=(index,value)=>{const angle=-Math.PI/2+index*2*Math.PI/n,scale=Math.max(0,Math.min(100,Number(value)||0))/100;return [cx+Math.cos(angle)*r*scale,cy+Math.sin(angle)*r*scale];};
+  const rings=[25,50,75,100].map(level=>Array.from({length:n},(_,i)=>{const [x,y]=point(i,level);return x+","+y;}).join(" ")).map(points=>'<polygon points="'+points+'" fill="none" stroke="#455071" stroke-width="1"/>').join("");
+  const axes=Array.from({length:n},(_,i)=>{const [x,y]=point(i,100);return '<line x1="'+cx+'" y1="'+cy+'" x2="'+x+'" y2="'+y+'" stroke="#455071" stroke-width="1"/>';}).join("");
+  const values=entries.map(([key],i)=>point(i,scores[key]).join(",")).join(" ");
+  const dots=entries.map(([key],i)=>{const [x,y]=point(i,scores[key]);return '<circle cx="'+x+'" cy="'+y+'" r="4" fill="#5de4dc" stroke="#fff" stroke-width="1.5"><title>'+labels[key]+': '+scores[key]+'%</title></circle>';}).join("");
+  const svg='<svg class="radar-svg" viewBox="0 0 300 270" role="img" aria-label="Gráfica radar de indicadores"><defs><linearGradient id="radarFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a16bff" stop-opacity=".48"/><stop offset="1" stop-color="#51d9d1" stop-opacity=".2"/></linearGradient></defs>'+rings+axes+'<polygon points="'+values+'" fill="url(#radarFill)" stroke="#b78aff" stroke-width="2.5"/>'+dots+'</svg>';
+  chart.innerHTML=svg;host.classList.remove("hidden");
+  const copy=host.querySelector(".radar-copy");
+  if(copy){copy.innerHTML="<strong>Mapa de dimensiones</strong>"+entries.map(([key,label])=>'<div>'+label+': <b>'+Math.max(0,Math.min(100,Number(scores[key])))+'%</b></div>').join("")+'<p>Los valores describen respuestas del autorregistro; no son probabilidades ni un diagnóstico.</p>';}
+}
+
 async function loadAdmin() {
   if(!currentIsAdmin){alert("No tienes permisos para consultar esta sección.");return;}
   try{
@@ -1631,6 +1693,7 @@ async function loadAdmin() {
     const records=Array.isArray(data.records)?data.records:[],users=Array.isArray(data.usersList)?data.usersList:[];
     renderAdminEvaluations(records.slice(0,8),"admin-recent-rows");renderAdminEvaluations(records);renderAdminClients(users);
     renderAdminPayments(records.filter(record=>record.paymentProvider==="wompi"||record.paymentReference||record.wompiTransactionId));
+    renderAdminDashboardCharts(records);
     setAdminTab("overview");
   }catch(error){console.error("Panel administrativo:",error);alert("No se pudo cargar el panel: "+error.message);}
 }
