@@ -1579,10 +1579,32 @@ async function loadOwnResult(evaluationId) {
     }
 
     $("result-name").textContent = evaluation.evaluationType === "parent_observation"
-      ? `Informe de observación familiar · ${evaluation.parentContext?.childAge || "—"} años (${evaluation.parentContext?.ageBand || "etapa no especificada"}) · ${currentUser.email}`
+      ? `Informe de observación familiar · ${evaluation.parentContext?.childAge || "—"} años (${evaluation.parentContext?.ageBand || "etapa no especificada"}) · Familiar: ${evaluation.parentContext?.relationship || "no especificado"} · ${currentUser.email}`
       : `${evaluation.name || profileData?.name || ""} · ${currentUser.email}`;
     $("result-profile").textContent = evaluation.profile || "Resumen orientativo";
     $("result-description").textContent = evaluation.profileDescription || "";
+    if (evaluation.evaluationType === "parent_observation") {
+      const hero = $("result-view").querySelector(".hero-copy");
+      if (hero) {
+        hero.querySelector(".eyebrow").textContent = "Observación familiar";
+        hero.querySelector("h1").textContent = "Una mirada a las conductas observadas.";
+        hero.querySelector("p").textContent = "Este informe organiza tus observaciones y ofrece orientaciones generales para acompañar al menor.";
+      }
+      const cardEyebrow = $("result-view").querySelector(".card > .eyebrow");
+      if (cardEyebrow) cardEyebrow.textContent = "Informe de observación familiar";
+      const headings = $("result-view").querySelectorAll(".section-heading h2");
+      if (headings[2]) headings[2].textContent = "Orientaciones para padres y cuidadores";
+      $("attention-task-summary").textContent = "Esta evaluación recoge observaciones del familiar; no incluye pruebas de rendimiento cognitivo ni actividades para el menor.";
+    } else {
+      const hero = $("result-view").querySelector(".hero-copy");
+      if (hero) {
+        hero.querySelector(".eyebrow").textContent = "Tu informe personal";
+        hero.querySelector("h1").textContent = "Un espacio para comprenderte.";
+        hero.querySelector("p").textContent = "Este resumen organiza tus respuestas y ofrece orientaciones generales para reflexionar sobre tu bienestar cognitivo.";
+      }
+      const cardEyebrow = $("result-view").querySelector(".card > .eyebrow");
+      if (cardEyebrow) cardEyebrow.textContent = "Resultado del autorregistro";
+    }
 
     const dimensionMeta = evaluation.dimensions || {};
     const scores = evaluation.scores || {};
@@ -1643,7 +1665,7 @@ async function loadOwnResult(evaluationId) {
       p.className = "text-sm text-slate-600 mb-2";
       const strong = document.createElement("strong");
       strong.textContent = label + ": ";
-      p.append(strong, document.createTextNode(value));
+      p.append(strong, document.createTextNode(Array.isArray(value) ? value.join(" · ") : String(value)));
       $("result-summary").appendChild(p);
     });
 
