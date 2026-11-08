@@ -230,6 +230,24 @@ const passwordLimiter = rateLimit({
   }
 });
 
+// Límites adicionales para acciones que pueden consumir recursos o generar abuso.
+// El almacén predeterminado es local al proceso; en despliegues con varias instancias
+// debe sustituirse por un almacén compartido para aplicar límites globales.
+const supportCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Has creado varias solicitudes. Intenta nuevamente en una hora." }
+});
+const backupExportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 2,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Se alcanzó el límite temporal de exportaciones. Intenta más tarde." }
+});
+
 app.use("/api", generalLimiter);
 
 /* =========================================================
@@ -482,7 +500,7 @@ async function writeAdminAudit(actorUid, action, targetUid, details = {}) {
 
 // Un cliente solo puede crear y consultar sus propios tickets.
 // El acceso administrativo se controla mediante permisos independientes.
-app.post("/api/support/tickets", requireUser, async (req, res) => {
+app.post("/api/support/tickets", supportCreateLimiter, requireUser, async (req, res) => {
   try {
     const subject = cleanText(req.body.subject, 120);
     const message = cleanText(req.body.message, 3000);
@@ -583,6 +601,10 @@ app.patch("/api/admin/support/tickets/:id", requireUser, requireStaffAdmin("supp
     }
     const reply = cleanText(req.body.reply, 3000);
     if (reply.length) {
+      const existingMessages = Array.isArray(snapshot.data()?.messages) ? snapshot.data().messages : [];
+      if (existingMessages.length >= 100) {
+        return sendError(res, 409, "Esta conversación alcanzó el límite de mensajes. Crea una nueva solicitud para continuar.");
+      }
       updates.messages = admin.firestore.FieldValue.arrayUnion({
         senderUid: req.user.uid,
         senderRole: "admin",
@@ -1914,6 +1936,74 @@ app.patch("/api/admin/promo-codes/:code", requireUser, requireStaffAdmin("pricin
   } catch (error) {
     console.error("Actualizar código promocional:", error);
     return sendError(res, 500, "No se pudo actualizar el código.");
+  }
+});
+
+/* Exportación acotada para respaldo manual. Solo el administrador principal puede descargarla. */
+app.get("/api/admin/backups/export", backupExportLimiter, requireUser, requireStaffAdmin("settings.view"), async (req, res) => {
+  try {
+    if (req.adminAccess?.isPrimaryAdmin !== true) {
+      return sendError(res, 403, "La exportación de respaldo está reservada al administrador principal.");
+    }
+
+    const collectionNames = [
+      "users", "evaluations", "supportTickets", "promoCodes",
+      "platformSettings", "adminRoles", "adminAuditLogs"
+    ];
+    const results = await Promise.all(collectionNames.map(async name => {
+      const snapshot = await db.collection(name).limit(501).get();
+      const documents = snapshot.docs.slice(0, 500).map(document => ({
+        id: document.id,
+        data: document.data()
+      }));
+      return {
+        name,
+        documents,
+        exportedCount: documents.length,
+        truncated: snapshot.size > 500
+      };
+    }));
+
+    // Nunca incluir credenciales, tokens o secretos aunque aparezcan accidentalmente
+    // en un documento. passwordResets y datos de sesión quedan fuera del respaldo.
+    const sensitiveKey = /(password|passwd|secret|token|authorization|private.?key|api.?key)/i;
+    const sanitize = value => {
+      if (Array.isArray(value)) return value.map(sanitize);
+      if (!value || typeof value !== "object") return value;
+      const output = {};
+      Object.entries(value).forEach(([key, item]) => {
+        if (!sensitiveKey.test(key)) output[key] = sanitize(item);
+      });
+      return output;
+    };
+
+    const backup = {
+      product: "NeuroEval Pro",
+      formatVersion: 1,
+      generatedAt: new Date().toISOString(),
+      scope: "Exportación manual acotada de datos Firestore; no sustituye los respaldos administrados de Google Cloud.",
+      complete: results.every(item => !item.truncated),
+      collections: results.map(item => ({
+        name: item.name,
+        exportedCount: item.exportedCount,
+        truncated: item.truncated,
+        documents: sanitize(item.documents)
+      }))
+    };
+
+    await writeAdminAudit(req.user.uid, "backup.exported", null, {
+      collections: results.map(item => ({ name: item.name, count: item.exportedCount, truncated: item.truncated })),
+      complete: backup.complete
+    });
+
+    const filename = "neuroeval-pro-respaldo-" + new Date().toISOString().replace(/[:.]/g, "-") + ".json";
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="' + filename + '"');
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.send(JSON.stringify(backup));
+  } catch (error) {
+    console.error("Exportación de respaldo:", error);
+    return sendError(res, 500, "No se pudo generar la exportación de respaldo.");
   }
 });
 
