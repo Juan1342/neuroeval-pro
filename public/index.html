@@ -336,14 +336,28 @@
 
     <!-- JUEGOS GRATUITOS -->
     <section id="games-view" class="hidden fade-in">
-      <div class="section-heading"><div><div class="eyebrow">Entrena jugando</div><h2>Juegos cognitivos gratuitos</h2><p>Retos breves de memoria, atención y razonamiento. Juega las veces que quieras.</p></div><span class="pill">100 % gratis</span></div>
+      <div class="section-heading"><div><div class="eyebrow">Entrena jugando</div><h2>Desafíos cognitivos por niveles</h2><p>12 juegos diferentes, gratuitos y con dificultad progresiva. Supera cada reto para desbloquear el siguiente nivel.</p></div><span class="pill">100 % gratis</span></div>
+      <div class="score-grid mb-5">
+        <div class="score-card"><p class="muted-text">Juegos disponibles</p><div class="score-number">12</div></div>
+        <div class="score-card"><p class="muted-text">Niveles progresivos</p><div class="score-number">∞</div></div>
+        <div class="score-card"><p class="muted-text">Tu avance</p><div id="games-level-summary" class="score-number">0 niveles</div></div>
+      </div>
       <div class="game-grid">
-        <article class="evaluation-card available"><div class="evaluation-icon">🔢</div><div class="evaluation-status">Memoria de trabajo</div><h3>Secuencia relámpago</h3><p>Observa una serie de números durante unos segundos y trata de recordarla en el mismo orden.</p><button class="btn primary" type="button" data-game="memory">Jugar gratis →</button></article>
-        <article class="evaluation-card available"><div class="evaluation-icon">🔎</div><div class="evaluation-status">Atención visual</div><h3>Cazador de símbolos</h3><p>Encuentra y selecciona todos los símbolos objetivo entre varios distractores.</p><button class="btn primary" type="button" data-game="search">Jugar gratis →</button></article>
-        <article class="evaluation-card available"><div class="evaluation-icon">🧩</div><div class="evaluation-status">Razonamiento</div><h3>Completa el patrón</h3><p>Identifica la regla de una secuencia y elige qué elemento continúa.</p><button class="btn primary" type="button" data-game="pattern">Jugar gratis →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🔢</div><div class="evaluation-status">Memoria de trabajo</div><h3>1. Secuencia relámpago</h3><p>Recuerda números cada vez más largos y en el orden exacto.</p><button class="btn primary" type="button" data-game="memory">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🔎</div><div class="evaluation-status">Atención selectiva</div><h3>2. Cazador de símbolos</h3><p>Encuentra objetivos entre más distractores y con menos tiempo.</p><button class="btn primary" type="button" data-game="search">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🧩</div><div class="evaluation-status">Razonamiento abstracto</div><h3>3. Completa el patrón</h3><p>Descubre reglas numéricas y secuencias que se vuelven más complejas.</p><button class="btn primary" type="button" data-game="pattern">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">⚡</div><div class="evaluation-status">Cálculo mental · contrarreloj</div><h3>4. Mente veloz</h3><p>Resuelve operaciones con dificultad y ritmo crecientes.</p><button class="btn primary" type="button" data-game="math">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🗣️</div><div class="evaluation-status">Memoria verbal</div><h3>5. Archivo de palabras</h3><p>Memoriza palabras y reconócelas entre opciones parecidas.</p><button class="btn primary" type="button" data-game="words">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">👁️</div><div class="evaluation-status">Discriminación visual</div><h3>6. El intruso</h3><p>Detecta el elemento diferente en grupos cada vez más parecidos.</p><button class="btn primary" type="button" data-game="odd">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🎨</div><div class="evaluation-status">Control inhibitorio</div><h3>7. Color bajo presión</h3><p>Responde al color de la tinta, no a la palabra que intenta distraerte.</p><button class="btn primary" type="button" data-game="stroop">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🧭</div><div class="evaluation-status">Orientación espacial</div><h3>8. Giro mental</h3><p>Rota flechas y figuras mentalmente para elegir su orientación final.</p><button class="btn primary" type="button" data-game="spatial">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🚦</div><div class="evaluation-status">Velocidad de reacción</div><h3>9. Reflejos</h3><p>Espera la señal y reacciona sin anticiparte. Mejora tu marca personal.</p><button class="btn primary" type="button" data-game="reaction">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🕵️</div><div class="evaluation-status">Lógica deductiva</div><h3>10. Código secreto</h3><p>Usa pistas para descubrir combinaciones y resolver el código.</p><button class="btn primary" type="button" data-game="logic">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🔷</div><div class="evaluation-status">Atención y conteo</div><h3>11. Cuenta y encuentra</h3><p>Cuenta objetivos en tableros con más elementos y distractores.</p><button class="btn primary" type="button" data-game="count">Jugar →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🔀</div><div class="evaluation-status">Atención dividida</div><h3>12. Doble misión</h3><p>Atiende dos reglas al mismo tiempo y cambia de estrategia por ronda.</p><button class="btn primary" type="button" data-game="dual">Jugar →</button></article>
       </div>
       <div id="game-stage" class="card game-stage hidden mt-6" aria-live="polite"></div>
-      <p class="notice mt-5">Los juegos son ejercicios recreativos de práctica. Sus puntuaciones no son diagnósticos ni pruebas neuropsicológicas validadas.</p>
+      <p class="notice mt-5">Cada juego guarda tu nivel más alto en este dispositivo. Los retos son recreativos y sus resultados no constituyen diagnósticos ni pruebas neuropsicológicas validadas.</p>
     </section>
 
     <!-- ACTIVIDADES GRATUITAS -->
