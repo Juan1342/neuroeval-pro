@@ -772,17 +772,21 @@ function progressKey() {
 }
 
 function readProgress() {
-  try { return JSON.parse(localStorage.getItem(progressKey()) || '{"games":[],"activities":[],"history":[]}'); }
-  catch (_) { return { games: [], activities: [], history: [] }; }
+  try {
+    const data = JSON.parse(localStorage.getItem(progressKey()) || '{"games":[],"activities":[],"history":[]}');
+    data.games ||= []; data.activities ||= []; data.history ||= []; data.gameLevels ||= {};
+    return data;
+  } catch (_) { return { games: [], activities: [], history: [], gameLevels: {} }; }
 }
 
 function saveProgress(data) {
   try { localStorage.setItem(progressKey(), JSON.stringify(data)); } catch (error) { console.warn("No se pudo guardar el progreso local.", error); }
 }
 
-function recordGame(name, score, detail) {
+function recordGame(name, score, detail, gameId, level) {
   const data = readProgress();
-  data.games.push({ name, score, detail, date: new Date().toISOString() });
+  data.games.push({ name, score, detail, date: new Date().toISOString(), gameId, level });
+  if (gameId && level) data.gameLevels[gameId] = Math.max(Number(data.gameLevels[gameId] || 0), level);
   data.history.unshift({ type: "Juego", name, detail: `${score}% · ${detail}`, date: new Date().toISOString() });
   data.history = data.history.slice(0, 12);
   saveProgress(data);
@@ -796,6 +800,9 @@ function renderProgress() {
   $("progress-games").textContent = games.length;
   $("progress-activities").textContent = activities.length;
   $("progress-best").textContent = `${games.length ? Math.max(...games.map(item => Number(item.score) || 0)) : 0}%`;
+  const levels = Object.values(data.gameLevels || {}).reduce((sum,value) => sum + Number(value || 0), 0);
+  const levelSummary = $("games-level-summary");
+  if (levelSummary) levelSummary.textContent = levels + " niveles";
   const history = $("progress-history");
   history.innerHTML = "";
   if (!(data.history || []).length) { history.textContent = "Aún no hay actividades registradas. ¡Prueba tu primer juego!"; return; }
@@ -807,36 +814,180 @@ function renderProgress() {
   });
 }
 
-function openGame(game) {
-  const stage = $("game-stage"); stage.classList.remove("hidden"); stage.innerHTML = "";
-  const title = document.createElement("h3"); title.className = "text-xl font-extrabold";
-  const intro = document.createElement("p"); intro.className = "muted-text mt-2";
-  const content = document.createElement("div");
-  const feedback = document.createElement("p"); feedback.className = "message"; feedback.setAttribute("aria-live","polite");
-  const close = document.createElement("button"); close.className = "btn outline mt-3"; close.type = "button"; close.textContent = "Cerrar juego"; close.addEventListener("click", () => stage.classList.add("hidden"));
-  stage.append(title,intro,content,feedback,close);
-
-  if (game === "memory") {
-    title.textContent = "Secuencia relámpago"; intro.textContent = "Memoriza los números. Cuando desaparezcan, escríbelos en el mismo orden.";
-    const sequence = Array.from({length:5}, () => Math.floor(Math.random()*9)+1);
-    const display = document.createElement("div"); display.className = "game-sequence"; display.textContent = sequence.join("  "); content.appendChild(display);
-    const start = document.createElement("button"); start.className = "btn primary"; start.textContent = "Comenzar"; content.appendChild(start);
-    start.addEventListener("click", () => { start.disabled = true; feedback.textContent = "Observa con atención…"; window.setTimeout(() => { display.textContent = "?  ?  ?  ?  ?"; const form = document.createElement("form"); form.className = "max-w-sm mx-auto mt-4"; const input = document.createElement("input"); input.className = "field text-center"; input.inputMode = "numeric"; input.maxLength = 5; input.placeholder = "Escribe los 5 números"; input.required = true; const submit = document.createElement("button"); submit.className = "btn primary mt-3"; submit.textContent = "Comprobar"; form.append(input,submit); content.appendChild(form); form.addEventListener("submit", event => { event.preventDefault(); const answer = input.value.replace(/\D/g,"").split("").map(Number); const correct = answer.filter((value,index) => value === sequence[index]).length; const score = Math.round(correct/sequence.length*100); feedback.textContent = `Resultado: ${correct} de 5 posiciones correctas (${score}%).`; recordGame("Secuencia relámpago",score,`${correct}/5 posiciones`); form.remove(); }); }, 3500); });
-  } else if (game === "search") {
-    title.textContent = "Cazador de símbolos"; intro.textContent = "Selecciona todas las estrellas ★. Evita tocar los demás símbolos.";
-    const symbols = ["★","●","◆","▲","✚","★","■","●","◆","★","▲","✚","■","★","●","◆","▲","■","★","✚"];
-    const grid = document.createElement("div"); grid.className = "game-symbol-grid"; let selected = 0, mistakes = 0;
-    symbols.forEach((symbol,index) => { const button = document.createElement("button"); button.type = "button"; button.className = "game-symbol"; button.textContent = symbol; button.addEventListener("click", () => { if(button.disabled) return; button.disabled = true; if(symbol === "★") { selected++; button.classList.add("selected"); } else { mistakes++; button.style.opacity = ".35"; } feedback.textContent = `Estrellas encontradas: ${selected}/5 · Selecciones incorrectas: ${mistakes}`; }); grid.appendChild(button); });
-    const submit = document.createElement("button"); submit.className = "btn primary"; submit.textContent = "Finalizar reto"; submit.addEventListener("click", () => { const score = Math.max(0,Math.round((selected/5)*100 - mistakes*5)); feedback.textContent = `Encontraste ${selected} de 5 estrellas. Puntuación: ${score}%.`; recordGame("Cazador de símbolos",score,`${selected}/5 estrellas · ${mistakes} errores`); submit.disabled = true; }); content.append(grid,submit);
-  } else if (game === "pattern") {
-    title.textContent = "Completa el patrón"; intro.textContent = "Observa la secuencia y elige el número que continúa.";
-    const sequence = document.createElement("div"); sequence.className = "game-sequence"; sequence.textContent = "2  ·  4  ·  8  ·  16  ·  ?"; content.appendChild(sequence);
-    const choices = document.createElement("div"); choices.className = "game-choice-grid";
-    [24,30,32,36].forEach(value => { const button = document.createElement("button"); button.className = "game-choice"; button.type = "button"; button.textContent = value; button.addEventListener("click", () => { const correct = value === 32; const score = correct ? 100 : 0; feedback.textContent = correct ? "¡Correcto! Cada número se multiplica por 2." : "Esta vez no. La regla era multiplicar cada número por 2; la respuesta es 32."; recordGame("Completa el patrón",score,correct ? "Respuesta correcta" : "Respuesta por revisar"); choices.querySelectorAll("button").forEach(item => item.disabled = true); }); choices.appendChild(button); }); content.appendChild(choices);
-  }
-  stage.scrollIntoView({behavior:"smooth",block:"start"});
+function gameLevel(game) {
+  const data = readProgress();
+  return Math.max(1, Number(data.gameLevels?.[game] || 0) + 1);
 }
 
+function gameButton(label, onClick, className = "game-choice") {
+  const button = document.createElement("button");
+  button.type = "button"; button.className = className; button.textContent = label;
+  if (onClick) button.addEventListener("click", onClick);
+  return button;
+}
+
+function openGame(game) {
+  const games = {
+    memory:["Secuencia relámpago","Memoria de trabajo"], search:["Cazador de símbolos","Atención selectiva"],
+    pattern:["Completa el patrón","Razonamiento abstracto"], math:["Mente veloz","Cálculo mental"],
+    words:["Archivo de palabras","Memoria verbal"], odd:["El intruso","Discriminación visual"],
+    stroop:["Color bajo presión","Control inhibitorio"], spatial:["Giro mental","Orientación espacial"],
+    reaction:["Reflejos","Velocidad de reacción"], logic:["Código secreto","Lógica deductiva"],
+    count:["Cuenta y encuentra","Atención y conteo"], dual:["Doble misión","Atención dividida"]
+  };
+  if (!games[game]) return;
+  const stage=$("game-stage"); let timer=null, active=true, level=gameLevel(game);
+  stage.classList.remove("hidden"); stage.innerHTML="";
+  const heading=document.createElement("div"); heading.className="flex flex-wrap items-center justify-between gap-3";
+  const title=document.createElement("h3"); title.className="text-xl font-extrabold"; title.textContent=games[game][0];
+  const badge=document.createElement("span"); badge.className="pill";
+  const intro=document.createElement("p"); intro.className="muted-text mt-2";
+  const meter=document.createElement("div"); meter.className="progress-wrap mt-4";
+  const fill=document.createElement("div"); fill.className="progress-fill"; meter.appendChild(fill);
+  const content=document.createElement("div"); content.className="mt-5";
+  const feedback=document.createElement("p"); feedback.className="message mt-4"; feedback.setAttribute("aria-live","polite");
+  const controls=document.createElement("div"); controls.className="flex flex-wrap gap-3 mt-4";
+  const close=gameButton("Cerrar juego",()=>{active=false;if(timer){clearTimeout(timer);clearInterval(timer);}stage.classList.add("hidden");},"btn outline mt-4");
+  heading.append(title,badge); stage.append(heading,intro,meter,content,feedback,controls,close);
+
+  function clearClock(){if(timer){clearTimeout(timer);clearInterval(timer);timer=null;}}
+  function updateLevel(){badge.textContent="Nivel "+level+" · "+games[game][1];fill.style.width=Math.min(100,25+level*3)+"%";}
+  function nextLevel(){if(!active)return;level++;renderChallenge();}
+  function finish(ok,score,detail){
+    if(!active)return;clearClock();
+    content.querySelectorAll("button,input").forEach(el=>el.disabled=true);
+    controls.innerHTML="";
+    if(ok){
+      recordGame(games[game][0],score,"Nivel "+level+" · "+detail,game,level);
+      feedback.textContent="¡Nivel "+level+" superado! "+detail+" · "+score+"%";
+      controls.appendChild(gameButton("Continuar al nivel "+(level+1)+" →",nextLevel,"btn primary"));
+    }else{
+      feedback.textContent="No se superó el nivel "+level+". "+detail;
+      controls.appendChild(gameButton("Intentar de nuevo",renderChallenge,"btn primary"));
+    }
+  }
+  function choices(options,correct,explain,seconds){
+    const grid=document.createElement("div");grid.className="game-choice-grid";let answered=false;
+    options.forEach(value=>grid.appendChild(gameButton(String(value),()=>{
+      if(answered)return;answered=true;const ok=String(value)===String(correct);
+      finish(ok,ok?100:0,ok?explain:"La respuesta correcta era "+correct+".");
+    })));
+    content.appendChild(grid);
+    if(seconds){
+      const clock=document.createElement("p");clock.className="muted-text mt-3";let left=seconds;
+      clock.textContent="Tiempo: "+left+" s";content.appendChild(clock);
+      timer=window.setInterval(()=>{left--;clock.textContent="Tiempo: "+left+" s";if(left<=0&&!answered){answered=true;finish(false,0,"Se agotó el tiempo.");}},1000);
+    }
+  }
+  function renderChallenge(){
+    if(!active)return;clearClock();updateLevel();content.innerHTML="";controls.innerHTML="";feedback.textContent="";
+    if(game==="memory"){
+      const len=Math.min(3+Math.floor((level-1)/2),14),seq=Array.from({length:len},()=>Math.floor(Math.random()*10));
+      const display=document.createElement("div");display.className="game-sequence";display.textContent=seq.join(" · ");
+      intro.textContent="Memoriza los "+len+" dígitos. Luego escríbelos en el mismo orden.";content.appendChild(display);
+      const begin=gameButton("Estoy listo",()=>{
+        begin.disabled=true;feedback.textContent="Observa y memoriza…";
+        timer=window.setTimeout(()=>{
+          if(!active)return;display.textContent="●  ●  ●  ●  ●";
+          const form=document.createElement("form");form.className="max-w-sm mx-auto";
+          const input=document.createElement("input");input.className="field text-center";input.inputMode="numeric";input.maxLength=len;input.placeholder="Escribe "+len+" dígitos";input.required=true;
+          const submit=gameButton("Comprobar",null,"btn primary mt-3");submit.type="submit";form.append(input,submit);content.appendChild(form);
+          form.addEventListener("submit",e=>{e.preventDefault();const answer=input.value.replace(/\D/g,"").split("").map(Number);const hit=answer.filter((v,i)=>v===seq[i]).length;finish(hit===len,Math.round(hit/len*100),hit+" de "+len+" posiciones correctas.");});
+        },Math.max(900,3200-level*130));
+      },"btn primary");content.appendChild(begin);
+    }
+    if(game==="search"||game==="count"){
+      const target=game==="search"?"★":"●",total=Math.min(18+level*2,64),amount=Math.min(3+Math.floor(level/2),Math.floor(total/3));
+      const symbols=Array.from({length:total},()=>"▲");const positions=new Set();
+      while(positions.size<amount)positions.add(Math.floor(Math.random()*total));positions.forEach(i=>symbols[i]=target);
+      const grid=document.createElement("div");grid.className="game-symbol-grid";
+      if(game==="search"){
+        let found=0,mistakes=0,ended=false;intro.textContent="Encuentra las "+amount+" estrellas. Hay más distractores y menos tiempo en cada nivel.";
+        symbols.forEach(symbol=>{let b; b=gameButton(symbol,()=>{if(ended||b.disabled)return;b.disabled=true;if(symbol===target){found++;b.classList.add("selected");}else{mistakes++;b.style.opacity=".35";}
+          feedback.textContent="Encontradas: "+found+"/"+amount+" · Errores: "+mistakes;
+          if(found===amount){ended=true;finish(true,Math.max(0,100-mistakes*8),found+" objetivos encontrados con "+mistakes+" errores.");}
+        },"game-symbol");grid.appendChild(b);});
+        content.appendChild(grid);let left=Math.max(7,22-Math.floor(level*.7));const clock=document.createElement("p");clock.className="muted-text mt-3";clock.textContent="Tiempo: "+left+" s";content.appendChild(clock);
+        timer=window.setInterval(()=>{left--;clock.textContent="Tiempo: "+left+" s";if(left<=0&&!ended){ended=true;finish(false,0,"Encontraste "+found+" de "+amount+".");}},1000);
+      }else{
+        intro.textContent="Cuenta los círculos negros entre "+total+" figuras.";symbols.forEach(symbol=>{const cell=document.createElement("div");cell.className="game-symbol";cell.textContent=symbol;grid.appendChild(cell);});
+        content.appendChild(grid);choices([amount,amount+1,Math.max(1,amount-1),amount+2].sort(()=>Math.random()-.5),amount,"Contaste "+amount+" círculos.");
+      }
+    }
+    if(game==="pattern"){
+      const first=level+2,step=level+2,seq=[first,first+step,first+2*step,first+3*step],answer=first+4*step;
+      const box=document.createElement("div");box.className="game-sequence";box.textContent=seq.join(" · ")+" · ?";intro.textContent="Descubre la regla y elige el siguiente número.";content.appendChild(box);
+      choices([answer,answer+step,answer-2,answer+2*step].sort(()=>Math.random()-.5),answer,"La secuencia aumenta de "+step+" en "+step+".");
+    }
+    if(game==="math"){
+      const x=2+Math.floor(Math.random()*(10+level*4)),y=2+Math.floor(Math.random()*Math.max(5,level*3));
+      const mul=level>=4&&Math.random()>.45,sub=!mul&&level>=2&&Math.random()>.5;
+      const answer=mul?x*y:x+y,question=mul?x+" × "+y:sub?(x+y)+" − "+y:x+" + "+y;
+      const box=document.createElement("div");box.className="game-sequence";box.textContent=question+" = ?";
+      intro.textContent="Resuelve mentalmente antes de que termine el tiempo.";content.appendChild(box);
+      choices([answer,answer+2,Math.max(0,answer-3),answer+5].sort(()=>Math.random()-.5),answer,"¡Cálculo correcto!",Math.max(5,15-Math.floor(level/2)));
+    }
+    if(game==="words"){
+      const bank=["NUBE","LÁPIZ","RÍO","TAZA","LUNA","FLOR","RELOJ","PAN","LLAVE","MONTAÑA","LIBRO","VENTANA","CAMINO","NARANJA","ESTRELLA","JARDÍN","MÚSICA","TREN"];
+      const len=Math.min(3+Math.floor(level/2),10),selected=bank.slice().sort(()=>Math.random()-.5).slice(0,len);
+      const display=document.createElement("div");display.className="game-sequence";display.textContent=selected.join(" · ");intro.textContent="Memoriza estas "+len+" palabras y después reconoce una.";content.appendChild(display);
+      content.appendChild(gameButton("Ocultar y jugar",()=>{
+        const correct=selected[Math.floor(Math.random()*selected.length)],decoys=bank.filter(w=>!selected.includes(w)).sort(()=>Math.random()-.5).slice(0,3);
+        display.textContent="¿Qué palabra estaba en la lista?";content.querySelectorAll("button").forEach(b=>b.remove());
+        const grid=document.createElement("div");grid.className="game-choice-grid";
+        [...decoys,correct].sort(()=>Math.random()-.5).forEach(word=>grid.appendChild(gameButton(word,()=>finish(word===correct,word===correct?100:0,word===correct?"Reconociste una palabra.":"La palabra correcta era "+correct+"."))));
+        content.appendChild(grid);
+      },"btn primary"));
+    }
+    if(game==="odd"){
+      const total=Math.min(12+level,40),odd=level<4?"◆":level<8?"◉":level<12?"◎":"◌",index=Math.floor(Math.random()*total),grid=document.createElement("div");grid.className="game-symbol-grid";
+      intro.textContent="Toca el único símbolo diferente. Los distractores se parecen cada vez más.";
+      for(let i=0;i<total;i++){const symbol=i===index?odd:"●";grid.appendChild(gameButton(symbol,()=>finish(i===index,i===index?100:0,i===index?"¡Detectaste el intruso!":"Ese no era el símbolo diferente."),"game-symbol"));}
+      content.appendChild(grid);
+    }
+    if(game==="stroop"){
+      const colors=[["ROJO","#dc2626"],["AZUL","#2563eb"],["VERDE","#16a34a"],["MORADO","#9333ea"],["NARANJA","#ea580c"]];
+      const word=colors[Math.floor(Math.random()*colors.length)];let ink=colors[Math.floor(Math.random()*colors.length)];
+      if(level>1&&ink[0]===word[0])ink=colors[(colors.indexOf(ink)+1)%colors.length];
+      const label=document.createElement("div");label.className="game-sequence";label.textContent=word[0];label.style.color=ink[1];label.style.fontWeight="900";
+      intro.textContent="Ignora la palabra. Selecciona el COLOR DE LA TINTA.";content.appendChild(label);
+      const grid=document.createElement("div");grid.className="game-choice-grid";colors.slice().sort(()=>Math.random()-.5).forEach(c=>grid.appendChild(gameButton(c[0],()=>finish(c[0]===ink[0],c[0]===ink[0]?100:0,c[0]===ink[0]?"¡Controlaste la distracción!":"La tinta era "+ink[0]+"."))));
+      content.appendChild(grid);
+    }
+    if(game==="spatial"){
+      const arrows=["↑","→","↓","←"],start=Math.floor(Math.random()*4),turns=1+Math.floor(Math.random()*Math.min(level+1,7)),answer=arrows[(start+turns)%4];
+      const box=document.createElement("div");box.className="game-sequence";box.textContent=arrows[start]+" ↻ "+turns+" giros";
+      intro.textContent="Imagina que la flecha gira 90° a la derecha en cada giro. ¿Hacia dónde apunta?";content.appendChild(box);
+      choices(arrows.slice().sort(()=>Math.random()-.5),answer,"Después de "+turns+" giros apunta "+answer+".");
+    }
+    if(game==="reaction"){
+      const signal=document.createElement("button");signal.type="button";signal.className="game-sequence w-full";signal.textContent="Espera la señal…";content.appendChild(signal);
+      intro.textContent="Cuando el panel cambie a VERDE, pulsa lo más rápido posible. No te anticipes.";
+      let ready=false,started=0;signal.addEventListener("click",()=>{
+        if(!ready){finish(false,0,"Te anticipaste. Espera a que aparezca VERDE.");return;}
+        const ms=Math.round(performance.now()-started),limit=Math.max(260,850-level*18);
+        finish(ms<=limit,Math.max(0,Math.min(100,Math.round(limit/ms*100))),"Tu reacción: "+ms+" ms. Objetivo: "+limit+" ms o menos.");
+      });
+      timer=window.setTimeout(()=>{if(!active)return;ready=true;started=performance.now();signal.textContent="🟢 ¡AHORA!";signal.style.background="#dcfce7";signal.style.color="#166534";},1200+Math.random()*2600);
+    }
+    if(game==="logic"){
+      const n=level+2,answer=n*n+(n+1)*(n+1),box=document.createElement("div");box.className="game-sequence";
+      box.textContent="Si "+n+" → "+(n*n)+" y "+(n+1)+" → "+((n+1)*(n+1))+", suma los dos resultados.";
+      intro.textContent="Usa las pistas para resolver el código lógico.";content.appendChild(box);
+      choices([answer,answer+n,answer-2,answer+5].sort(()=>Math.random()-.5),answer,"¡Deducción correcta!");
+    }
+    if(game==="dual"){
+      const starCount=3+Math.floor(Math.random()*Math.min(5+level,12)),triCount=2+Math.floor(Math.random()*Math.min(4+level,10));
+      const all=[...Array.from({length:starCount},()=>"★"),...Array.from({length:triCount},()=>"▲")].sort(()=>Math.random()-.5);
+      const box=document.createElement("div");box.className="game-sequence";box.textContent=all.join("  ");intro.textContent="Doble misión: cuenta las estrellas y los triángulos. Debes acertar ambas cantidades.";content.appendChild(box);
+      const form=document.createElement("form");form.className="max-w-sm mx-auto grid grid-cols-2 gap-3";
+      const a=document.createElement("input"),b=document.createElement("input");a.className=b.className="field";a.type=b.type="number";a.min=b.min="0";a.placeholder="Estrellas";b.placeholder="Triángulos";a.required=b.required=true;
+      const submit=gameButton("Comprobar las dos",null,"btn primary col-span-2");submit.type="submit";form.append(a,b,submit);content.appendChild(form);
+      form.addEventListener("submit",e=>{e.preventDefault();const ok=Number(a.value)===starCount&&Number(b.value)===triCount;finish(ok,ok?100:0,ok?"¡Atendiste a las dos reglas!":"Había "+starCount+" estrellas y "+triCount+" triángulos.");});
+    }
+  }
+  renderChallenge();stage.scrollIntoView({behavior:"smooth",block:"start"});
+}
 function completeActivity(activity) {
   const labels = { breathing:"Respiración consciente", planning:"Divide una tarea", grounding:"Pausa de observación", focus:"Enfoque de 10 minutos", recall:"Recuerdo del día", movement:"Pausa de movimiento" };
   const data = readProgress(); data.activities.push({ name: labels[activity] || activity, date: new Date().toISOString() });
