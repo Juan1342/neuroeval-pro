@@ -1981,7 +1981,7 @@ app.get("/api/admin/backups/export", backupExportLimiter, requireUser, requireSt
       product: "NeuroEval Pro",
       formatVersion: 1,
       generatedAt: new Date().toISOString(),
-      scope: "Exportación manual acotada de datos Firestore; no sustituye los respaldos administrados de Google Cloud.",
+      scope: "Exportación manual de documentos de las colecciones raíz indicadas, con máximo de 500 documentos por colección; no incluye subcolecciones ni sustituye los respaldos administrados de Google Cloud.",
       complete: results.every(item => !item.truncated),
       collections: results.map(item => ({
         name: item.name,
