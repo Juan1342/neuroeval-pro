@@ -405,6 +405,7 @@ function normalizeAdminPermissions(values) {
   if (permissions.has("evaluations.responses") || permissions.has("evaluations.pdf")) {
     permissions.add("evaluations.view");
   }
+  if (permissions.has("support.manage")) permissions.add("support.view");
   if (permissions.size) permissions.add("dashboard.view");
   return [...permissions];
 }
