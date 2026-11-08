@@ -1443,7 +1443,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
         ["Nombre", evaluation.name || "No registrado"],
         ["Correo", evaluation.email || "No registrado"],
         ...(evaluation.evaluationType === "parent_observation"
-          ? [["Edad del menor", evaluation.parentContext?.childAge ?? "No registrada"], ["Parentesco de quien responde", evaluation.parentContext?.relationship || "No especificado"], ["Entornos observados", (evaluation.parentContext?.settings || []).join(", ") || "No especificados"]]
+          ? [["Edad del menor", evaluation.parentContext?.childAge ?? "No registrada"], ["Etapa de edad", evaluation.parentContext?.ageBand || "No especificada"], ["Parentesco de quien responde", evaluation.parentContext?.relationship || "No especificado"], ["Entornos observados", (evaluation.parentContext?.settings || []).join(", ") || "No especificados"]]
           : [["Edad", evaluation.age ?? "No registrada"]]),
         ["Objetivo", evaluation.goal || "No especificado"],
         [
@@ -1514,7 +1514,8 @@ function buildEvaluationPdf(evaluation, options = {}) {
         hyperactivity: "Actividad motora e inquietud",
         impulsivity: "Impulsividad y espera de turnos",
         emotionalContext: "Regulación emocional",
-        context: "Estrés, preocupación y descanso",
+        context: "Duración, entornos y observación externa",
+        contextFactors: "Otros factores que conviene considerar",
         impact: "Impacto en la vida cotidiana",
         history: "Historia y presencia en distintos entornos"
       };
