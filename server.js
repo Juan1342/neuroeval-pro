@@ -1509,12 +1509,12 @@ function buildEvaluationPdf(evaluation, options = {}) {
       const scores = evaluation.scores || {};
 
       const dimensionLabels = {
-        inattention: "Atención sostenida y memoria cotidiana",
+        inattention: evaluation.evaluationType === "parent_observation" ? "Atención y seguimiento de tareas" : "Atención sostenida y memoria cotidiana",
         executive: "Organización y funciones ejecutivas",
-        hyperactivity: "Actividad motora e inquietud",
+        hyperactivity: evaluation.evaluationType === "parent_observation" ? "Actividad motora e inquietud" : "Inquietud e impulsividad",
         impulsivity: "Impulsividad y espera de turnos",
         emotionalContext: "Regulación emocional",
-        context: "Duración, entornos y observación externa",
+        context: evaluation.evaluationType === "parent_observation" ? "Duración, entornos y observación externa" : "Estrés, preocupación y descanso",
         contextFactors: "Otros factores que conviene considerar",
         impact: "Impacto en la vida cotidiana",
         history: "Historia y presencia en distintos entornos"
@@ -1606,7 +1606,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
           .text("Contexto e impacto cotidiano");
         doc.moveDown(0.4);
         const summaryLabels = [
-          ["Estrés y descanso", evaluation.summary.contextInfluence],
+          [evaluation.evaluationType === "parent_observation" ? "Otros factores que pueden influir" : "Estrés y descanso", evaluation.summary.contextInfluence],
           ["Impacto cotidiano", evaluation.summary.dailyImpact],
           ["Historia y contextos", evaluation.summary.childhoodAndSettings]
         ];
