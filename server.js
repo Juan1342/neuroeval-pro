@@ -1189,7 +1189,8 @@ function buildEvaluationPdf(evaluation, options = {}) {
       doc.on("error", reject);
 
       const navy = "#171B3B";
-      const purple = "#6259C9";
+      const purple = "#966BFF";
+      const cyan = "#36CFC7";
       const muted = "#66708B";
 
       doc.rect(0, 0, doc.page.width, 150).fill(navy);
@@ -1319,6 +1320,51 @@ function buildEvaluationPdf(evaluation, options = {}) {
           .text(explanation, { width: 480, lineGap: 2 });
         doc.moveDown(0.7);
       });
+
+      // Gráfica radar comparativa, construida con los valores reales del autorregistro.
+      if (dimensions.length >= 3) {
+        ensureSpace(190);
+        doc.font("Helvetica-Bold").fontSize(13).fillColor(navy)
+          .text("Mapa comparativo de dimensiones");
+        doc.moveDown(0.35);
+        const chartTop = doc.y + 4;
+        const cx = doc.page.width / 2;
+        const cy = chartTop + 78;
+        const radius = 66;
+        const radarPoints = (index, value) => {
+          const angle = -Math.PI / 2 + index * Math.PI * 2 / dimensions.length;
+          const scale = Math.max(0, Math.min(100, Number(value) || 0)) / 100;
+          return [cx + Math.cos(angle) * radius * scale, cy + Math.sin(angle) * radius * scale];
+        };
+        doc.save();
+        [25, 50, 75, 100].forEach(level => {
+          const points = dimensions.map((item, index) => radarPoints(index, level));
+          doc.moveTo(points[0][0], points[0][1]);
+          points.slice(1).forEach(point => doc.lineTo(point[0], point[1]));
+          doc.closePath().lineWidth(0.6).strokeColor("#D9DDF0").stroke();
+        });
+        dimensions.forEach((item, index) => {
+          const endpoint = radarPoints(index, 100);
+          doc.moveTo(cx, cy).lineTo(endpoint[0], endpoint[1])
+            .lineWidth(0.6).strokeColor("#D9DDF0").stroke();
+        });
+        const values = dimensions.map((item, index) => radarPoints(index, item[1]));
+        doc.moveTo(values[0][0], values[0][1]);
+        values.slice(1).forEach(point => doc.lineTo(point[0], point[1]));
+        doc.closePath().fillColor(purple).fillOpacity(0.22).fill();
+        doc.moveTo(values[0][0], values[0][1]);
+        values.slice(1).forEach(point => doc.lineTo(point[0], point[1]));
+        doc.closePath().lineWidth(2).strokeColor(purple).stroke();
+        values.forEach(point => doc.circle(point[0], point[1], 3.2).fillColor(cyan).fill());
+        doc.restore();
+        doc.y = chartTop + 158;
+        doc.font("Helvetica").fontSize(7.5).fillColor(muted)
+          .text(dimensions.map(([label, value]) => `• ${label}: ${Math.max(0, Math.min(100, Number(value) || 0))}%`).join("   "), {
+            width: 480, align: "center", lineGap: 2
+          });
+        doc.moveDown(0.7);
+      }
+
 
       if (evaluation.attentionTasks) {
         ensureSpace(55);
