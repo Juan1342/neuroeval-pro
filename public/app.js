@@ -886,6 +886,8 @@ function startParentEvaluation(event) {
   answers = new Array(questions.length).fill(null);
   currentIndex = 0;
   renderQuestion();
+  const quizIntro = $("quiz-view").querySelector(".hero-copy");
+  if (quizIntro) { quizIntro.querySelector(".eyebrow").textContent = "Observación familiar · 24 preguntas"; quizIntro.querySelector("p").textContent = "Responde según las conductas que has observado en el menor durante los últimos seis meses. Elige la frecuencia que mejor describa lo que ocurre."; }
   show("quiz-view");
 }
 
