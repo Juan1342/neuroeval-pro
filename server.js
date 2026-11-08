@@ -881,8 +881,8 @@ app.post(
           if (promoError) return { error: "promo-unavailable", message: promoError };
           if (Array.isArray(promo.serviceIds) && promo.serviceIds.length && !promo.serviceIds.includes(evaluation.serviceId || EVALUATION_SERVICE_ID)) return { error: "promo-service" };
           if (promo.newCustomersOnly) {
-            const priorPaid = await transactionWriter.get(db.collection("evaluations").where("uid", "==", req.user.uid).where("paymentStatus", "==", "paid").limit(1));
-            if (!priorPaid.empty) return { error: "promo-new-customer" };
+            const priorEvaluations = await transactionWriter.get(db.collection("evaluations").where("uid", "==", req.user.uid).limit(100));
+            if (priorEvaluations.docs.some(doc => doc.data()?.paymentStatus === "paid")) return { error: "promo-new-customer" };
           }
           if (evaluation.promoCode && evaluation.promoCode !== requestedPromoCode) return { error: "promo-locked" };
         }
