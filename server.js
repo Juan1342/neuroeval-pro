@@ -74,7 +74,7 @@ const APP_ORIGIN = String(
   process.env.APP_ORIGIN || `http://localhost:${PORT}`
 ).replace(/\/+$/, "");
 
-const DEFAULT_EVAL_PRICE_COP = 4000;
+const DEFAULT_DEFAULT_EVAL_PRICE_COP = 4000;
 const EVALUATION_SERVICE_ID = "adhd_evaluation";
 const EVALUATION_SERVICE_LABEL = "Evaluación integral";
 const CURRENCY = "COP";
@@ -82,7 +82,7 @@ async function getPricingConfig() {
   const snapshot = await db.collection("platformSettings").doc("pricing").get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
   const configured = Number(data.services?.[EVALUATION_SERVICE_ID]?.priceCop);
-  const priceCop = Number.isSafeInteger(configured) && configured >= 100 ? configured : DEFAULT_EVAL_PRICE_COP;
+  const priceCop = Number.isSafeInteger(configured) && configured >= 100 ? configured : DEFAULT_DEFAULT_EVAL_PRICE_COP;
   return { serviceId: EVALUATION_SERVICE_ID, label: EVALUATION_SERVICE_LABEL, priceCop, currency: CURRENCY };
 }
 function calculatePromoDiscount(promo, basePrice) {
@@ -180,7 +180,7 @@ app.use(
 
       return callback(new Error("Origen no autorizado por CORS"));
     },
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -534,7 +534,7 @@ app.get("/api/health", (req, res) => {
     ),
     wompiEnvironment,
     demoPaymentEnabled: ALLOW_DEMO_PAY,
-    evaluationPriceCop: DEFAULT_EVAL_PRICE_COP,
+    evaluationPriceCop: DEFAULT_DEFAULT_EVAL_PRICE_COP,
     time: new Date().toISOString()
   });
 });
@@ -726,7 +726,7 @@ app.get("/api/my-evaluations", requireUser, async (req, res) => {
         name: data.name || "",
         goal: data.goal || "",
         paymentStatus: data.paymentStatus || "pending",
-        amountCop: data.amountCop || EVAL_PRICE_COP,
+        amountCop: data.amountCop || DEFAULT_EVAL_PRICE_COP,
         currency: data.currency || CURRENCY,
         createdAt: data.createdAt || null
       };
@@ -822,7 +822,7 @@ app.get(
         id: req.params.id,
         paymentStatus: result.data.paymentStatus || "pending",
         reference: result.data.paymentReference || null,
-        amountCop: result.data.amountCop || EVAL_PRICE_COP,
+        amountCop: result.data.amountCop || DEFAULT_EVAL_PRICE_COP,
         currency: result.data.currency || CURRENCY
       });
 
@@ -869,7 +869,7 @@ app.post(
         const evaluation = snapshot.data() || {};
         if (evaluation.paymentStatus === "paid") return { error: "already-paid" };
         if (String(evaluation.wompiTransactionStatus || "").toUpperCase() === "APPROVED") return { error: "reconciliation-required" };
-        const basePrice = Number(evaluation.originalAmountCop || evaluation.amountCop || DEFAULT_EVAL_PRICE_COP);
+        const basePrice = Number(evaluation.originalAmountCop || evaluation.amountCop || DEFAULT_DEFAULT_EVAL_PRICE_COP);
         if (!Number.isSafeInteger(basePrice) || basePrice < 100) return { error: "invalid-price" };
         let promo = null, promoRef = null;
         if (requestedPromoCode) {
@@ -1037,7 +1037,7 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
     }
 
     const evaluationRef = query.docs[0].ref;
-    const expectedAmountInCents = Number(query.docs[0].data()?.amountCop || DEFAULT_EVAL_PRICE_COP) * 100;
+    const expectedAmountInCents = Number(query.docs[0].data()?.amountCop || DEFAULT_DEFAULT_EVAL_PRICE_COP) * 100;
     if (amountInCents !== expectedAmountInCents || currency !== CURRENCY) {
       console.error("Importe o moneda no coinciden:", { reference, amountInCents, expectedAmountInCents, currency });
       return res.status(200).json({ ok: true, ignored: true, reason: "El importe o la moneda no coinciden." });
@@ -1054,7 +1054,7 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
       // La referencia debe seguir siendo la activa: una notificación de un
       // intento anterior no puede afectar un reintento con nueva referencia.
       if (evaluation.paymentReference !== reference) return { ignored: true, reason: "La referencia ya no corresponde al intento de pago activo." };
-      if (Number(evaluation.amountCop || DEFAULT_EVAL_PRICE_COP) * 100 !== amountInCents || currency !== CURRENCY) return { ignored: true, reason: "El importe ya no coincide con el precio registrado." };
+      if (Number(evaluation.amountCop || DEFAULT_DEFAULT_EVAL_PRICE_COP) * 100 !== amountInCents || currency !== CURRENCY) return { ignored: true, reason: "El importe ya no coincide con el precio registrado." };
 
       const decision = decideWompiTransition(evaluation, {
         status,
@@ -2245,7 +2245,7 @@ app.listen(PORT, () => {
   console.log(" NeuroEval Pro API");
   console.log(` Puerto: ${PORT}`);
   console.log(` Entorno: ${process.env.NODE_ENV || "development"}`);
-  console.log(` Precio: $${EVAL_PRICE_COP} COP`);
+  console.log(` Precio: $${DEFAULT_EVAL_PRICE_COP} COP`);
   console.log(` Firebase: ${FIREBASE_PROJECT_ID || "No especificado"}`);
   console.log(` SMTP: ${mailer ? "Configurado" : "Pendiente"}`);
   console.log(` Wompi: ${WOMPI_PUBLIC_KEY ? "Clave pública detectada" : "Pendiente"}`);
