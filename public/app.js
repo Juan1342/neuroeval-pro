@@ -989,7 +989,7 @@ function openGame(game) {
   renderChallenge();stage.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function completeActivity(activity) {
-  const labels = { breathing:"Respiración consciente", planning:"Divide una tarea", grounding:"Pausa de observación", focus:"Enfoque de 10 minutos", recall:"Recuerdo del día", movement:"Pausa de movimiento" };
+  const labels = { breathing:"Respiración consciente", planning:"Divide una tarea", grounding:"Pausa de observación", focus:"Enfoque de 10 minutos", recall:"Recuerdo del día", movement:"Pausa de movimiento", reading:"Lectura con intención", organize:"Ordena tu espacio", countback:"Cuenta hacia atrás", priorities:"Plan de tres prioridades", listening:"Escucha atenta", journal:"Diario de bienestar" };
   const data = readProgress(); data.activities.push({ name: labels[activity] || activity, date: new Date().toISOString() });
   data.history.unshift({ type:"Actividad", name:labels[activity] || activity, detail:"Completada", date:new Date().toISOString() }); data.history = data.history.slice(0,12); saveProgress(data);
   showMessage("activity-message", "¡Bien hecho! Registramos esta actividad en tu progreso.");
