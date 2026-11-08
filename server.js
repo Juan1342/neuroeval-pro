@@ -1230,7 +1230,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
           .text("Retos visuales de atención");
         doc.moveDown(0.35);
         doc.font("Helvetica").fontSize(9).fillColor(muted)
-          .text(`Respuestas correctas: ${evaluation.attentionTasks.correct} de ${evaluation.attentionTasks.completed}.`, { width: 480 });
+          .text(`Retos de selección correctos: ${evaluation.attentionTasks.correct} de ${evaluation.attentionTasks.completed}. Recuerdo de memoria: ${evaluation.attentionTasks.memoryCorrect} de ${evaluation.attentionTasks.memoryCompleted}. Búsqueda visual: ${evaluation.attentionTasks.visualCorrect} de ${evaluation.attentionTasks.visualCompleted}.`, { width: 480, lineGap: 3 });
         doc.moveDown(0.25);
         doc.font("Helvetica").fontSize(8).fillColor(muted)
           .text(evaluation.attentionTasks.note || "Actividad interactiva no diagnóstica.", { width: 480, lineGap: 3 });
