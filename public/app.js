@@ -758,6 +758,7 @@ function setAdminTab(tab) {
     clients: hasAdminPermission("clients.view"),
     evaluations: hasAdminPermission("evaluations.view"),
     payments: hasAdminPermission("payments.view"),
+    analytics: hasAdminPermission("payments.view"),
     pricing: hasAdminPermission("pricing.manage"),
     settings: hasAdminPermission("settings.view"),
     health: hasAdminPermission("settings.view"),
@@ -777,6 +778,7 @@ function setAdminTab(tab) {
     button.classList.toggle("outline", !active);
     button.setAttribute("aria-selected", String(active));
   });
+  if (selected === "analytics") loadAdminCommercialAnalytics();
   if (selected === "pricing") loadAdminPricing();
   if (selected === "administrators") loadAdminAdministrators();
   if (selected === "audit") loadAdminAudit();
@@ -1772,6 +1774,56 @@ const ADMIN_PERMISSION_LABELS = {
   "support.manage": "Responder y gestionar soporte"
 };
 
+async function loadAdminCommercialAnalytics() {
+  const summary = $("admin-analytics-summary"), revenue = $("admin-analytics-revenue");
+  const conversion = $("admin-analytics-conversion"), promos = $("admin-analytics-promos");
+  if (!summary || !hasAdminPermission("payments.view")) return;
+  summary.textContent = "Calculando indicadores…"; revenue.textContent = "Cargando…"; conversion.textContent = "Cargando…"; promos.textContent = "Cargando…";
+  try {
+    const response = await api("/api/admin/analytics/commercial");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudo consultar la analítica.");
+    const totals = data.totals || {};
+    summary.replaceChildren();
+    [["Ingresos confirmados",formatCop(totals.revenueCop)],["Conversión a pago",Number(totals.conversionPercent||0).toLocaleString("es-CO")+"%"],["Ticket promedio",formatCop(totals.averageTicketCop)],["Evaluaciones pagadas",totals.paid||0],["Pagos pendientes",totals.pending||0],["Descuentos aplicados",formatCop(totals.discountsCop)]].forEach(([label,value])=>{
+      const card=document.createElement("div");card.className="card";const title=document.createElement("p");title.className="muted-text";title.textContent=label;
+      const amount=document.createElement("p");amount.className="text-2xl font-extrabold mt-2";amount.textContent=value;card.append(title,amount);summary.appendChild(card);
+    });
+    const months=Array.isArray(data.months)?data.months:[];
+    revenue.replaceChildren();
+    if(!months.length){revenue.textContent="No hay datos mensuales disponibles.";}
+    else{
+      const max=Math.max(1,...months.map(item=>Number(item.revenueCop||0)));
+      months.forEach(item=>{
+        const col=document.createElement("div");col.className="chart-bar-col";
+        const value=document.createElement("span");value.className="text-xs muted-text";value.textContent=formatCop(item.revenueCop||0);
+        const bar=document.createElement("div");bar.className="chart-bar";bar.style.height=Math.max(4,Number(item.revenueCop||0)/max*100)+"%";bar.title=formatCop(item.revenueCop||0);
+        const label=document.createElement("span");label.className="chart-bar-label";label.textContent=item.label||"";col.append(value,bar,label);revenue.appendChild(col);
+      });
+    }
+    conversion.replaceChildren();
+    months.forEach(item=>{
+      const row=document.createElement("div");row.className="space-y-1";
+      const line=document.createElement("div");line.className="flex justify-between gap-2 text-sm";
+      const label=document.createElement("strong");label.textContent=item.label||"";
+      const value=document.createElement("span");value.textContent=(item.evaluations?Math.round(item.paid/item.evaluations*100):0)+"% · "+(item.paid||0)+"/"+(item.evaluations||0);
+      line.append(label,value);const track=document.createElement("div");track.className="h-2 rounded-full bg-slate-700/30 overflow-hidden";
+      const fill=document.createElement("div");fill.className="h-full rounded-full";fill.style.width=(item.evaluations?Math.min(100,item.paid/item.evaluations*100):0)+"%";fill.style.background="linear-gradient(90deg,#a16bff,#51d9d1)";
+      track.appendChild(fill);row.append(line,track);conversion.appendChild(row);
+    });
+    promos.replaceChildren();
+    const promoItems=Array.isArray(data.promos)?data.promos:[];
+    if(!promoItems.length){const empty=document.createElement("p");empty.className="muted-text";empty.textContent="Todavía no hay promociones registradas.";promos.appendChild(empty);}
+    else promoItems.forEach(item=>{
+      const row=document.createElement("div");row.className="flex flex-wrap justify-between gap-2 border-b border-slate-700/20 pb-3";
+      const left=document.createElement("div");const name=document.createElement("strong");name.textContent=item.code+(item.active?" · Activa":" · Inactiva");
+      const detail=document.createElement("p");detail.className="muted-text text-sm";detail.textContent="Evaluaciones asociadas: "+item.evaluationsUsingCode+" · Límite: "+(item.maxUses>0?item.maxUses:"Sin límite");
+      left.append(name,detail);const count=document.createElement("span");count.className="font-bold";count.textContent="Usos reservados: "+item.uses;row.append(left,count);promos.appendChild(row);
+    });
+    $("admin-analytics-updated").textContent="Actualizado: "+new Date(data.generatedAt||Date.now()).toLocaleString("es-CO")+" · Fuente: registros almacenados.";
+  }catch(error){summary.textContent="No se pudo cargar la analítica: "+error.message;revenue.textContent="—";conversion.textContent="—";promos.textContent="—";}
+}
+
 async function loadAdminSupportTickets() {
   const target = $("admin-support-list");
   if (!target || !hasAdminPermission("support.view")) return;
@@ -2403,6 +2455,7 @@ function registerEventListeners() {
   $("admin-client-search").addEventListener("input", filterAdminTables);
   $("admin-evaluation-search").addEventListener("input", filterAdminTables);
   $("admin-health-refresh").addEventListener("click", loadAdminHealth);
+  $("admin-analytics-refresh").addEventListener("click", loadAdminCommercialAnalytics);
   $("admin-health-details-refresh").addEventListener("click", loadAdminHealthDetails);
   $("admin-support-refresh").addEventListener("click", loadAdminSupportTickets);
   $("admin-profile-open").addEventListener("click", showProfile);
