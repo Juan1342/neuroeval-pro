@@ -21,7 +21,7 @@ import {
 
 const $ = (id) => document.getElementById(id);
 
-const EVALUATION_PRICE_COP = 4000;
+const EVALUATION_PRICE_COP = 4000; // Valor de respaldo visual; el servidor determina el importe real.
 // Solo bloquea el registro público de la cuenta reservada; no concede permisos.
 const ADMIN_EMAIL = "jzamorazapata@gmail.com";
 
@@ -758,6 +758,7 @@ function setAdminTab(tab) {
     clients: hasAdminPermission("clients.view"),
     evaluations: hasAdminPermission("evaluations.view"),
     payments: hasAdminPermission("payments.view"),
+    pricing: hasAdminPermission("pricing.manage"),
     settings: hasAdminPermission("settings.view"),
     administrators: currentIsPrimaryAdmin,
     audit: hasAdminPermission("audit.view")
@@ -774,6 +775,7 @@ function setAdminTab(tab) {
     button.classList.toggle("outline", !active);
     button.setAttribute("aria-selected", String(active));
   });
+  if (selected === "pricing") loadAdminPricing();
   if (selected === "administrators") loadAdminAdministrators();
   if (selected === "audit") loadAdminAudit();
   if (selected === "settings") loadAdminHealth();
@@ -1274,6 +1276,7 @@ async function finishEvaluation() {
 
     lastEvaluationId = data.id;
     paymentReference = data.reference || null;
+    if ($("payment-price")) $("payment-price").textContent = "$" + Number(data.amountCop || 4000).toLocaleString("es-CO") + " COP";
 
     await showPaymentForExistingEvaluation();
 
@@ -1335,14 +1338,14 @@ async function showPaymentForExistingEvaluation() {
   }
 }
 
-async function createWompiCheckout() {
+async function createWompiCheckout(promoCode = "") {
   const container = $("wompi-checkout");
   container.innerHTML = "";
 
   try {
     const response = await api("/api/payments/wompi-signature", {
       method: "POST",
-      body: JSON.stringify({ evaluationId: lastEvaluationId })
+      body: JSON.stringify({ evaluationId: lastEvaluationId, promoCode })
     });
 
     const data = await response.json();
@@ -1351,9 +1354,14 @@ async function createWompiCheckout() {
       throw new Error("El servidor no entregó los datos necesarios para Wompi.");
     }
 
-    if (Number(data.amountInCents) !== EVALUATION_PRICE_COP * 100) {
+    if (Number(data.amountInCents) !== Number(data.amountCop) * 100) {
       throw new Error("El valor de pago recibido no coincide con el precio configurado.");
     }
+    const money = amount => "$" + Number(amount || 0).toLocaleString("es-CO") + " COP";
+    $("payment-price").textContent = money(data.amountCop);
+    $("payment-discount").textContent = Number(data.discountCop) > 0
+      ? "Precio original: " + money(data.originalAmountCop) + " · Descuento " + (data.promoCode || "") + ": −" + money(data.discountCop)
+      : "Pago único por informe";
 
     const script = document.createElement("script");
 
@@ -1718,8 +1726,103 @@ const ADMIN_PERMISSION_LABELS = {
   "evaluations.pdf": "Descargar informes PDF",
   "payments.view": "Consultar pagos e ingresos",
   "settings.view": "Consultar estado técnico",
+  "pricing.manage": "Administrar precios y promociones",
   "audit.view": "Consultar historial administrativo"
 };
+
+async function loadAdminPricing() {
+  const priceInput = $("admin-service-price");
+  const list = $("admin-promo-list");
+  if (!priceInput || !hasAdminPermission("pricing.manage")) return;
+  list.textContent = "Cargando precios y promociones…";
+  try {
+    const response = await api("/api/admin/pricing");
+    const data = await response.json();
+    priceInput.value = Number(data.pricing?.priceCop || 4000);
+    renderAdminPromos(Array.isArray(data.promos) ? data.promos : []);
+  } catch (error) {
+    list.textContent = "No se pudo cargar la configuración comercial: " + error.message;
+  }
+}
+
+function renderAdminPromos(items) {
+  const target = $("admin-promo-list");
+  target.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted-text";
+    empty.textContent = "Todavía no has creado códigos promocionales.";
+    target.appendChild(empty);
+    return;
+  }
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "rounded-xl border border-slate-700/30 p-4 flex flex-wrap items-center justify-between gap-3";
+    const info = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = item.code + " · " + (item.discountType === "percentage" ? item.discountValue + "% de descuento" : formatCop(item.discountValue) + " de descuento");
+    const detail = document.createElement("p");
+    detail.className = "muted-text text-sm mt-1";
+    detail.textContent = "Usos: " + item.uses + (Number(item.maxUses) > 0 ? " / " + item.maxUses : " · Sin límite") +
+      (item.expiresAt ? " · Vence: " + new Date(item.expiresAt).toLocaleDateString("es-CO") : " · Sin vencimiento") +
+      (item.newCustomersOnly ? " · Solo nuevos clientes" : "");
+    const status = document.createElement("span");
+    status.className = "text-xs font-bold " + (item.active ? "text-emerald-500" : "text-amber-500");
+    status.textContent = item.active ? "Activo" : "Desactivado";
+    info.append(title, detail, status);
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "btn outline";
+    toggle.textContent = item.active ? "Desactivar" : "Activar";
+    toggle.addEventListener("click", async () => {
+      try {
+        await api("/api/admin/promo-codes/" + encodeURIComponent(item.code), {
+          method: "PATCH", body: JSON.stringify({ active: !item.active })
+        });
+        await loadAdminPricing();
+      } catch (error) { alert(error.message); }
+    });
+    card.append(info, toggle);
+    target.appendChild(card);
+  });
+}
+
+async function saveAdminPrice(event) {
+  event.preventDefault();
+  const priceCop = Number($("admin-service-price").value);
+  const message = $("admin-price-message");
+  message.textContent = "Guardando nuevo precio…";
+  try {
+    await api("/api/admin/pricing", { method: "PUT", body: JSON.stringify({ priceCop }) });
+    message.textContent = "Precio actualizado. Las nuevas evaluaciones usarán este valor; las que ya fueron creadas conservan su precio.";
+    await loadAdminPricing();
+  } catch (error) { message.textContent = error.message; }
+}
+
+async function createPromoCode(event) {
+  event.preventDefault();
+  const form = $("admin-promo-form");
+  const value = Number($("admin-promo-value").value);
+  const toIso = id => $(id).value ? new Date($(id).value).toISOString() : null;
+  const payload = {
+    code: $("admin-promo-code").value,
+    discountType: $("admin-promo-type").value,
+    discountValue: value,
+    maxUses: Number($("admin-promo-max-uses").value || 0),
+    startsAt: toIso("admin-promo-start"),
+    expiresAt: toIso("admin-promo-expiry"),
+    newCustomersOnly: $("admin-promo-new-only").checked
+  };
+  const message = $("admin-promo-message");
+  message.textContent = "Creando código…";
+  try {
+    const response = await api("/api/admin/promo-codes", { method: "POST", body: JSON.stringify(payload) });
+    const data = await response.json();
+    message.textContent = "Código " + data.code + " creado correctamente.";
+    form.reset();
+    await loadAdminPricing();
+  } catch (error) { message.textContent = error.message; }
+}
 
 async function loadAdminAdministrators() {
   const target = $("admin-managers-list");
@@ -2111,6 +2214,10 @@ function registerEventListeners() {
 
   $("admin-refresh").addEventListener("click", loadAdmin);
   $("admin-add-form").addEventListener("submit", createAdminFromForm);
+  $("admin-price-form").addEventListener("submit", saveAdminPrice);
+  $("admin-promo-form").addEventListener("submit", createPromoCode);
+  $("admin-pricing-refresh").addEventListener("click", loadAdminPricing);
+  $("promo-apply").addEventListener("click", () => createWompiCheckout($("promo-code").value.trim()));
   $("admin-managers-refresh").addEventListener("click", loadAdminAdministrators);
   $("admin-audit-refresh").addEventListener("click", loadAdminAudit);
   $("admin-logout").addEventListener("click", logout);
