@@ -100,6 +100,7 @@ function validatePromoWindow(promo, now = new Date()) {
 }
 
 const { calculateEvaluationOnServer } = require("./lib/evaluation");
+const { calculateParentEvaluation } = require("./lib/parent-evaluation");
 const { decideWompiTransition } = require("./lib/payment-state");
 const { validateWompiSignature } = require("./lib/wompi-signature");
 
@@ -831,7 +832,10 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       return sendError(res, 400, "No se encontró el nombre del usuario.");
     }
 
-    const calculated = calculateEvaluationOnServer(body.answers);
+    const evaluationType = body.evaluationType === "parent_observation" ? "parent_observation" : "self_report";
+    const calculated = evaluationType === "parent_observation"
+      ? calculateParentEvaluation(body.answers, body.parentContext || {})
+      : calculateEvaluationOnServer(body.answers);
     if (calculated.error) {
       return sendError(res, 400, calculated.error);
     }
@@ -852,6 +856,8 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       email,
       age,
       goal,
+      evaluationType,
+      parentContext: evaluationType === "parent_observation" ? calculated.parentContext : null,
       answers: calculated.answers,
       scores: calculated.scores,
       profile: calculated.profile,
