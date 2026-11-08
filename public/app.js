@@ -1566,7 +1566,7 @@ async function loadOwnResult(evaluationId) {
     }
 
     $("result-name").textContent = evaluation.evaluationType === "parent_observation"
-      ? `Informe de observación familiar · ${evaluation.parentContext?.childAge || "—"} años · ${currentUser.email}`
+      ? `Informe de observación familiar · ${evaluation.parentContext?.childAge || "—"} años (${evaluation.parentContext?.ageBand || "etapa no especificada"}) · ${currentUser.email}`
       : `${evaluation.name || profileData?.name || ""} · ${currentUser.email}`;
     $("result-profile").textContent = evaluation.profile || "Resumen orientativo";
     $("result-description").textContent = evaluation.profileDescription || "";
@@ -1578,7 +1578,8 @@ async function loadOwnResult(evaluationId) {
       executive: "Organización y funciones ejecutivas",
       hyperactivity: "Inquietud e impulsividad",
       emotionalContext: "Regulación emocional",
-      context: "Estrés, preocupación y descanso",
+      context: "Duración, entornos y observación externa",
+      contextFactors: "Otros factores que conviene considerar",
       impact: "Impacto en la vida cotidiana",
       history: "Historia y presencia en distintos entornos",
       impulsivity: "Impulsividad y espera de turnos"
@@ -1620,7 +1621,7 @@ async function loadOwnResult(evaluationId) {
     const summary = evaluation.summary || {};
     $("result-summary").innerHTML = "";
     [
-      ["Estrés y descanso", summary.contextInfluence],
+      ["Otros factores que pueden influir", summary.contextInfluence],
       ["Impacto cotidiano", summary.dailyImpact],
       ["Historia y contextos", summary.childhoodAndSettings]
     ].forEach(([label, value]) => {
