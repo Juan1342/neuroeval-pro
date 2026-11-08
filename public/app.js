@@ -639,10 +639,13 @@ async function handleAuthState(user) {
     $("account-menu-name").textContent = profileData?.name || user.displayName || "Mi cuenta";
     $("account-email").textContent = user.email || "";
 
+    // El servidor es la fuente de verdad del rol. Esto permite reconocer
+    // la cuenta administradora incluso si nunca creó un perfil de evaluación.
+    const sessionResponse = await api("/api/session");
+    const sessionData = await sessionResponse.json();
     const tokenResult = await getIdTokenResult(user, true);
-    // La interfaz sigue el mismo permiso que valida el backend.
-    // Un correo coincidente no concede acceso administrativo.
-    currentIsAdmin = tokenResult.claims.admin === true;
+    currentIsAdmin =
+      sessionData.isAdmin === true || tokenResult.claims.admin === true;
 
     if (currentIsAdmin) {
       $("account-name").textContent = user.displayName || user.email || "Administración";
@@ -686,8 +689,17 @@ async function handleAuthState(user) {
     const evaluationIdFromUrl = params.get("evaluation");
 
     if (evaluationIdFromUrl) {
-      // El retorno desde Wompi debe conservar el flujo de pago pendiente.
+      // Consumir el parámetro de retorno una sola vez. Evita que una sesión
+      // posterior, incluso de otra cuenta en el mismo navegador, herede una
+      // evaluación anterior.
       lastEvaluationId = evaluationIdFromUrl;
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("evaluation");
+      window.history.replaceState(
+        {},
+        document.title,
+        cleanUrl.pathname + cleanUrl.search + cleanUrl.hash
+      );
       await showPaymentForExistingEvaluation();
     } else {
       // El usuario siempre llega primero al panel y elige qué evaluación iniciar.
@@ -1262,6 +1274,15 @@ async function showPaymentForExistingEvaluation() {
     await createWompiCheckout();
 
   } catch (error) {
+    // Un enlace de retorno de otra cuenta o una evaluación inexistente no
+    // debe dejar al usuario atrapado en la pantalla de pago.
+    if (/no encontramos esa evaluación/i.test(error.message || "")) {
+      lastEvaluationId = null;
+      paymentReference = null;
+      showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email);
+      alert("Este enlace de evaluación no pertenece a esta cuenta o ya no está disponible. Puedes iniciar una evaluación nueva desde tu panel.");
+      return;
+    }
     showMessage("payment-message", error.message, true);
   }
 }
