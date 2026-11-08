@@ -1641,6 +1641,32 @@ function renderAdminPayments(records) {
   if(!records.length)return adminEmptyRow(tbody,7,"No hay transacciones registradas.");
   records.forEach(record=>{const row=document.createElement("tr");adminCell(row,formatAdminDate(record.paidAt||record.updatedAt||record.createdAt));adminCell(row,record.name||record.email);adminCell(row,formatCop(record.amountCop));adminCell(row,record.paymentStatus==="paid"?"Aprobado":record.paymentStatus||"Pendiente");adminCell(row,record.paymentReference);adminCell(row,record.wompiTransactionId);adminCell(row,record.wompiTransactionStatus);tbody.appendChild(row);});
 }
+async function exportAdminBackup() {
+  const button = $("admin-backup-export");
+  const status = $("admin-backup-status");
+  if (!button || !status || !currentIsPrimaryAdmin) {
+    if (status) status.textContent = "Esta acción está reservada al administrador principal.";
+    return;
+  }
+  button.disabled = true;
+  status.textContent = "Preparando exportación segura…";
+  try {
+    const response = await api("/api/admin/backups/export");
+    const backup = await response.json();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8" });
+    const date = new Date(backup.generatedAt || Date.now()).toISOString().slice(0, 10);
+    downloadBlob(blob, "neuroeval-pro-respaldo-" + date + ".json");
+    const partial = Array.isArray(backup.collections) ? backup.collections.filter(item => item.truncated) : [];
+    status.textContent = backup.complete
+      ? "Exportación generada. " + backup.collections.reduce((sum, item) => sum + Number(item.exportedCount || 0), 0) + " documentos incluidos. Guarda el archivo en un lugar seguro."
+      : "Exportación parcial: " + partial.map(item => item.name).join(", ") + " superó el límite de 500 documentos. No la uses como respaldo completo; solicita una copia administrada en Google Cloud.";
+  } catch (error) {
+    status.textContent = "No se pudo generar el respaldo: " + error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function loadAdminHealthDetails() {
   const target = $("admin-health-checks"), summary = $("admin-health-summary"), runtime = $("admin-health-runtime");
   if (!target || !hasAdminPermission("settings.view")) return;
@@ -2457,6 +2483,7 @@ function registerEventListeners() {
   $("admin-health-refresh").addEventListener("click", loadAdminHealth);
   $("admin-analytics-refresh").addEventListener("click", loadAdminCommercialAnalytics);
   $("admin-health-details-refresh").addEventListener("click", loadAdminHealthDetails);
+  $("admin-backup-export").addEventListener("click", exportAdminBackup);
   $("admin-support-refresh").addEventListener("click", loadAdminSupportTickets);
   $("admin-profile-open").addEventListener("click", showProfile);
 
