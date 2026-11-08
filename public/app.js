@@ -56,179 +56,30 @@ const points = [0, 1, 2, 3, 4];
 
 const bank = [
   [
+    "Memoria inmediata",
+    "Memoriza estas tres palabras. Más adelante te pediremos recordarlas.",
+    "memoryStudy",
+    "🧠",
+    "LUNA   ·   LLAVE   ·   RÍO",
+    "study",
+    [
+      "Ya memoricé la secuencia"
+    ],
+    null
+  ],
+  [
     "Atención sostenida",
-    "Cuando leo, estudio o trabajo, ¿pierdo el hilo aunque quiera prestar atención?",
+    "Cuando lees, estudias o trabajas, ¿pierdes el hilo aunque quieras prestar atención?",
     "inattention",
     "📚",
     "Por ejemplo: relees el mismo párrafo varias veces y al final no recuerdas qué decía."
   ],
   [
-    "Atención sostenida",
-    "¿Te cuesta terminar una actividad cuando aparecen notificaciones, conversaciones o ruidos?",
-    "inattention",
-    "🔔",
-    "Piensa en lo que ocurre cuando intentas concentrarte y algo interrumpe tu tarea."
-  ],
-  [
-    "Atención sostenida",
-    "¿Cometes errores por pasar por alto detalles, incluso cuando conoces bien la tarea?",
-    "inattention",
-    "🔎",
-    "Por ejemplo: omites una instrucción o no notas un dato importante."
-  ],
-  [
-    "Atención sostenida",
-    "¿Te resulta difícil escuchar una explicación completa sin que tu mente se vaya a otro tema?",
-    "inattention",
-    "👂",
-    "Considera conversaciones, reuniones o clases."
-  ],
-  [
-    "Memoria cotidiana",
-    "¿Olvidas qué ibas a hacer justo después de cambiar de habitación o actividad?",
-    "inattention",
-    "🚪",
-    "Por ejemplo: vas por algo y al llegar no recuerdas qué buscabas."
-  ],
-  [
-    "Memoria cotidiana",
-    "¿Pierdes con frecuencia objetos que necesitas, como llaves, gafas, documentos o el teléfono?",
-    "inattention",
-    "🔑",
-    "Piensa en la frecuencia, no en un olvido aislado."
-  ],
-  [
-    "Organización y planificación",
-    "¿Te cuesta dividir una tarea grande en pasos y decidir por dónde empezar?",
-    "executive",
-    "🧩",
-    "Por ejemplo: tienes varias cosas pendientes y no sabes cómo ordenarlas."
-  ],
-  [
-    "Organización y planificación",
-    "¿Sueles calcular mal el tiempo que necesitas y terminas con prisas?",
-    "executive",
-    "⏰",
-    "Piensa en citas, entregas, preparación o desplazamientos."
-  ],
-  [
-    "Organización y planificación",
-    "¿Postergas tareas importantes aunque tengas claro que debes hacerlas?",
-    "executive",
-    "📋",
-    "No se trata de pereza: observa si te cuesta iniciar o sostener el primer paso."
-  ],
-  [
-    "Organización y planificación",
-    "¿Te cuesta cambiar de una actividad a otra o retomar una tarea después de una interrupción?",
-    "executive",
-    "🔄",
-    "Por ejemplo: una pausa breve hace difícil volver al punto donde estabas."
-  ],
-  [
-    "Organización y planificación",
-    "¿Necesitas recordatorios externos para cumplir actividades que realmente deseas hacer?",
-    "executive",
-    "🗓️",
-    "Considera alarmas, notas, listas o ayuda de otras personas."
-  ],
-  [
-    "Inquietud e impulsividad",
-    "¿Sientes inquietud física o necesidad de moverte cuando debes permanecer sentado?",
-    "hyperactivity",
-    "🪑",
-    "Por ejemplo: mueves manos o pies, cambias de postura o te levantas."
-  ],
-  [
-    "Inquietud e impulsividad",
-    "¿Te descubres hablando mucho o interviniendo antes de que otra persona termine?",
-    "hyperactivity",
-    "💬",
-    "Piensa en conversaciones familiares, laborales o sociales."
-  ],
-  [
-    "Inquietud e impulsividad",
-    "¿Te cuesta esperar, incluso cuando sabes que es necesario hacerlo?",
-    "hyperactivity",
-    "⏳",
-    "Por ejemplo: filas, turnos o conversaciones."
-  ],
-  [
-    "Inquietud e impulsividad",
-    "¿Actúas o respondes rápidamente y luego piensas que habrías preferido hacer una pausa?",
-    "hyperactivity",
-    "⚡",
-    "Puede ocurrir al hablar, comprar, decidir o reaccionar."
-  ],
-  [
-    "Regulación emocional",
-    "¿Una frustración pequeña puede provocarte una reacción emocional intensa o difícil de regular?",
-    "emotionalContext",
-    "🌦️",
-    "Observa cuánto tarda en bajar la intensidad de la emoción."
-  ],
-  [
-    "Regulación emocional",
-    "¿Te cuesta recuperar la calma cuando algo interrumpe tus planes?",
-    "emotionalContext",
-    "🧘",
-    "Piensa en cambios inesperados o tareas que no salen como esperabas."
-  ],
-  [
-    "Estrés y descanso",
-    "¿Notas que tu concentración empeora cuando duermes poco o descansas mal?",
-    "context",
-    "🌙",
-    "Compara tus días descansados con los días de poco sueño."
-  ],
-  [
-    "Estrés y descanso",
-    "¿La preocupación, tensión o ansiedad ocupa tu mente e interfiere con lo que estás haciendo?",
-    "context",
-    "☁️",
-    "Por ejemplo: intentas trabajar, pero sigues pensando en un problema."
-  ],
-  [
-    "Estrés y descanso",
-    "¿Has notado que estas dificultades aumentan durante épocas de sobrecarga o estrés?",
-    "context",
-    "📈",
-    "Piensa si existe una relación clara con tus responsabilidades actuales."
-  ],
-  [
-    "Impacto cotidiano",
-    "¿Estas experiencias dificultan tus estudios, trabajo, tareas domésticas o relaciones?",
-    "impact",
-    "🏡",
-    "Responde pensando en consecuencias concretas y repetidas."
-  ],
-  [
-    "Impacto cotidiano",
-    "¿Otras personas te han señalado dificultades de atención, organización, inquietud o impulsividad?",
-    "impact",
-    "👥",
-    "Considera comentarios respetuosos de personas que te conocen bien."
-  ],
-  [
-    "Historia y contexto",
-    "¿Recuerdas que algunas de estas dificultades ya estaban presentes antes de los 12 años?",
-    "history",
-    "🧒",
-    "Piensa en recuerdos escolares, familiares o relatos de personas cercanas."
-  ],
-  [
-    "Historia y contexto",
-    "¿Estas dificultades aparecen en más de un entorno, por ejemplo casa, estudio, trabajo o vida social?",
-    "history",
-    "🏠",
-    "No tienen que presentarse igual en todos los lugares."
-  ],
-  [
-    "Reto visual de concentración",
-    "Observa la secuencia y selecciona cuántas estrellas aparecen.",
-    "attentionTask",
+    "Búsqueda visual",
+    "Cuenta cuántas estrellas aparecen entre los símbolos.",
+    "visualTask",
     "👁️",
-    "⭐ 🔺 ⭐ ⚪ 🔺 ⭐",
+    "⭐  🔺  ⭐  ⚪  🔺  ⭐",
     "task",
     [
       "2",
@@ -239,11 +90,37 @@ const bank = [
     "3"
   ],
   [
-    "Reto visual de concentración",
-    "Mira los símbolos y elige cuál aparece más veces.",
-    "attentionTask",
-    "🧠",
-    "🔵 🟡 🟣 🟡 🔵 🟢 🟡",
+    "Organización y planificación",
+    "¿Te cuesta dividir una tarea grande en pasos y decidir por dónde empezar?",
+    "executive",
+    "🧩",
+    "Por ejemplo: tienes varias cosas pendientes y no sabes cómo ordenarlas."
+  ],
+  [
+    "Memoria inmediata",
+    "Memoriza estos números en el mismo orden. Más adelante tendrás que seleccionarlos.",
+    "memoryStudy",
+    "🔢",
+    "8   –   2   –   5   –   9",
+    "study",
+    [
+      "Ya memoricé la secuencia"
+    ],
+    null
+  ],
+  [
+    "Inquietud e impulsividad",
+    "¿Sientes inquietud física o necesidad de moverte cuando debes permanecer sentado?",
+    "hyperactivity",
+    "🪑",
+    "Por ejemplo: mueves manos o pies, cambias de postura o te levantas."
+  ],
+  [
+    "Búsqueda visual",
+    "¿Qué color aparece más veces en esta secuencia?",
+    "visualTask",
+    "🎨",
+    "🔵  🟡  🟣  🟡  🔵  🟢  🟡",
     "task",
     [
       "Azul",
@@ -252,6 +129,197 @@ const bank = [
       "Verde"
     ],
     "Amarillo"
+  ],
+  [
+    "Regulación emocional",
+    "¿Una frustración pequeña puede provocarte una reacción emocional intensa o difícil de regular?",
+    "emotionalContext",
+    "🌦️",
+    "Observa cuánto tarda en bajar la intensidad de la emoción."
+  ],
+  [
+    "Recuerdo de palabras",
+    "¿Qué grupo contiene exactamente las tres palabras que memorizaste al comienzo?",
+    "memoryRecall",
+    "🧠",
+    "Elige la secuencia que recuerdes, sin volver atrás.",
+    "task",
+    [
+      "LUNA · LLAVE · RÍO",
+      "LUNA · LIBRO · RÍO",
+      "LLAVE · RÍO · ROSA",
+      "LUNA · LLAVE · SOL"
+    ],
+    "LUNA · LLAVE · RÍO"
+  ],
+  [
+    "Estrés y descanso",
+    "¿Notas que tu concentración empeora cuando duermes poco o descansas mal?",
+    "context",
+    "🌙",
+    "Compara tus días descansados con los días de poco sueño."
+  ],
+  [
+    "Organización y planificación",
+    "¿Postergas tareas importantes aunque tengas claro que debes hacerlas?",
+    "executive",
+    "📋",
+    "No se trata de pereza: observa si te cuesta iniciar o sostener el primer paso."
+  ],
+  [
+    "Memoria de secuencias",
+    "Memoriza el orden de estos símbolos. Más adelante tendrás que reconocer la secuencia exacta.",
+    "memoryStudy",
+    "🔷",
+    "▲   ●   ■   ◆",
+    "study",
+    [
+      "Ya memoricé la secuencia"
+    ],
+    null
+  ],
+  [
+    "Impacto cotidiano",
+    "¿Estas experiencias dificultan tus estudios, trabajo, tareas domésticas o relaciones?",
+    "impact",
+    "🏡",
+    "Responde pensando en consecuencias concretas y repetidas."
+  ],
+  [
+    "Recuerdo de números",
+    "¿Cuál era la secuencia numérica que viste anteriormente?",
+    "memoryRecall",
+    "🔢",
+    "Selecciona los cuatro números en el mismo orden.",
+    "task",
+    [
+      "8 – 2 – 5 – 9",
+      "8 – 5 – 2 – 9",
+      "9 – 2 – 5 – 8",
+      "8 – 2 – 9 – 5"
+    ],
+    "8 – 2 – 5 – 9"
+  ],
+  [
+    "Inquietud e impulsividad",
+    "¿Actúas o respondes rápidamente y luego piensas que habrías preferido hacer una pausa?",
+    "hyperactivity",
+    "⚡",
+    "Puede ocurrir al hablar, comprar, decidir o reaccionar."
+  ],
+  [
+    "Historia y contexto",
+    "¿Recuerdas que algunas de estas dificultades ya estaban presentes antes de los 12 años?",
+    "history",
+    "🧒",
+    "Piensa en recuerdos escolares, familiares o relatos de personas cercanas."
+  ],
+  [
+    "Búsqueda visual",
+    "Cuenta cuántos círculos negros aparecen en la secuencia.",
+    "visualTask",
+    "⚫",
+    "●  ▲  ●  ■  ◆  ●  ▲  ●",
+    "task",
+    [
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "4"
+  ],
+  [
+    "Memoria inmediata",
+    "Memoriza estas cuatro palabras. Después de varias actividades te preguntaremos por ellas.",
+    "memoryStudy",
+    "🗝️",
+    "NUBE   ·   PAN   ·   RELOJ   ·   FLOR",
+    "study",
+    [
+      "Ya memoricé las palabras"
+    ],
+    null
+  ],
+  [
+    "Recuerdo de patrones",
+    "¿Cuál era el orden exacto de los cuatro símbolos que memorizaste?",
+    "memoryRecall",
+    "🔷",
+    "Elige la secuencia que viste, en el mismo orden.",
+    "task",
+    [
+      "▲ – ● – ■ – ◆",
+      "● – ▲ – ■ – ◆",
+      "▲ – ■ – ● – ◆",
+      "▲ – ● – ◆ – ■"
+    ],
+    "▲ – ● – ■ – ◆"
+  ],
+  [
+    "Estrés y descanso",
+    "¿La preocupación, tensión o ansiedad ocupa tu mente e interfiere con lo que estás haciendo?",
+    "context",
+    "☁️",
+    "Por ejemplo: intentas trabajar, pero sigues pensando en un problema."
+  ],
+  [
+    "Atención sostenida",
+    "¿Te cuesta terminar una actividad cuando aparecen notificaciones, conversaciones o ruidos?",
+    "inattention",
+    "🔔",
+    "Piensa en lo que ocurre cuando intentas concentrarte y algo interrumpe tu tarea."
+  ],
+  [
+    "Búsqueda visual",
+    "Cuenta cuántos triángulos aparecen en esta secuencia.",
+    "visualTask",
+    "🔺",
+    "🔺  ●  ■  🔺  ◆  ●  🔺  ■  🔺",
+    "task",
+    [
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "4"
+  ],
+  [
+    "Historia y contexto",
+    "¿Estas dificultades aparecen en más de un entorno, por ejemplo casa, estudio, trabajo o vida social?",
+    "history",
+    "🏠",
+    "No tienen que presentarse igual en todos los lugares."
+  ],
+  [
+    "Regulación emocional",
+    "¿Te cuesta recuperar la calma cuando algo interrumpe tus planes?",
+    "emotionalContext",
+    "🧘",
+    "Piensa en cambios inesperados o tareas que no salen como esperabas."
+  ],
+  [
+    "Impacto cotidiano",
+    "¿Otras personas te han señalado dificultades de atención, organización, inquietud o impulsividad?",
+    "impact",
+    "👥",
+    "Considera comentarios respetuosos de personas que te conocen bien."
+  ],
+  [
+    "Recuerdo final de palabras",
+    "Al inicio de esta parte memorizaste cuatro palabras. ¿Cuál es el grupo exacto?",
+    "memoryRecall",
+    "🗝️",
+    "Selecciona las cuatro palabras que aparecieron juntas.",
+    "task",
+    [
+      "NUBE · PAN · RELOJ · FLOR",
+      "NUBE · PAN · RELOJ · LUNA",
+      "NUBE · LIBRO · RELOJ · FLOR",
+      "PAN · RELOJ · FLOR · ROSA"
+    ],
+    "NUBE · PAN · RELOJ · FLOR"
   ]
 ];
 
@@ -803,10 +871,15 @@ function renderQuestion() {
 
   const answersContainer = $("answers");
   answersContainer.innerHTML = "";
-  const isVisualTask = question[5] === "task";
-  const options = isVisualTask ? question[6] : choices;
+  const isInteractive = question[5] === "task" || question[5] === "study";
+  const options = isInteractive ? question[6] : choices;
+  $("q-example").classList.toggle("memory-stimulus", question[5] === "study");
+  if (question[5] === "study") {
+    $("q-text").textContent = "Observa y memoriza estos elementos. No los anotes: te preguntaremos por ellos más adelante.";
+    $("q-example").textContent = question[4];
+  }
   options.forEach((label, index) => {
-    const value = isVisualTask ? label : index;
+    const value = isInteractive ? label : index;
     const selected = answers[currentIndex] === value;
     const button = document.createElement("button");
     button.type = "button";
@@ -855,7 +928,7 @@ function calculateEvaluation() {
     category: question[0],
     question: question[1],
     dimension: question[2],
-    answer: question[5] === "task" ? answers[index] : choices[answers[index]]
+    answer: question[5] === "task" || question[5] === "study" ? answers[index] : choices[answers[index]]
   }));
   return { answers: qa, scores: {}, recommendations: [] };
 }
@@ -1124,7 +1197,7 @@ async function loadOwnResult(evaluationId) {
 
     const taskSummary = evaluation.attentionTasks;
     $("attention-task-summary").textContent = taskSummary
-      ? `Retos visuales completados: ${taskSummary.correct} de ${taskSummary.completed} respuestas correctas. ${taskSummary.note}`
+      ? `Actividades interactivas: ${taskSummary.correct} de ${taskSummary.completed} retos de selección correctos. Memoria: ${taskSummary.memoryCorrect} de ${taskSummary.memoryCompleted}; búsqueda visual: ${taskSummary.visualCorrect} de ${taskSummary.visualCompleted}. ${taskSummary.note}`
       : "";
     const summary = evaluation.summary || {};
     $("result-summary").innerHTML = "";
