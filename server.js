@@ -360,38 +360,79 @@ async function requireUser(req, res, next) {
   }
 }
 
+const ADMIN_PERMISSION_CATALOG = [
+  "dashboard.view",
+  "clients.view",
+  "evaluations.view",
+  "evaluations.responses",
+  "evaluations.pdf",
+  "payments.view",
+  "settings.view",
+  "administrators.manage",
+  "audit.view"
+];
+
+async function getPrimaryAdminAccount(uid) {
+  const account = await firebaseAuth.getUser(uid);
+  const isPrimaryAdmin =
+    !account.disabled &&
+    account.emailVerified === true &&
+    String(account.email || "").trim().toLowerCase() === ADMIN_EMAIL;
+  return { account, isPrimaryAdmin };
+}
+
+// El administrador principal se identifica exclusivamente por el correo
+// configurado y verificado. Un custom claim antiguo nunca concede privilegios.
 async function requireAdmin(req, res, next) {
   try {
-    if (!req.user) {
-      return sendError(res, 401, "Debes iniciar sesión.");
+    if (!req.user) return sendError(res, 401, "Debes iniciar sesión.");
+    const { isPrimaryAdmin } = await getPrimaryAdminAccount(req.user.uid);
+    if (!isPrimaryAdmin) {
+      return sendError(res, 403, "Esta acción está reservada al administrador principal.");
     }
-
-    // Consultar el estado actual en Firebase evita aceptar un custom
-    // claim antiguo que siga presente en un token todavía no expirado.
-    const account = await firebaseAuth.getUser(req.user.uid);
-    const hasAdminClaim = account.customClaims?.admin === true;
-    const isConfiguredAdmin =
-      String(account.email || "").trim().toLowerCase() === ADMIN_EMAIL &&
-      account.emailVerified === true;
-
-    if (account.disabled || (!hasAdminClaim && !isConfiguredAdmin)) {
-      return sendError(
-        res,
-        403,
-        "No tienes permisos administrativos."
-      );
-    }
-
+    req.adminAccess = { isPrimaryAdmin: true, permissions: ADMIN_PERMISSION_CATALOG };
     return next();
-
   } catch (error) {
-    console.error("Validación administrativa:", error);
-    return sendError(
-      res,
-      403,
-      "No se pudo validar el permiso administrativo."
-    );
+    console.error("Validación del administrador principal:", error);
+    return sendError(res, 403, "No se pudo validar el permiso administrativo.");
   }
+}
+
+function requireStaffAdmin(permission) {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) return sendError(res, 401, "Debes iniciar sesión.");
+      const { account, isPrimaryAdmin } = await getPrimaryAdminAccount(req.user.uid);
+      if (account.disabled) return sendError(res, 403, "La cuenta está deshabilitada.");
+      if (isPrimaryAdmin) {
+        req.adminAccess = { isPrimaryAdmin: true, permissions: ADMIN_PERMISSION_CATALOG };
+        return next();
+      }
+      const roleSnapshot = await db.collection("adminRoles").doc(req.user.uid).get();
+      const role = roleSnapshot.exists ? roleSnapshot.data() || {} : {};
+      const permissions = Array.isArray(role.permissions)
+        ? role.permissions.filter(item => ADMIN_PERMISSION_CATALOG.includes(item))
+        : [];
+      if (role.status !== "active" || !permissions.includes(permission)) {
+        return sendError(res, 403, "No tienes autorización para realizar esta acción.");
+      }
+      req.adminAccess = { isPrimaryAdmin: false, permissions };
+      return next();
+    } catch (error) {
+      console.error("Validación de permisos de colaborador:", error);
+      return sendError(res, 403, "No se pudieron validar tus permisos.");
+    }
+  };
+}
+
+async function writeAdminAudit(actorUid, action, targetUid, details = {}) {
+  await db.collection("adminAuditLogs").add({
+    actorUid,
+    action,
+    targetUid: targetUid || null,
+    details,
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
 }
 
 /* =========================================================
@@ -402,25 +443,24 @@ async function requireAdmin(req, res, next) {
 // tener el correo configurado y estar verificada en Firebase Authentication.
 app.get("/api/session", requireUser, async (req, res) => {
   try {
-    const account = await firebaseAuth.getUser(req.user.uid);
-    const email = String(account.email || "").trim().toLowerCase();
-    const isConfiguredAdmin =
-      !account.disabled &&
-      account.emailVerified === true &&
-      email === ADMIN_EMAIL;
-    const hasAdminClaim = account.customClaims?.admin === true;
-    const isAdmin = isConfiguredAdmin || hasAdminClaim;
-
-    // Mantener el claim sincronizado facilita futuras sesiones y conserva
-    // cualquier otro custom claim que ya tenga la cuenta.
-    if (isConfiguredAdmin && !hasAdminClaim) {
-      await firebaseAuth.setCustomUserClaims(account.uid, {
-        ...(account.customClaims || {}),
-        admin: true
-      });
-    }
-
-    return res.json({ ok: true, isAdmin });
+    const { account, isPrimaryAdmin } = await getPrimaryAdminAccount(req.user.uid);
+    const roleSnapshot = isPrimaryAdmin
+      ? null
+      : await db.collection("adminRoles").doc(req.user.uid).get();
+    const role = roleSnapshot?.exists ? roleSnapshot.data() || {} : {};
+    const permissions = isPrimaryAdmin
+      ? ADMIN_PERMISSION_CATALOG
+      : role.status === "active" && Array.isArray(role.permissions)
+        ? role.permissions.filter(item => ADMIN_PERMISSION_CATALOG.includes(item))
+        : [];
+    const isSecondaryAdmin = !isPrimaryAdmin && !account.disabled && role.status === "active";
+    return res.json({
+      ok: true,
+      isAdmin: !account.disabled && (isPrimaryAdmin || isSecondaryAdmin),
+      isPrimaryAdmin: !account.disabled && isPrimaryAdmin,
+      isSecondaryAdmin: !account.disabled && isSecondaryAdmin,
+      permissions
+    });
   } catch (error) {
     console.error("Consultar rol de sesión:", error);
     return sendError(res, 500, "No se pudo validar el perfil de la cuenta.");
@@ -1439,10 +1479,143 @@ app.get(
    17. PANEL ADMINISTRATIVO
 ========================================================= */
 
+/* =========================================================
+   GESTIÓN DE ADMINISTRADORES SECUNDARIOS (SOLO PRINCIPAL)
+========================================================= */
+
+app.get("/api/admin/administrators", requireUser, requireAdmin, async (req, res) => {
+  try {
+    const snapshot = await db.collection("adminRoles").orderBy("updatedAt", "desc").limit(200).get();
+    const administrators = snapshot.docs.map(doc => {
+      const data = doc.data() || {};
+      return {
+        uid: doc.id,
+        email: data.email || "",
+        displayName: data.displayName || "",
+        permissions: Array.isArray(data.permissions) ? data.permissions : [],
+        status: data.status || "inactive",
+        createdAt: asDate(data.createdAt)?.toISOString() || null,
+        updatedAt: asDate(data.updatedAt)?.toISOString() || null
+      };
+    });
+    return res.json({ administrators, permissionCatalog: ADMIN_PERMISSION_CATALOG });
+  } catch (error) {
+    console.error("Listar administradores secundarios:", error);
+    return sendError(res, 500, "No se pudieron consultar los colaboradores.");
+  }
+});
+
+app.post("/api/admin/administrators", requireUser, requireAdmin, async (req, res) => {
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const permissions = Array.isArray(req.body.permissions)
+      ? [...new Set(req.body.permissions.filter(item => ADMIN_PERMISSION_CATALOG.includes(item)))]
+      : [];
+    if (!isValidEmail(email)) return sendError(res, 400, "Escribe un correo válido.");
+    if (!permissions.length) return sendError(res, 400, "Selecciona al menos un permiso.");
+    if (email === ADMIN_EMAIL) return sendError(res, 400, "La cuenta principal no puede registrarse como colaborador.");
+    let account;
+    try {
+      account = await firebaseAuth.getUserByEmail(email);
+    } catch (error) {
+      if (error.code === "auth/user-not-found") {
+        return sendError(res, 404, "La persona debe crear primero su cuenta en NeuroEval Pro con ese correo.");
+      }
+      throw error;
+    }
+    if (account.disabled) return sendError(res, 400, "La cuenta está deshabilitada.");
+    await db.collection("adminRoles").doc(account.uid).set({
+      uid: account.uid,
+      email,
+      displayName: account.displayName || "",
+      permissions,
+      status: "active",
+      grantedBy: req.user.uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    await writeAdminAudit(req.user.uid, "administrator.created_or_reactivated", account.uid, { email, permissions });
+    return res.status(201).json({ ok: true, uid: account.uid, email, permissions, status: "active" });
+  } catch (error) {
+    console.error("Crear administrador secundario:", error);
+    return sendError(res, 500, "No se pudo agregar el colaborador.");
+  }
+});
+
+app.patch("/api/admin/administrators/:uid", requireUser, requireAdmin, async (req, res) => {
+  try {
+    const uid = String(req.params.uid || "");
+    if (!uid || uid === req.user.uid) return sendError(res, 400, "No puedes modificar tu propia cuenta principal.");
+    const ref = db.collection("adminRoles").doc(uid);
+    const snapshot = await ref.get();
+    if (!snapshot.exists) return sendError(res, 404, "No encontramos ese colaborador.");
+    const current = snapshot.data() || {};
+    if (String(current.email || "").toLowerCase() === ADMIN_EMAIL) {
+      return sendError(res, 403, "La cuenta principal está protegida.");
+    }
+    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    if (Array.isArray(req.body.permissions)) {
+      updates.permissions = [...new Set(req.body.permissions.filter(item => ADMIN_PERMISSION_CATALOG.includes(item)))];
+      if (!updates.permissions.length) return sendError(res, 400, "Selecciona al menos un permiso o desactiva al colaborador.");
+    }
+    if (typeof req.body.active === "boolean") updates.status = req.body.active ? "active" : "inactive";
+    await ref.set(updates, { merge: true });
+    await writeAdminAudit(req.user.uid, "administrator.updated", uid, {
+      permissions: updates.permissions || current.permissions || [],
+      status: updates.status || current.status || "active"
+    });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("Actualizar administrador secundario:", error);
+    return sendError(res, 500, "No se pudo actualizar el colaborador.");
+  }
+});
+
+app.delete("/api/admin/administrators/:uid", requireUser, requireAdmin, async (req, res) => {
+  try {
+    const uid = String(req.params.uid || "");
+    if (!uid || uid === req.user.uid) return sendError(res, 400, "No puedes eliminar tu cuenta principal.");
+    const ref = db.collection("adminRoles").doc(uid);
+    const snapshot = await ref.get();
+    if (!snapshot.exists) return sendError(res, 404, "No encontramos ese colaborador.");
+    const data = snapshot.data() || {};
+    if (String(data.email || "").toLowerCase() === ADMIN_EMAIL) {
+      return sendError(res, 403, "La cuenta principal está protegida.");
+    }
+    await ref.delete();
+    await writeAdminAudit(req.user.uid, "administrator.revoked", uid, { email: data.email || "" });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("Revocar administrador secundario:", error);
+    return sendError(res, 500, "No se pudo revocar el acceso del colaborador.");
+  }
+});
+
+app.get("/api/admin/audit", requireUser, requireStaffAdmin("audit.view"), async (req, res) => {
+  try {
+    const snapshot = await db.collection("adminAuditLogs").orderBy("createdAt", "desc").limit(200).get();
+    const logs = snapshot.docs.map(doc => {
+      const data = doc.data() || {};
+      return {
+        id: doc.id,
+        actorUid: data.actorUid || "",
+        action: data.action || "",
+        targetUid: data.targetUid || "",
+        details: data.details || {},
+        createdAt: asDate(data.createdAt)?.toISOString() || null
+      };
+    });
+    return res.json({ logs });
+  } catch (error) {
+    console.error("Consultar auditoría administrativa:", error);
+    return sendError(res, 500, "No se pudo consultar el historial administrativo.");
+  }
+});
+
 app.get(
   "/api/admin/overview",
   requireUser,
-  requireAdmin,
+  requireStaffAdmin("dashboard.view"),
   async (req, res) => {
     try {
       const evaluationsRef = db.collection("evaluations");
@@ -1488,7 +1661,7 @@ app.get(
 app.get(
   "/api/admin/evaluations/:id",
   requireUser,
-  requireAdmin,
+  requireStaffAdmin("evaluations.responses"),
   async (req, res) => {
     try {
       const snapshot = await db
@@ -1517,7 +1690,7 @@ app.get(
 app.get(
   "/api/admin/evaluations/:id/pdf",
   requireUser,
-  requireAdmin,
+  requireStaffAdmin("evaluations.pdf"),
   async (req, res) => {
     try {
       const snapshot = await db
