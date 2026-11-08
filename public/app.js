@@ -845,7 +845,7 @@ const parentQuestionBank = [
 ["Impulsividad","¿Le cuesta esperar su turno en juegos, filas o conversaciones?","impulsivity","⏳","Piensa en situaciones cotidianas repetidas."],
 ["Impulsividad","¿Interrumpe conversaciones, juegos o actividades de otras personas sin advertirlo?","impulsivity","🗣️","Por ejemplo, se incorpora a una actividad o toma la palabra repentinamente."],
 ["Contexto","¿Las conductas que has señalado se presentan desde hace aproximadamente seis meses o más?","context","📆","Si comenzaron hace poco, anota cuándo aparecieron."],
-["Contexto","¿Recuerdas comportamientos similares antes de los 12 años?","context","🧒","Piensa en informes escolares, recuerdos familiares o comentarios docentes."],
+["Contexto","¿Recuerdas que algunas de estas conductas ya estaban presentes en etapas anteriores de su desarrollo?","context","🧒","Piensa en informes escolares, recuerdos familiares o comentarios docentes."],
 ["Contexto","¿Has observado estas conductas en al menos dos entornos, como casa y colegio?","context","🏠","También pueden ser actividades extracurriculares u otros espacios."],
 ["Impacto cotidiano","¿Estas conductas afectan de forma clara su aprendizaje, convivencia, amistades o rutinas?","impact","🎯","Describe consecuencias concretas, no solo que el comportamiento resulte molesto."],
 ["Contexto","¿Un docente u otro cuidador ha expresado preocupaciones similares?","context","👥","Si es posible, contrasta lo observado con alguien que lo conozca en otro entorno."],
