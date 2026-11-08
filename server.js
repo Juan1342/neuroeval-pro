@@ -370,8 +370,11 @@ async function requireAdmin(req, res, next) {
     // claim antiguo que siga presente en un token todavía no expirado.
     const account = await firebaseAuth.getUser(req.user.uid);
     const hasAdminClaim = account.customClaims?.admin === true;
+    const isConfiguredAdmin =
+      String(account.email || "").trim().toLowerCase() === ADMIN_EMAIL &&
+      account.emailVerified === true;
 
-    if (account.disabled || !hasAdminClaim) {
+    if (account.disabled || (!hasAdminClaim && !isConfiguredAdmin)) {
       return sendError(
         res,
         403,
@@ -392,7 +395,40 @@ async function requireAdmin(req, res, next) {
 }
 
 /* =========================================================
-   7. ESTADO DEL SERVIDOR Y CONFIGURACIÓN FIREBASE
+   7. SESIÓN Y ROL DE LA CUENTA
+========================================================= */
+
+// Devuelve el rol calculado en el servidor. La cuenta administradora debe
+// tener el correo configurado y estar verificada en Firebase Authentication.
+app.get("/api/session", requireUser, async (req, res) => {
+  try {
+    const account = await firebaseAuth.getUser(req.user.uid);
+    const email = String(account.email || "").trim().toLowerCase();
+    const isConfiguredAdmin =
+      !account.disabled &&
+      account.emailVerified === true &&
+      email === ADMIN_EMAIL;
+    const hasAdminClaim = account.customClaims?.admin === true;
+    const isAdmin = isConfiguredAdmin || hasAdminClaim;
+
+    // Mantener el claim sincronizado facilita futuras sesiones y conserva
+    // cualquier otro custom claim que ya tenga la cuenta.
+    if (isConfiguredAdmin && !hasAdminClaim) {
+      await firebaseAuth.setCustomUserClaims(account.uid, {
+        ...(account.customClaims || {}),
+        admin: true
+      });
+    }
+
+    return res.json({ ok: true, isAdmin });
+  } catch (error) {
+    console.error("Consultar rol de sesión:", error);
+    return sendError(res, 500, "No se pudo validar el perfil de la cuenta.");
+  }
+});
+
+/* =========================================================
+   8. ESTADO DEL SERVIDOR Y CONFIGURACIÓN FIREBASE
 ========================================================= */
 
 app.get("/api/health", (req, res) => {
