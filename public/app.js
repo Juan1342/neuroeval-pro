@@ -42,7 +42,7 @@ let currentScores = null;
 let currentRecommendations = [];
 let currentEvaluationType = "self_report";
 let parentEvaluationContext = null;
-let activeChoices = choices;
+let activeChoices;
 
 const choices = [
   "Nunca",
@@ -53,6 +53,7 @@ const choices = [
 ];
 
 const points = [0, 1, 2, 3, 4];
+activeChoices = choices;
 
 /* =========================================================
    2. BANCO DE PREGUNTAS
