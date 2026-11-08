@@ -1786,6 +1786,37 @@ app.patch("/api/admin/promo-codes/:code", requireUser, requireStaffAdmin("pricin
   }
 });
 
+/* Diagnóstico protegido de servicios y recursos del servidor. */
+app.get("/api/admin/health/details", requireUser, requireStaffAdmin("settings.view"), async (req, res) => {
+  const startedAt = Date.now();
+  const checks = [];
+  const add = (id, label, status, detail) => checks.push({ id, label, status, detail });
+  add("api", "API NeuroEval Pro", "operational", "El servidor respondió correctamente.");
+  add("firebase-auth", "Firebase Authentication", "operational", "La sesión administrativa fue validada.");
+  try {
+    await db.collection("platformSettings").doc("pricing").get();
+    add("firestore", "Base de datos Firestore", "operational", "Consulta de lectura completada.");
+  } catch (error) {
+    console.error("Health check Firestore:", error.message);
+    add("firestore", "Base de datos Firestore", "error", "No fue posible completar una consulta de lectura.");
+  }
+  add("smtp", "Servicio de correo SMTP", !mailer ? "not_configured" : smtpConnectionVerified ? "operational" : "warning",
+    !mailer ? "No hay transporte SMTP configurado." : smtpConnectionVerified ? "Conexión SMTP verificada." : "Configurado, pero sin verificación de conexión.");
+  const wompiConfigured = Boolean(WOMPI_PUBLIC_KEY && WOMPI_INTEGRITY_SECRET && WOMPI_EVENTS_SECRET);
+  add("wompi", "Pasarela Wompi", wompiConfigured ? "configured" : "not_configured",
+    !wompiConfigured ? "Faltan parámetros de configuración." : WOMPI_PUBLIC_KEY.startsWith("pub_test_") ? "Ambiente de pruebas (sandbox)." : WOMPI_PUBLIC_KEY.startsWith("pub_prod_") ? "Ambiente de producción." : "Ambiente no identificado.");
+  const memory = process.memoryUsage();
+  return res.json({
+    ok: checks.every(item => item.status !== "error"),
+    checkedAt: new Date().toISOString(),
+    uptimeSeconds: Math.floor(process.uptime()),
+    responseMs: Date.now() - startedAt,
+    runtime: process.version,
+    memory: { rssMb: Math.round(memory.rss / 1048576), heapUsedMb: Math.round(memory.heapUsed / 1048576), heapTotalMb: Math.round(memory.heapTotal / 1048576) },
+    checks
+  });
+});
+
 app.get(
   "/api/admin/overview",
   requireUser,
