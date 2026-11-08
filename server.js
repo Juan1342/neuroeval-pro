@@ -2038,13 +2038,22 @@ app.get("/api/admin/analytics/commercial", requireUser, requireStaffAdmin("payme
       else if (["failed", "declined", "error", "cancelled"].includes(status)) failed++;
       if (isPaid) { revenueCop += Number(data.amountCop || 0); discountsCop += Number(data.discountCop || 0); }
       if (data.promoCode) { promoApplied++; promoUsage.set(String(data.promoCode), (promoUsage.get(String(data.promoCode)) || 0) + 1); }
-      const date = asDate(isPaid ? (data.paidAt || data.updatedAt || data.createdAt) : data.createdAt);
-      if (!date) return;
-      const key = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
-      const bucket = months.find(item => item.key === key);
-      if (bucket) {
-        bucket.evaluations++;
-        if (isPaid) { bucket.paid++; bucket.revenueCop += Number(data.amountCop || 0); }
+      const createdDate = asDate(data.createdAt);
+      if (createdDate) {
+        const createdKey = createdDate.getFullYear() + "-" + String(createdDate.getMonth() + 1).padStart(2, "0");
+        const createdBucket = months.find(item => item.key === createdKey);
+        if (createdBucket) {
+          createdBucket.evaluations++;
+          if (isPaid) createdBucket.paid++;
+        }
+      }
+      if (isPaid) {
+        const paidDate = asDate(data.paidAt || data.updatedAt || data.createdAt);
+        if (paidDate) {
+          const paidKey = paidDate.getFullYear() + "-" + String(paidDate.getMonth() + 1).padStart(2, "0");
+          const paidBucket = months.find(item => item.key === paidKey);
+          if (paidBucket) paidBucket.revenueCop += Number(data.amountCop || 0);
+        }
       }
     });
     const promos = promosSnapshot.docs.map(document => {
