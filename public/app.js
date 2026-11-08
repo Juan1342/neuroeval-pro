@@ -1629,13 +1629,14 @@ function renderAdminDashboardCharts(records) {
   const monthly = $("admin-monthly-chart"), donut = $("admin-payment-donut");
   if (!monthly || !donut) return;
   monthly.replaceChildren();
-  if (!records.length) {
-    const note=document.createElement("p");note.className="chart-subtitle";note.textContent="No hay registros suficientes o tu rol no tiene acceso a los datos para construir esta gráfica.";
-    monthly.appendChild(note);donut.style.setProperty("--paid","0%");donut.style.setProperty("--pending","0%");
-    donut.innerHTML='<div class="status-donut-center">—<small>Sin datos</small></div>';
-    $("admin-payment-legend").textContent="Datos no disponibles";return;
-  }
-  const now=new Date(), buckets=[];
+  if (!hasAdminPermission("evaluations.view")) {
+    const note=document.createElement("p");note.className="chart-subtitle";note.textContent="Tu rol no permite consultar estadísticas de evaluaciones.";
+    monthly.appendChild(note);
+  } else if (!records.length) {
+    const note=document.createElement("p");note.className="chart-subtitle";note.textContent="No hay registros suficientes para construir esta gráfica.";
+    monthly.appendChild(note);
+  } else {
+    const now=new Date(), buckets=[];
   for(let offset=5;offset>=0;offset--){
     const date=new Date(now.getFullYear(),now.getMonth()-offset,1);
     buckets.push({key:date.getFullYear()+"-"+date.getMonth(),label:date.toLocaleDateString("es-CO",{month:"short"}).replace(".",""),count:0});
@@ -1653,6 +1654,7 @@ function renderAdminDashboardCharts(records) {
     const label=document.createElement("span");label.className="chart-bar-label";label.textContent=item.label;
     col.append(bar,label);monthly.appendChild(col);
   });
+  }
   if (!hasAdminPermission("payments.view")) {
     donut.style.background="conic-gradient(#394363 0 100%)";
     donut.innerHTML='<div class="status-donut-center">🔒<small>Acceso restringido</small></div>';
@@ -1672,7 +1674,11 @@ function renderAdminDashboardCharts(records) {
   } else {
     donut.style.background="conic-gradient(#394363 0 100%)";donut.innerHTML='<div class="status-donut-center">0<small>pagos</small></div>';$("admin-payment-legend").textContent="Sin movimientos";
   }
-  $("admin-chart-sample-note").textContent="Basado en "+records.length+" registros visibles";
+  if (hasAdminPermission("evaluations.view")) {
+    $("admin-chart-sample-note").textContent="Basado en "+records.length+" registros visibles";
+  } else {
+    $("admin-chart-sample-note").textContent="Acceso restringido";
+  }
 }
 function renderResultRadar(scores, labels) {
   const host=$("result-radar"),chart=$("result-radar-chart");
