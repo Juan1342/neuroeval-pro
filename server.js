@@ -425,7 +425,10 @@ function requireStaffAdmin(permission) {
       const permissions = Array.isArray(role.permissions)
         ? role.permissions.filter(item => ADMIN_PERMISSION_CATALOG.includes(item))
         : [];
-      if (role.status !== "active" || !permissions.includes(permission)) {
+      const accountEmail = String(account.email || "").trim().toLowerCase();
+      const roleEmail = String(role.email || "").trim().toLowerCase();
+      if (account.emailVerified !== true || !roleEmail || roleEmail !== accountEmail ||
+          role.status !== "active" || !permissions.includes(permission)) {
         return sendError(res, 403, "No tienes autorización para realizar esta acción.");
       }
       req.adminAccess = { isPrimaryAdmin: false, permissions };
@@ -465,7 +468,12 @@ app.get("/api/session", requireUser, async (req, res) => {
       : role.status === "active" && Array.isArray(role.permissions)
         ? role.permissions.filter(item => ADMIN_PERMISSION_CATALOG.includes(item))
         : [];
-    const isSecondaryAdmin = !isPrimaryAdmin && !account.disabled && role.status === "active";
+    const isSecondaryAdmin =
+      !isPrimaryAdmin &&
+      !account.disabled &&
+      account.emailVerified === true &&
+      role.status === "active" &&
+      String(role.email || "").trim().toLowerCase() === String(account.email || "").trim().toLowerCase();
     return res.json({
       ok: true,
       isAdmin: !account.disabled && (isPrimaryAdmin || isSecondaryAdmin),
