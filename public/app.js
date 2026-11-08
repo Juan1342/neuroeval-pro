@@ -400,6 +400,10 @@ function show(viewId) {
     "auth-view",
     "forgot-view",
     "dashboard-view",
+    "games-view",
+    "activities-view",
+    "recommendations-view",
+    "progress-view",
     "profile-view",
     "settings-view",
     "quiz-view",
@@ -415,6 +419,11 @@ function show(viewId) {
     }
   });
 
+  const nav = $("app-nav");
+  if (nav) {
+    const navViews = ["dashboard-view","games-view","activities-view","recommendations-view","progress-view","profile-view","settings-view"];
+    nav.classList.toggle("hidden", !currentUser || currentIsAdmin || !navViews.includes(viewId));
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -750,6 +759,95 @@ function startAdhdEvaluation() {
     profileData?.age ?? null,
     profileData?.goal || "Autoconocimiento"
   );
+}
+
+
+/* =========================================================
+   8. JUEGOS Y ACTIVIDADES GRATUITAS
+========================================================= */
+
+function progressKey() {
+  return currentUser?.uid ? `neuroeval-progress-${currentUser.uid}` : "neuroeval-progress-guest";
+}
+
+function readProgress() {
+  try { return JSON.parse(localStorage.getItem(progressKey()) || '{"games":[],"activities":[],"history":[]}'); }
+  catch (_) { return { games: [], activities: [], history: [] }; }
+}
+
+function saveProgress(data) {
+  try { localStorage.setItem(progressKey(), JSON.stringify(data)); } catch (error) { console.warn("No se pudo guardar el progreso local.", error); }
+}
+
+function recordGame(name, score, detail) {
+  const data = readProgress();
+  data.games.push({ name, score, detail, date: new Date().toISOString() });
+  data.history.unshift({ type: "Juego", name, detail: `${score}% · ${detail}`, date: new Date().toISOString() });
+  data.history = data.history.slice(0, 12);
+  saveProgress(data);
+  renderProgress();
+}
+
+function renderProgress() {
+  const data = readProgress();
+  const games = data.games || [];
+  const activities = data.activities || [];
+  $("progress-games").textContent = games.length;
+  $("progress-activities").textContent = activities.length;
+  $("progress-best").textContent = `${games.length ? Math.max(...games.map(item => Number(item.score) || 0)) : 0}%`;
+  const history = $("progress-history");
+  history.innerHTML = "";
+  if (!(data.history || []).length) { history.textContent = "Aún no hay actividades registradas. ¡Prueba tu primer juego!"; return; }
+  data.history.forEach(item => {
+    const row = document.createElement("div"); row.className = "profile-row";
+    const label = document.createElement("span"); label.textContent = `${item.type}: ${item.name}`;
+    const detail = document.createElement("strong"); detail.textContent = item.detail;
+    row.append(label, detail); history.appendChild(row);
+  });
+}
+
+function openGame(game) {
+  const stage = $("game-stage"); stage.classList.remove("hidden"); stage.innerHTML = "";
+  const title = document.createElement("h3"); title.className = "text-xl font-extrabold";
+  const intro = document.createElement("p"); intro.className = "muted-text mt-2";
+  const content = document.createElement("div");
+  const feedback = document.createElement("p"); feedback.className = "message"; feedback.setAttribute("aria-live","polite");
+  const close = document.createElement("button"); close.className = "btn outline mt-3"; close.type = "button"; close.textContent = "Cerrar juego"; close.addEventListener("click", () => stage.classList.add("hidden"));
+  stage.append(title,intro,content,feedback,close);
+
+  if (game === "memory") {
+    title.textContent = "Secuencia relámpago"; intro.textContent = "Memoriza los números. Cuando desaparezcan, escríbelos en el mismo orden.";
+    const sequence = Array.from({length:5}, () => Math.floor(Math.random()*9)+1);
+    const display = document.createElement("div"); display.className = "game-sequence"; display.textContent = sequence.join("  "); content.appendChild(display);
+    const start = document.createElement("button"); start.className = "btn primary"; start.textContent = "Comenzar"; content.appendChild(start);
+    start.addEventListener("click", () => { start.disabled = true; feedback.textContent = "Observa con atención…"; window.setTimeout(() => { display.textContent = "?  ?  ?  ?  ?"; const form = document.createElement("form"); form.className = "max-w-sm mx-auto mt-4"; const input = document.createElement("input"); input.className = "field text-center"; input.inputMode = "numeric"; input.maxLength = 5; input.placeholder = "Escribe los 5 números"; input.required = true; const submit = document.createElement("button"); submit.className = "btn primary mt-3"; submit.textContent = "Comprobar"; form.append(input,submit); content.appendChild(form); form.addEventListener("submit", event => { event.preventDefault(); const answer = input.value.replace(/\\D/g,"").split("").map(Number); const correct = answer.filter((value,index) => value === sequence[index]).length; const score = Math.round(correct/sequence.length*100); feedback.textContent = `Resultado: ${correct} de 5 posiciones correctas (${score}%).`; recordGame("Secuencia relámpago",score,`${correct}/5 posiciones`); form.remove(); }); }, 3500); });
+  } else if (game === "search") {
+    title.textContent = "Cazador de símbolos"; intro.textContent = "Selecciona todas las estrellas ★. Evita tocar los demás símbolos.";
+    const symbols = ["★","●","◆","▲","✚","★","■","●","◆","★","▲","✚","■","★","●","◆","▲","■","★","✚"];
+    const grid = document.createElement("div"); grid.className = "game-symbol-grid"; let selected = 0, mistakes = 0;
+    symbols.forEach((symbol,index) => { const button = document.createElement("button"); button.type = "button"; button.className = "game-symbol"; button.textContent = symbol; button.addEventListener("click", () => { if(button.disabled) return; button.disabled = true; if(symbol === "★") { selected++; button.classList.add("selected"); } else { mistakes++; button.style.opacity = ".35"; } feedback.textContent = `Estrellas encontradas: ${selected}/5 · Selecciones incorrectas: ${mistakes}`; }); grid.appendChild(button); });
+    const submit = document.createElement("button"); submit.className = "btn primary"; submit.textContent = "Finalizar reto"; submit.addEventListener("click", () => { const score = Math.max(0,Math.round((selected/5)*100 - mistakes*5)); feedback.textContent = `Encontraste ${selected} de 5 estrellas. Puntuación: ${score}%.`; recordGame("Cazador de símbolos",score,`${selected}/5 estrellas · ${mistakes} errores`); submit.disabled = true; }); content.append(grid,submit);
+  } else if (game === "pattern") {
+    title.textContent = "Completa el patrón"; intro.textContent = "Observa la secuencia y elige el número que continúa.";
+    const sequence = document.createElement("div"); sequence.className = "game-sequence"; sequence.textContent = "2  ·  4  ·  8  ·  16  ·  ?"; content.appendChild(sequence);
+    const choices = document.createElement("div"); choices.className = "game-choice-grid";
+    [24,30,32,36].forEach(value => { const button = document.createElement("button"); button.className = "game-choice"; button.type = "button"; button.textContent = value; button.addEventListener("click", () => { const correct = value === 32; const score = correct ? 100 : 0; feedback.textContent = correct ? "¡Correcto! Cada número se multiplica por 2." : "Esta vez no. La regla era multiplicar cada número por 2; la respuesta es 32."; recordGame("Completa el patrón",score,correct ? "Respuesta correcta" : "Respuesta por revisar"); choices.querySelectorAll("button").forEach(item => item.disabled = true); }); choices.appendChild(button); }); content.appendChild(choices);
+  }
+  stage.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function completeActivity(activity) {
+  const labels = { breathing:"Respiración consciente", planning:"Divide una tarea", grounding:"Pausa de observación", focus:"Enfoque de 10 minutos", recall:"Recuerdo del día", movement:"Pausa de movimiento" };
+  const data = readProgress(); data.activities.push({ name: labels[activity] || activity, date: new Date().toISOString() });
+  data.history.unshift({ type:"Actividad", name:labels[activity] || activity, detail:"Completada", date:new Date().toISOString() }); data.history = data.history.slice(0,12); saveProgress(data);
+  showMessage("activity-message", "¡Bien hecho! Registramos esta actividad en tu progreso.");
+}
+
+function navigateSection(section) {
+  document.querySelectorAll("[data-nav]").forEach(button => button.classList.toggle("active", button.dataset.nav === section));
+  const views = { tests:"dashboard-view", games:"games-view", activities:"activities-view", recommendations:"recommendations-view", progress:"progress-view" };
+  if (section === "progress") renderProgress();
+  show(views[section] || "dashboard-view");
 }
 
 /* =========================================================
@@ -1535,6 +1633,11 @@ function registerEventListeners() {
   });
 
   $("start-adhd-evaluation").addEventListener("click", startAdhdEvaluation);
+  document.querySelectorAll("[data-nav]").forEach(button => button.addEventListener("click", () => navigateSection(button.dataset.nav)));
+  document.querySelectorAll("[data-game]").forEach(button => button.addEventListener("click", () => openGame(button.dataset.game)));
+  document.querySelectorAll("[data-activity]").forEach(button => button.addEventListener("click", () => completeActivity(button.dataset.activity)));
+  $("refresh-progress").addEventListener("click", renderProgress);
+  $("menu-tests").addEventListener("click", () => { closeAccountMenu(); navigateSection("tests"); });
   $("dashboard-logout").addEventListener("click", logout);
 
   $("prev-question").addEventListener("click", previousQuestion);
