@@ -558,6 +558,41 @@ app.get("/api/support/tickets", requireUser, async (req, res) => {
   }
 });
 
+// Un cliente autenticado solo puede responder dentro de sus propias solicitudes.
+app.post("/api/support/tickets/:id/messages", requireUser, async (req, res) => {
+  try {
+    const message = cleanText(req.body.message, 3000);
+    if (message.length < 2) return sendError(res, 400, "Escribe un mensaje antes de enviarlo.");
+    const ref = db.collection("supportTickets").doc(String(req.params.id || ""));
+    const result = await db.runTransaction(async transaction => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) return { status: 404, error: "No encontramos esa solicitud." };
+      const data = snapshot.data() || {};
+      if (data.uid !== req.user.uid) return { status: 403, error: "No tienes acceso a esta solicitud." };
+      const messages = Array.isArray(data.messages) ? data.messages : [];
+      if (messages.length >= 100) return { status: 409, error: "Esta conversación alcanzó el límite de mensajes. Crea una nueva solicitud para continuar." };
+      if (data.status === "closed") return { status: 409, error: "Esta solicitud está cerrada. Crea una nueva solicitud para recibir ayuda." };
+      const nextMessages = [...messages, {
+        senderUid: req.user.uid,
+        senderRole: "customer",
+        message,
+        createdAt: new Date().toISOString()
+      }];
+      transaction.update(ref, {
+        messages: nextMessages,
+        status: data.status === "resolved" ? "open" : (data.status || "open"),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      return { status: 200, ok: true };
+    });
+    if (result.status !== 200) return sendError(res, result.status, result.error);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("Responder ticket de soporte:", error);
+    return sendError(res, 500, "No se pudo enviar tu mensaje.");
+  }
+});
+
 app.get("/api/admin/support/tickets", requireUser, requireStaffAdmin("support.view"), async (req, res) => {
   try {
     const status = ["open", "in_progress", "waiting_customer", "resolved", "closed"].includes(req.query.status)
