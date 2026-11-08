@@ -762,7 +762,8 @@ function setAdminTab(tab) {
     settings: hasAdminPermission("settings.view"),
     health: hasAdminPermission("settings.view"),
     administrators: currentIsPrimaryAdmin,
-    audit: hasAdminPermission("audit.view")
+    audit: hasAdminPermission("audit.view"),
+    support: hasAdminPermission("support.view")
   };
   document.querySelectorAll("[data-admin-tab]").forEach(button => {
     button.classList.toggle("hidden", !visibility[button.dataset.adminTab]);
@@ -781,6 +782,7 @@ function setAdminTab(tab) {
   if (selected === "audit") loadAdminAudit();
   if (selected === "settings") loadAdminHealth();
   if (selected === "health") loadAdminHealthDetails();
+  if (selected === "support") loadAdminSupportTickets();
 }
 
 function showProfile() {
@@ -1754,8 +1756,101 @@ const ADMIN_PERMISSION_LABELS = {
   "payments.view": "Consultar pagos e ingresos",
   "settings.view": "Consultar estado técnico",
   "pricing.manage": "Administrar precios y promociones",
-  "audit.view": "Consultar historial administrativo"
+  "audit.view": "Consultar historial administrativo",
+  "support.view": "Consultar solicitudes de soporte",
+  "support.manage": "Responder y gestionar soporte"
 };
+
+async function loadAdminSupportTickets() {
+  const target = $("admin-support-list");
+  if (!target || !hasAdminPermission("support.view")) return;
+  target.textContent = "Cargando solicitudes…";
+  try {
+    const response = await api("/api/admin/support/tickets");
+    const data = await response.json();
+    renderAdminSupportTickets(Array.isArray(data.tickets) ? data.tickets : []);
+  } catch (error) {
+    target.textContent = "No se pudieron cargar las solicitudes: " + error.message;
+  }
+}
+
+function renderAdminSupportTickets(tickets) {
+  const target = $("admin-support-list");
+  target.replaceChildren();
+  if (!tickets.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted-text";
+    empty.textContent = "No hay solicitudes de soporte registradas.";
+    target.appendChild(empty);
+    return;
+  }
+  const labels = { open: "Abierto", in_progress: "En gestión", waiting_customer: "Espera al cliente", resolved: "Resuelto", closed: "Cerrado" };
+  tickets.forEach(ticket => {
+    const card = document.createElement("article");
+    card.className = "card space-y-3";
+    const heading = document.createElement("div");
+    heading.className = "flex flex-wrap justify-between gap-2";
+    const title = document.createElement("div");
+    const subject = document.createElement("strong");
+    subject.textContent = ticket.subject || "Solicitud sin asunto";
+    const meta = document.createElement("p");
+    meta.className = "muted-text text-xs mt-1";
+    meta.textContent = (ticket.displayName || ticket.email || ticket.uid) + " · " + ticket.category + " · " + formatAdminDate(ticket.createdAt);
+    title.append(subject, meta);
+    const status = document.createElement("span");
+    status.className = "pill";
+    status.textContent = labels[ticket.status] || ticket.status;
+    heading.append(title, status);
+    const conversation = document.createElement("div");
+    conversation.className = "space-y-2";
+    (ticket.messages || []).forEach(message => {
+      const bubble = document.createElement("div");
+      bubble.className = "rounded-xl p-3 " + (message.senderRole === "admin" ? "bg-violet-500/10 ml-4" : "bg-slate-500/10 mr-4");
+      const who = document.createElement("strong");
+      who.className = "text-xs";
+      who.textContent = message.senderRole === "admin" ? "Equipo de soporte" : "Cliente";
+      const body = document.createElement("p");
+      body.className = "text-sm whitespace-pre-wrap mt-1";
+      body.textContent = message.message || "";
+      bubble.append(who, body);
+      conversation.appendChild(bubble);
+    });
+    card.append(heading, conversation);
+    if (hasAdminPermission("support.manage")) {
+      const controls = document.createElement("div");
+      controls.className = "grid sm:grid-cols-3 gap-2";
+      const state = document.createElement("select");
+      state.className = "input";
+      [["open","Abierto"],["in_progress","En gestión"],["waiting_customer","Espera al cliente"],["resolved","Resuelto"],["closed","Cerrado"]].forEach(([value,label]) => {
+        const option = document.createElement("option"); option.value=value; option.textContent=label; option.selected=ticket.status===value; state.appendChild(option);
+      });
+      const priority = document.createElement("select");
+      priority.className = "input";
+      [["low","Baja"],["normal","Normal"],["high","Alta"],["urgent","Urgente"]].forEach(([value,label]) => {
+        const option=document.createElement("option"); option.value=value; option.textContent="Prioridad: "+label; option.selected=(ticket.priority||"normal")===value; priority.appendChild(option);
+      });
+      const reply = document.createElement("textarea");
+      reply.className = "input sm:col-span-3";
+      reply.rows = 2; reply.maxLength = 3000; reply.placeholder = "Escribe una respuesta para el cliente (opcional)…";
+      const save = document.createElement("button");
+      save.type = "button"; save.className = "btn primary";
+      save.textContent = "Guardar gestión";
+      save.addEventListener("click", async () => {
+        save.disabled = true;
+        try {
+          await api("/api/admin/support/tickets/" + encodeURIComponent(ticket.id), {
+            method: "PATCH",
+            body: JSON.stringify({ status: state.value, priority: priority.value, reply: reply.value.trim() })
+          });
+          await loadAdminSupportTickets();
+        } catch (error) { alert(error.message); save.disabled = false; }
+      });
+      controls.append(state, priority, save, reply);
+      card.appendChild(controls);
+    }
+    target.appendChild(card);
+  });
+}
 
 async function loadAdminPricing() {
   const priceInput = $("admin-service-price");
@@ -2254,6 +2349,7 @@ function registerEventListeners() {
   $("admin-evaluation-search").addEventListener("input", filterAdminTables);
   $("admin-health-refresh").addEventListener("click", loadAdminHealth);
   $("admin-health-details-refresh").addEventListener("click", loadAdminHealthDetails);
+  $("admin-support-refresh").addEventListener("click", loadAdminSupportTickets);
   $("admin-profile-open").addEventListener("click", showProfile);
 
   // Limpia el parámetro de retorno después de procesar la sesión.
