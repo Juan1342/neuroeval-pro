@@ -422,8 +422,10 @@ function show(viewId) {
   const nav = $("app-nav");
   if (nav) {
     const navViews = ["dashboard-view","games-view","activities-view","recommendations-view","progress-view","profile-view","settings-view"];
-    nav.classList.toggle("hidden", !currentUser || currentIsAdmin || !navViews.includes(viewId));
+    nav.classList.toggle("hidden", !currentUser || !navViews.includes(viewId));
   }
+  const adminShortcut = $("menu-admin");
+  if (adminShortcut) adminShortcut.classList.toggle("hidden", !currentUser || !currentIsAdmin);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -729,6 +731,28 @@ function showDashboard(name) {
     ? `Hola, ${displayName}`
     : "Bienvenido a NeuroEval Pro";
   show("dashboard-view");
+}
+
+function showAdmin() {
+  if (!currentUser || !currentIsAdmin) {
+    showMessage("auth-message", "Esta sección requiere permisos administrativos.", true);
+    return show("auth-view");
+  }
+  closeAccountMenu();
+  show("admin-view");
+  loadAdmin();
+}
+
+function setAdminTab(tab) {
+  const allowed = ["overview", "clients", "evaluations", "payments", "settings"];
+  const selected = allowed.includes(tab) ? tab : "overview";
+  document.querySelectorAll(".admin-panel").forEach(panel => panel.classList.toggle("hidden", panel.id !== "admin-panel-" + selected));
+  document.querySelectorAll("[data-admin-tab]").forEach(button => {
+    const active = button.dataset.adminTab === selected;
+    button.classList.toggle("primary", active);
+    button.classList.toggle("outline", !active);
+    button.setAttribute("aria-selected", String(active));
+  });
 }
 
 function showProfile() {
@@ -1526,82 +1550,60 @@ async function downloadOwnPdf() {
    13. PANEL ADMINISTRATIVO
 ========================================================= */
 
+let adminOverviewCache = null;
+function formatAdminDate(value) { if (!value) return "—"; const d = new Date(value); return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString("es-CO"); }
+function formatCop(value) { return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(value||0)); }
+function adminCell(row,value) { const cell=document.createElement("td"); cell.textContent=value===null||value===undefined||value===""?"—":String(value); row.appendChild(cell); return cell; }
+function adminEmptyRow(tbody,colspan,message) { tbody.replaceChildren(); const row=document.createElement("tr"),cell=document.createElement("td"); cell.colSpan=colspan; cell.className="muted-text"; cell.textContent=message; row.appendChild(cell); tbody.appendChild(row); }
+function renderAdminEvaluations(records,targetId="admin-rows") {
+  const tbody=$(targetId); if(!tbody)return; tbody.replaceChildren();
+  if(!records.length)return adminEmptyRow(tbody,targetId==="admin-recent-rows"?5:6,"No hay evaluaciones que coincidan con la búsqueda.");
+  records.forEach(record=>{
+    const row=document.createElement("tr"); adminCell(row,formatAdminDate(record.createdAt)); adminCell(row,record.name); adminCell(row,record.email);
+    if(targetId==="admin-recent-rows") adminCell(row,record.paymentStatus==="paid"?"Pagado":record.paymentStatus||"Pendiente");
+    else {adminCell(row,record.profile||"Pendiente de pago");adminCell(row,record.paymentStatus==="paid"?"Pagado":record.paymentStatus||"Pendiente");}
+    const actions=document.createElement("td"); actions.className="space-x-2 whitespace-nowrap";
+    const detail=document.createElement("button"); detail.type="button";detail.className="text-indigo-600 font-bold underline";detail.textContent="Ver detalle";detail.addEventListener("click",()=>viewAdminEvaluation(record.id));
+    const pdf=document.createElement("button");pdf.type="button";pdf.className="text-indigo-600 font-bold underline";pdf.textContent="PDF";pdf.addEventListener("click",()=>downloadAdminPdf(record.id));
+    actions.append(detail,pdf);row.appendChild(actions);tbody.appendChild(row);
+  });
+}
+function renderAdminClients(users) {
+  const tbody=$("admin-client-rows");if(!tbody)return;tbody.replaceChildren();
+  if(!users.length)return adminEmptyRow(tbody,6,"Todavía no hay perfiles registrados.");
+  users.forEach(user=>{const row=document.createElement("tr");adminCell(row,formatAdminDate(user.createdAt));adminCell(row,user.name);adminCell(row,user.email);adminCell(row,user.age==null?"—":user.age);adminCell(row,user.goal);adminCell(row,user.uid);tbody.appendChild(row);});
+}
+function renderAdminPayments(records) {
+  const tbody=$("admin-payment-rows");if(!tbody)return;tbody.replaceChildren();
+  if(!records.length)return adminEmptyRow(tbody,7,"No hay transacciones registradas.");
+  records.forEach(record=>{const row=document.createElement("tr");adminCell(row,formatAdminDate(record.paidAt||record.updatedAt||record.createdAt));adminCell(row,record.name||record.email);adminCell(row,formatCop(record.amountCop));adminCell(row,record.paymentStatus==="paid"?"Aprobado":record.paymentStatus||"Pendiente");adminCell(row,record.paymentReference);adminCell(row,record.wompiTransactionId);adminCell(row,record.wompiTransactionStatus);tbody.appendChild(row);});
+}
+async function loadAdminHealth() {
+  const target=$("admin-system-status");if(!target||!currentIsAdmin)return;target.textContent="Consultando servicios…";
+  try{
+    const response=await fetch("/api/health",{cache:"no-store"});if(!response.ok)throw new Error("No se pudo consultar el estado del servidor.");
+    const data=await response.json();target.replaceChildren();
+    [["Servidor",data.ok?"Operativo":"No disponible"],["Firebase",data.firebaseProject?"Configurado":"Sin configurar"],["Correo SMTP",data.smtpConnectionVerified?"Conexión verificada":data.smtpConfigured?"Configurado, sin verificación":"No configurado"],["Wompi",data.wompiConfigured?"Configurado":"No configurado"],["Ambiente de pagos",data.wompiEnvironment||"No disponible"],["Precio por evaluación",formatCop(data.evaluationPriceCop)],["Pagos de demostración",data.demoPaymentEnabled?"Activos":"Desactivados"]].forEach(([label,value])=>{const line=document.createElement("div");line.className="profile-row";const left=document.createElement("span");left.textContent=label;const right=document.createElement("strong");right.textContent=value;line.append(left,right);target.appendChild(line);});
+  }catch(error){target.textContent="No fue posible consultar los servicios: "+error.message;}
+}
 async function loadAdmin() {
-  if (!currentIsAdmin) {
-    alert("No tienes permisos para consultar esta sección.");
-    await signOut(auth);
-    return;
-  }
-
-  try {
-    const response = await api("/api/admin/overview");
-    const data = await response.json();
-
-    $("stat-users").textContent = data.users ?? 0;
-    $("stat-evals").textContent = data.evaluations ?? 0;
-
-    const tbody = $("admin-rows");
-    tbody.innerHTML = "";
-
-    const records = Array.isArray(data.records) ? data.records : [];
-
-    if (!records.length) {
-      const row = document.createElement("tr");
-      const cell = document.createElement("td");
-
-      cell.colSpan = 5;
-      cell.className = "p-4 text-slate-500";
-      cell.textContent = "Aún no hay evaluaciones registradas.";
-
-      row.appendChild(cell);
-      tbody.appendChild(row);
-      return;
-    }
-
-    records.forEach((record) => {
-      const row = document.createElement("tr");
-
-      const date = record.createdAt
-        ? new Date(record.createdAt).toLocaleString("es-CO")
-        : "—";
-
-      const values = [
-        date,
-        record.name || "—",
-        record.email || "—",
-        record.profile || "—"
-      ];
-
-      values.forEach((value) => {
-        const cell = document.createElement("td");
-        cell.textContent = value;
-        row.appendChild(cell);
-      });
-
-      const actionCell = document.createElement("td");
-      actionCell.className = "space-y-2";
-      
-      const detailButton = document.createElement("button");
-      detailButton.type = "button";
-      detailButton.className = "text-indigo-600 underline font-bold block";
-      detailButton.textContent = "Ver detalle";
-      detailButton.addEventListener("click", () => viewAdminEvaluation(record.id));
-      
-      const pdfButton = document.createElement("button");
-      pdfButton.type = "button";
-      pdfButton.className = "text-indigo-600 underline font-bold block";
-      pdfButton.textContent = "Descargar PDF";
-      pdfButton.addEventListener("click", () => downloadAdminPdf(record.id));
-
-      actionCell.append(detailButton, pdfButton);
-      row.appendChild(actionCell);
-      tbody.appendChild(row);
-    });
-
-  } catch (error) {
-    console.error("Panel administrativo:", error);
-    alert("No se pudo cargar el panel: " + error.message);
-  }
+  if(!currentIsAdmin){alert("No tienes permisos para consultar esta sección.");return;}
+  try{
+    const response=await api("/api/admin/overview");const data=await response.json();adminOverviewCache=data;
+    $("stat-users").textContent=data.users??0;$("stat-evals").textContent=data.evaluations??0;$("stat-paid").textContent=data.paid??0;$("stat-pending").textContent=data.pending??0;$("stat-revenue").textContent=formatCop(data.revenueCop??0);
+    $("admin-account-name").textContent=currentUser?.displayName||"Administrador";$("admin-account-email").textContent=currentUser?.email||"—";
+    const records=Array.isArray(data.records)?data.records:[],users=Array.isArray(data.usersList)?data.usersList:[];
+    renderAdminEvaluations(records.slice(0,8),"admin-recent-rows");renderAdminEvaluations(records);renderAdminClients(users);
+    renderAdminPayments(records.filter(record=>record.paymentProvider==="wompi"||record.paymentReference||record.wompiTransactionId));
+    setAdminTab("overview");await loadAdminHealth();
+  }catch(error){console.error("Panel administrativo:",error);alert("No se pudo cargar el panel: "+error.message);}
+}
+function filterAdminTables() {
+  if(!adminOverviewCache)return;
+  const records=adminOverviewCache.records||[],clients=adminOverviewCache.usersList||[];
+  const clientTerm=($("admin-client-search")?.value||"").trim().toLowerCase(),evalTerm=($("admin-evaluation-search")?.value||"").trim().toLowerCase();
+  renderAdminClients(clients.filter(user=>[user.name,user.email,user.goal,user.uid].some(value=>String(value||"").toLowerCase().includes(clientTerm))));
+  renderAdminEvaluations(records.filter(record=>[record.name,record.email,record.profile,record.paymentStatus].some(value=>String(value||"").toLowerCase().includes(evalTerm))));
 }
 
 function appendAdminDetailLine(container, label, value) {
@@ -1789,10 +1791,15 @@ function registerEventListeners() {
   });
   $("menu-settings").addEventListener("click", showSettings);
   $("menu-logout").addEventListener("click", logout);
-  $("profile-back").addEventListener("click", () =>
-    showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email));
-  $("settings-back").addEventListener("click", () =>
-    showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email));
+  $("menu-admin").addEventListener("click", () => { closeAccountMenu(); showAdmin(); });
+  $("profile-back").addEventListener("click", () => {
+    if (currentIsAdmin) showAdmin();
+    else showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email);
+  });
+  $("settings-back").addEventListener("click", () => {
+    if (currentIsAdmin) showAdmin();
+    else showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email);
+  });
   $("settings-password").addEventListener("click", () => {
     if (currentUser?.email) $("reset-email").value = currentUser.email;
     closeAccountMenu();
@@ -1835,6 +1842,12 @@ function registerEventListeners() {
 
   $("admin-refresh").addEventListener("click", loadAdmin);
   $("admin-logout").addEventListener("click", logout);
+  document.querySelectorAll("[data-admin-tab]").forEach(button => button.addEventListener("click", () => setAdminTab(button.dataset.adminTab)));
+  $("admin-open-evaluations").addEventListener("click", () => setAdminTab("evaluations"));
+  $("admin-client-search").addEventListener("input", filterAdminTables);
+  $("admin-evaluation-search").addEventListener("input", filterAdminTables);
+  $("admin-health-refresh").addEventListener("click", loadAdminHealth);
+  $("admin-profile-open").addEventListener("click", showProfile);
 
   // Limpia el parámetro de retorno después de procesar la sesión.
   window.addEventListener("pageshow", () => {
