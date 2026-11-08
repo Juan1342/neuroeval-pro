@@ -290,6 +290,22 @@
     .radar-copy strong { display:block;color:#eee7ff;font-size:14px;margin-bottom:5px; }
     @media(max-width:700px) { .radar-wrap { grid-template-columns:1fr;justify-items:center; }.radar-copy { width:100%; } }
 
+  
+    .admin-workspace { display:grid;grid-template-columns:218px minmax(0,1fr);gap:18px;align-items:start; }
+    .admin-sidebar { position:sticky;top:112px;display:flex;flex-direction:column;gap:8px;padding:13px;background:linear-gradient(160deg,#171d39,#10162d);border:1px solid #30395e;border-radius:20px;box-shadow:0 16px 42px #0004; }
+    .admin-sidebar:before { content:"NEUROEVAL PRO";display:block;padding:9px 10px 13px;color:#bda2ff;font-size:10px;font-weight:900;letter-spacing:1.6px;border-bottom:1px solid #30395e;margin-bottom:3px; }
+    .admin-sidebar .admin-tab { width:100%;text-align:left;justify-content:flex-start;border-radius:11px;padding:12px 13px;background:transparent;border:1px solid transparent;color:#aeb8d5; }
+    .admin-sidebar .admin-tab.primary { background:linear-gradient(105deg,#6e4db1,#5147a8);border-color:#9474db;color:#fff;box-shadow:0 8px 20px #8060d933; }
+    .admin-sidebar .admin-tab:hover:not(.primary) { background:#25274b;border-color:#42436d;color:#f0eaff; }
+    .admin-content { min-width:0; }
+    .admin-content .admin-panel { min-width:0; }
+    @media(max-width:850px) {
+      .admin-workspace { grid-template-columns:1fr; }
+      .admin-sidebar { position:static;flex-direction:row;overflow-x:auto;align-items:center; }
+      .admin-sidebar:before { display:none; }
+      .admin-sidebar .admin-tab { width:auto;flex:none;white-space:nowrap; }
+    }
+
   </style>
 </head>
 
@@ -668,9 +684,11 @@
     <!-- ADMINISTRACIÓN -->
     <section id="admin-view" class="hidden fade-in">
       <div class="hero mb-7" style="min-height:190px"><div class="hero-copy"><div class="eyebrow">Administración segura</div><h1 style="font-size:clamp(29px,4vw,42px)">Centro de administración.</h1><p>Gestiona clientes, evaluaciones, pagos e informes desde un solo lugar.</p></div><div class="hero-art"><span>🛡️</span></div></div>
-      <div class="flex flex-wrap gap-2 mb-5" role="tablist" aria-label="Opciones administrativas">
+      <div class="admin-workspace">
+      <div class="admin-sidebar" role="tablist" aria-label="Opciones administrativas">
         <button class="btn primary admin-tab" data-admin-tab="overview" type="button">📊 Resumen</button><button class="btn outline admin-tab" data-admin-tab="clients" type="button">👥 Clientes</button><button class="btn outline admin-tab" data-admin-tab="evaluations" type="button">🧠 Evaluaciones</button><button class="btn outline admin-tab" data-admin-tab="payments" type="button">💳 Pagos</button><button class="btn outline admin-tab" data-admin-tab="settings" type="button">⚙️ Configuración</button><button class="btn outline admin-tab" data-admin-tab="administrators" type="button">🛡️ Colaboradores</button><button class="btn outline admin-tab" data-admin-tab="audit" type="button">📋 Actividad</button>
       </div>
+      <div class="admin-content">
       <div id="admin-panel-overview" class="admin-panel space-y-5">
         <div class="grid sm:grid-cols-2 xl:grid-cols-5 gap-3">
           <div class="card"><p class="muted-text">Clientes registrados</p><div id="stat-users" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Evaluaciones</p><div id="stat-evals" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Pagadas</p><div id="stat-paid" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Pendientes</p><div id="stat-pending" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Fallidos</p><div id="stat-failed" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Ingresos confirmados</p><div id="stat-revenue" class="text-2xl font-extrabold mt-2">$0 COP</div></div>
@@ -707,6 +725,7 @@
         <div class="card"><div class="flex flex-wrap justify-between items-center gap-3 mb-4"><div><h2 class="text-xl font-extrabold">Administradores secundarios</h2><p class="muted-text">Modifica permisos, suspende o revoca accesos cuando quieras.</p></div><button id="admin-managers-refresh" class="btn outline" type="button">Actualizar</button></div><div id="admin-managers-list" class="space-y-4"><p class="muted-text">Cargando colaboradores…</p></div></div>
       </div>
       <div id="admin-panel-audit" class="admin-panel hidden"><div class="card"><div class="flex flex-wrap justify-between items-center gap-3 mb-4"><div><h2 class="text-xl font-extrabold">Actividad administrativa</h2><p class="muted-text">Registro de altas, cambios y revocaciones de permisos.</p></div><button id="admin-audit-refresh" class="btn outline" type="button">Actualizar</button></div><div id="admin-audit-list" class="space-y-3"><p class="muted-text">Cargando historial…</p></div></div></div>
+      </div>
       <div class="flex flex-wrap gap-2 mt-6"><button id="admin-logout" class="btn outline" type="button">Cerrar sesión</button></div>
       <div id="admin-detail" class="hidden fixed inset-0 z-50 bg-slate-950/60 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" aria-hidden="true"><div class="mx-auto mt-4 max-w-3xl max-h-[88vh] overflow-y-auto rounded-2xl bg-white p-5 sm:p-7 shadow-2xl"><div class="flex items-center justify-between gap-4 mb-4"><h2 id="admin-detail-title" class="text-xl font-extrabold">Detalle de evaluación</h2><button id="admin-detail-close" type="button" class="btn outline" aria-label="Cerrar detalle">Cerrar ✕</button></div><div id="admin-detail-content" aria-live="polite"></div></div></div>
     </section>
