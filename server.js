@@ -2013,6 +2013,55 @@ app.get(
   }
 );
 
+/* Analítica comercial consolidada: acceso exclusivo a personal con permiso de pagos. */
+app.get("/api/admin/analytics/commercial", requireUser, requireStaffAdmin("payments.view"), async (req, res) => {
+  try {
+    const [evaluationsSnapshot, promosSnapshot] = await Promise.all([
+      db.collection("evaluations").get(),
+      db.collection("promoCodes").orderBy("createdAt", "desc").limit(100).get()
+    ]);
+    const now = new Date();
+    const months = [];
+    for (let offset = 5; offset >= 0; offset--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      months.push({ key: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0"), label: date.toLocaleDateString("es-CO", { month: "short", year: "2-digit" }).replace(".", ""), evaluations: 0, paid: 0, revenueCop: 0 });
+    }
+    let total = 0, paid = 0, pending = 0, failed = 0, revenueCop = 0, discountsCop = 0, promoApplied = 0;
+    const promoUsage = new Map();
+    evaluationsSnapshot.docs.forEach(document => {
+      const data = document.data() || {};
+      total++;
+      const status = String(data.paymentStatus || "pending").toLowerCase();
+      const isPaid = status === "paid";
+      if (isPaid) paid++;
+      else if (status === "pending") pending++;
+      else if (["failed", "declined", "error", "cancelled"].includes(status)) failed++;
+      if (isPaid) { revenueCop += Number(data.amountCop || 0); discountsCop += Number(data.discountCop || 0); }
+      if (data.promoCode) { promoApplied++; promoUsage.set(String(data.promoCode), (promoUsage.get(String(data.promoCode)) || 0) + 1); }
+      const date = asDate(isPaid ? (data.paidAt || data.updatedAt || data.createdAt) : data.createdAt);
+      if (!date) return;
+      const key = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
+      const bucket = months.find(item => item.key === key);
+      if (bucket) {
+        bucket.evaluations++;
+        if (isPaid) { bucket.paid++; bucket.revenueCop += Number(data.amountCop || 0); }
+      }
+    });
+    const promos = promosSnapshot.docs.map(document => {
+      const data = document.data() || {};
+      return { code: document.id, active: data.active === true, uses: Number(data.uses || 0), maxUses: Number(data.maxUses || 0), discountType: data.discountType || "fixed", discountValue: Number(data.discountValue || 0), evaluationsUsingCode: promoUsage.get(document.id) || 0 };
+    }).sort((a, b) => b.uses - a.uses);
+    return res.json({
+      ok: true, generatedAt: now.toISOString(),
+      totals: { evaluations: total, paid, pending, failed, conversionPercent: total ? Math.round(paid / total * 1000) / 10 : 0, revenueCop, averageTicketCop: paid ? Math.round(revenueCop / paid) : 0, discountsCop, promoApplied },
+      months, promos
+    });
+  } catch (error) {
+    console.error("Analítica comercial:", error);
+    return sendError(res, 500, "No se pudo calcular la analítica comercial.");
+  }
+});
+
 app.get(
   "/api/admin/clients/:uid",
   requireUser,
