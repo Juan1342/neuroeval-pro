@@ -857,7 +857,7 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       age,
       goal,
       evaluationType,
-      parentContext: evaluationType === "parent_observation" ? calculated.parentContext : null,
+      parentContext: evaluationType === "parent_observation" ? { ...calculated.parentContext, consentAt: new Date().toISOString() } : null,
       answers: calculated.answers,
       scores: calculated.scores,
       profile: calculated.profile,
