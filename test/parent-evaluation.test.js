@@ -71,5 +71,5 @@ test("un patrón frecuente con impacto y distintos entornos recomienda consulta,
   const result = calculateParentEvaluation(makeAnswers("Muy a menudo"), metadata());
   assert.match(result.profile, /conviene explorar/);
   assert.ok(result.recommendations.some(item => item.title === "Solicita una valoración profesional"));
-  assert.match(result.disclaimer, /no es una escala clínica validada/);
+  assert.match(result.disclaimer, /no es una escala clínica validada/i);
 });
