@@ -21,5 +21,8 @@
     "helmet": "^8.0.0",
     "nodemailer": "^10.4.0",
     "pdfkit": "^0.16.0"
+  },
+  "overrides": {
+    "@google-cloud/firestore-api": "0.7.1"
   }
 }
