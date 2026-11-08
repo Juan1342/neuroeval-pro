@@ -1,8 +1,8 @@
-/* NEUROEVAL_PUBLIC_AUTH_BUILD: 20261107-5 */
+/* NEUROEVAL_PUBLIC_AUTH_BUILD: 20261108-1 */
 
 import {
   initializeApp
-} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 
 import {
   getAuth,
@@ -13,7 +13,7 @@ import {
   getRedirectResult,
   signOut,
   onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 
 /* =========================================================
    1. CONFIGURACIÓN Y ESTADO
