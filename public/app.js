@@ -1724,7 +1724,9 @@ function renderAdminEvaluations(records,targetId="admin-rows") {
       : "Sin permiso";
     if(targetId==="admin-recent-rows") adminCell(row,paymentLabel);
     else {
-      adminCell(row,record.profile || (hasAdminPermission("evaluations.responses") ? "Sin resultado" : "Restringido"));
+      const evaluationTypeLabel = record.evaluationType === "parent_observation" ? "Observación familiar" : "Autorregistro personal";
+      const resultLabel = record.profile || (hasAdminPermission("evaluations.responses") ? "Sin resultado" : "Restringido");
+      adminCell(row, evaluationTypeLabel + " · " + resultLabel);
       adminCell(row,paymentLabel);
     }
     const actions=document.createElement("td"); actions.className="space-x-2 whitespace-nowrap";
