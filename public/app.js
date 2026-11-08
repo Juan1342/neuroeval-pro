@@ -29,6 +29,8 @@ const ADMIN_EMAIL = "jzamorazapata@gmail.com";
 let auth;
 let currentUser = null;
 let currentIsAdmin = false;
+let currentIsPrimaryAdmin = false;
+let currentAdminPermissions = [];
 let currentIndex = 0;
 let questions = [];
 let answers = [];
@@ -618,6 +620,8 @@ async function handleAuthState(user) {
 
   currentUser = user;
   currentIsAdmin = false;
+  currentIsPrimaryAdmin = false;
+  currentAdminPermissions = [];
 
   try {
     if (!user) {
@@ -645,9 +649,11 @@ async function handleAuthState(user) {
     // la cuenta administradora incluso si nunca creó un perfil de evaluación.
     const sessionResponse = await api("/api/session");
     const sessionData = await sessionResponse.json();
-    const tokenResult = await getIdTokenResult(user, true);
-    currentIsAdmin =
-      sessionData.isAdmin === true || tokenResult.claims.admin === true;
+    currentIsAdmin = sessionData.isAdmin === true;
+    currentIsPrimaryAdmin = sessionData.isPrimaryAdmin === true;
+    currentAdminPermissions = Array.isArray(sessionData.permissions)
+      ? sessionData.permissions
+      : [];
 
     if (currentIsAdmin) {
       $("account-name").textContent = user.displayName || user.email || "Administración";
@@ -743,9 +749,25 @@ function showAdmin() {
   loadAdmin();
 }
 
+function hasAdminPermission(permission) {
+  return currentIsPrimaryAdmin || currentAdminPermissions.includes(permission);
+}
+
 function setAdminTab(tab) {
-  const allowed = ["overview", "clients", "evaluations", "payments", "settings"];
-  const selected = allowed.includes(tab) ? tab : "overview";
+  const visibility = {
+    overview: hasAdminPermission("dashboard.view"),
+    clients: hasAdminPermission("clients.view"),
+    evaluations: hasAdminPermission("evaluations.view"),
+    payments: hasAdminPermission("payments.view"),
+    settings: hasAdminPermission("settings.view"),
+    administrators: currentIsPrimaryAdmin,
+    audit: hasAdminPermission("audit.view")
+  };
+  document.querySelectorAll("[data-admin-tab]").forEach(button => {
+    button.classList.toggle("hidden", !visibility[button.dataset.adminTab]);
+  });
+  const allowed = Object.keys(visibility).filter(key => visibility[key]);
+  const selected = allowed.includes(tab) ? tab : (allowed[0] || "overview");
   document.querySelectorAll(".admin-panel").forEach(panel => panel.classList.toggle("hidden", panel.id !== "admin-panel-" + selected));
   document.querySelectorAll("[data-admin-tab]").forEach(button => {
     const active = button.dataset.adminTab === selected;
@@ -753,6 +775,9 @@ function setAdminTab(tab) {
     button.classList.toggle("outline", !active);
     button.setAttribute("aria-selected", String(active));
   });
+  if (selected === "administrators") loadAdminAdministrators();
+  if (selected === "audit") loadAdminAudit();
+  if (selected === "settings") loadAdminHealth();
 }
 
 function showProfile() {
@@ -1563,9 +1588,15 @@ function renderAdminEvaluations(records,targetId="admin-rows") {
     if(targetId==="admin-recent-rows") adminCell(row,record.paymentStatus==="paid"?"Pagado":record.paymentStatus||"Pendiente");
     else {adminCell(row,record.profile||"Pendiente de pago");adminCell(row,record.paymentStatus==="paid"?"Pagado":record.paymentStatus||"Pendiente");}
     const actions=document.createElement("td"); actions.className="space-x-2 whitespace-nowrap";
-    const detail=document.createElement("button"); detail.type="button";detail.className="text-indigo-600 font-bold underline";detail.textContent="Ver detalle";detail.addEventListener("click",()=>viewAdminEvaluation(record.id));
-    const pdf=document.createElement("button");pdf.type="button";pdf.className="text-indigo-600 font-bold underline";pdf.textContent="PDF";pdf.addEventListener("click",()=>downloadAdminPdf(record.id));
-    actions.append(detail,pdf);row.appendChild(actions);tbody.appendChild(row);
+    if (hasAdminPermission("evaluations.responses")) {
+      const detail=document.createElement("button"); detail.type="button";detail.className="text-indigo-600 font-bold underline";detail.textContent="Ver detalle";detail.addEventListener("click",()=>viewAdminEvaluation(record.id));actions.appendChild(detail);
+    }
+    if (hasAdminPermission("evaluations.pdf")) {
+      const pdf=document.createElement("button");pdf.type="button";pdf.className="text-indigo-600 font-bold underline";pdf.textContent="PDF";pdf.addEventListener("click",()=>downloadAdminPdf(record.id));actions.appendChild(pdf);
+    }
+    if (actions.childNodes.length) { row.appendChild(actions); }
+    else { adminCell(row,"Sin permisos de detalle"); }
+    tbody.appendChild(row);
   });
 }
 function renderAdminClients(users) {
@@ -1579,7 +1610,7 @@ function renderAdminPayments(records) {
   records.forEach(record=>{const row=document.createElement("tr");adminCell(row,formatAdminDate(record.paidAt||record.updatedAt||record.createdAt));adminCell(row,record.name||record.email);adminCell(row,formatCop(record.amountCop));adminCell(row,record.paymentStatus==="paid"?"Aprobado":record.paymentStatus||"Pendiente");adminCell(row,record.paymentReference);adminCell(row,record.wompiTransactionId);adminCell(row,record.wompiTransactionStatus);tbody.appendChild(row);});
 }
 async function loadAdminHealth() {
-  const target=$("admin-system-status");if(!target||!currentIsAdmin)return;target.textContent="Consultando servicios…";
+  const target=$("admin-system-status");if(!target||!hasAdminPermission("settings.view"))return;target.textContent="Consultando servicios…";
   try{
     const response=await fetch("/api/health",{cache:"no-store"});if(!response.ok)throw new Error("No se pudo consultar el estado del servidor.");
     const data=await response.json();target.replaceChildren();
@@ -1595,9 +1626,166 @@ async function loadAdmin() {
     const records=Array.isArray(data.records)?data.records:[],users=Array.isArray(data.usersList)?data.usersList:[];
     renderAdminEvaluations(records.slice(0,8),"admin-recent-rows");renderAdminEvaluations(records);renderAdminClients(users);
     renderAdminPayments(records.filter(record=>record.paymentProvider==="wompi"||record.paymentReference||record.wompiTransactionId));
-    setAdminTab("overview");await loadAdminHealth();
+    setAdminTab("overview");
   }catch(error){console.error("Panel administrativo:",error);alert("No se pudo cargar el panel: "+error.message);}
 }
+const ADMIN_PERMISSION_LABELS = {
+  "dashboard.view": "Ver resumen general",
+  "clients.view": "Consultar clientes",
+  "evaluations.view": "Consultar evaluaciones",
+  "evaluations.responses": "Ver respuestas y resultados privados",
+  "evaluations.pdf": "Descargar informes PDF",
+  "payments.view": "Consultar pagos e ingresos",
+  "settings.view": "Consultar estado técnico",
+  "audit.view": "Consultar historial administrativo"
+};
+
+async function loadAdminAdministrators() {
+  const target = $("admin-managers-list");
+  if (!target || !currentIsPrimaryAdmin) return;
+  target.textContent = "Consultando colaboradores…";
+  try {
+    const response = await api("/api/admin/administrators");
+    const data = await response.json();
+    renderAdminAdministrators(Array.isArray(data.administrators) ? data.administrators : []);
+  } catch (error) {
+    target.textContent = "No se pudieron consultar los colaboradores: " + error.message;
+  }
+}
+
+function renderAdminAdministrators(items) {
+  const target = $("admin-managers-list");
+  target.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted-text";
+    empty.textContent = "Todavía no has agregado administradores secundarios.";
+    target.appendChild(empty);
+    return;
+  }
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "border border-slate-200 rounded-xl p-4";
+    const heading = document.createElement("div");
+    heading.className = "flex flex-wrap justify-between gap-2";
+    const identity = document.createElement("div");
+    const email = document.createElement("strong");
+    email.textContent = item.email || item.uid;
+    const status = document.createElement("p");
+    status.className = "text-xs mt-1 " + (item.status === "active" ? "text-emerald-700" : "text-amber-700");
+    status.textContent = item.status === "active" ? "Acceso activo" : "Acceso suspendido";
+    identity.append(email, status);
+    const uid = document.createElement("span");
+    uid.className = "text-xs text-slate-400";
+    uid.textContent = item.uid;
+    heading.append(identity, uid);
+    const permissions = document.createElement("div");
+    permissions.className = "grid sm:grid-cols-2 gap-2 my-4";
+    Object.entries(ADMIN_PERMISSION_LABELS).forEach(([key, label]) => {
+      const wrapper = document.createElement("label");
+      wrapper.className = "flex items-center gap-2 text-sm";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = key;
+      checkbox.checked = (item.permissions || []).includes(key);
+      checkbox.dataset.permission = key;
+      wrapper.append(checkbox, document.createTextNode(label));
+      permissions.appendChild(wrapper);
+    });
+    const actions = document.createElement("div");
+    actions.className = "flex flex-wrap gap-2";
+    const save = document.createElement("button");
+    save.type = "button"; save.className = "btn primary"; save.textContent = "Guardar permisos";
+    save.addEventListener("click", async () => {
+      const selected = Array.from(permissions.querySelectorAll("input:checked")).map(input => input.value);
+      if (!selected.length) return alert("Selecciona al menos un permiso. Para retirar todo el acceso, suspende al colaborador.");
+      try {
+        await api("/api/admin/administrators/" + encodeURIComponent(item.uid), {
+          method: "PATCH", body: JSON.stringify({ permissions: selected })
+        });
+        alert("Permisos actualizados correctamente.");
+        loadAdminAdministrators();
+      } catch (error) { alert(error.message); }
+    });
+    const toggle = document.createElement("button");
+    toggle.type = "button"; toggle.className = "btn outline";
+    toggle.textContent = item.status === "active" ? "Suspender acceso" : "Reactivar acceso";
+    toggle.addEventListener("click", async () => {
+      try {
+        await api("/api/admin/administrators/" + encodeURIComponent(item.uid), {
+          method: "PATCH", body: JSON.stringify({ active: item.status !== "active" })
+        });
+        loadAdminAdministrators();
+      } catch (error) { alert(error.message); }
+    });
+    const remove = document.createElement("button");
+    remove.type = "button"; remove.className = "btn outline"; remove.textContent = "Revocar y eliminar";
+    remove.addEventListener("click", async () => {
+      if (!confirm("¿Revocar definitivamente el acceso administrativo de " + item.email + "?")) return;
+      try {
+        await api("/api/admin/administrators/" + encodeURIComponent(item.uid), { method: "DELETE" });
+        loadAdminAdministrators();
+      } catch (error) { alert(error.message); }
+    });
+    actions.append(save, toggle, remove);
+    card.append(heading, permissions, actions);
+    target.appendChild(card);
+  });
+}
+
+async function createAdminFromForm(event) {
+  event.preventDefault();
+  if (!currentIsPrimaryAdmin) return;
+  const email = $("admin-new-email").value.trim();
+  const permissions = Array.from(document.querySelectorAll('input[name="admin-permission"]:checked')).map(input => input.value);
+  if (!permissions.includes("dashboard.view")) permissions.push("dashboard.view");
+  const message = $("admin-add-message");
+  message.textContent = "Agregando colaborador…";
+  try {
+    await api("/api/admin/administrators", {
+      method: "POST", body: JSON.stringify({ email, permissions })
+    });
+    message.textContent = "Colaborador agregado. Ya puede iniciar sesión con su cuenta.";
+    $("admin-add-form").reset();
+    document.querySelector('input[name="admin-permission"][value="dashboard.view"]').checked = true;
+    await loadAdminAdministrators();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+}
+
+async function loadAdminAudit() {
+  const target = $("admin-audit-list");
+  if (!target || !hasAdminPermission("audit.view")) return;
+  target.textContent = "Consultando historial…";
+  try {
+    const response = await api("/api/admin/audit");
+    const data = await response.json();
+    target.replaceChildren();
+    const logs = Array.isArray(data.logs) ? data.logs : [];
+    if (!logs.length) {
+      const empty = document.createElement("p"); empty.className = "muted-text";
+      empty.textContent = "Todavía no hay movimientos administrativos registrados.";
+      target.appendChild(empty); return;
+    }
+    logs.forEach(log => {
+      const row = document.createElement("div");
+      row.className = "border-b border-slate-200 pb-3";
+      const title = document.createElement("strong");
+      title.textContent = log.action || "Actividad administrativa";
+      const detail = document.createElement("p");
+      detail.className = "muted-text text-sm";
+      detail.textContent = "Responsable: " + (log.actorUid || "—") + " · Cuenta afectada: " + (log.targetUid || "—");
+      const date = document.createElement("p");
+      date.className = "text-xs text-slate-400";
+      date.textContent = formatAdminDate(log.createdAt);
+      row.append(title, detail, date); target.appendChild(row);
+    });
+  } catch (error) {
+    target.textContent = "No se pudo consultar el historial: " + error.message;
+  }
+}
+
 function filterAdminTables() {
   if(!adminOverviewCache)return;
   const records=adminOverviewCache.records||[],clients=adminOverviewCache.usersList||[];
@@ -1841,6 +2029,9 @@ function registerEventListeners() {
   });
 
   $("admin-refresh").addEventListener("click", loadAdmin);
+  $("admin-add-form").addEventListener("submit", createAdminFromForm);
+  $("admin-managers-refresh").addEventListener("click", loadAdminAdministrators);
+  $("admin-audit-refresh").addEventListener("click", loadAdminAudit);
   $("admin-logout").addEventListener("click", logout);
   document.querySelectorAll("[data-admin-tab]").forEach(button => button.addEventListener("click", () => setAdminTab(button.dataset.adminTab)));
   $("admin-open-evaluations").addEventListener("click", () => setAdminTab("evaluations"));
