@@ -24,12 +24,16 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Actualizar lockfile sin ejecutar scripts
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          npm audit fix --package-lock-only
+      - name: Sincronizar lockfile
+        run: npm install --package-lock-only --ignore-scripts
 
       - name: Instalar dependencias
+        run: npm ci
+
+      - name: Aplicar correcciones compatibles de seguridad
+        run: npm audit fix
+
+      - name: Verificar instalación reproducible
         run: npm ci
 
       - name: Bloquear dependencias vulnerables
