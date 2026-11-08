@@ -1298,7 +1298,16 @@ async function viewAdminEvaluation(id) {
       list.className = "list-disc pl-5 text-sm text-slate-700 space-y-1";
       evaluation.recommendations.forEach((recommendation) => {
         const item = document.createElement("li");
-        item.textContent = String(recommendation);
+        if (recommendation && typeof recommendation === "object") {
+          const title = document.createElement("strong");
+          title.textContent = recommendation.title || "Orientación";
+          const detail = document.createElement("p");
+          detail.textContent = recommendation.detail || "";
+          detail.className = "text-sm text-slate-600";
+          item.append(title, detail);
+        } else {
+          item.textContent = String(recommendation);
+        }
         list.appendChild(item);
       });
       content.appendChild(list);
