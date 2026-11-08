@@ -391,7 +391,9 @@ const ADMIN_PERMISSION_CATALOG = [
   "payments.view",
   "settings.view",
   "pricing.manage",
-  "audit.view"
+  "audit.view",
+  "support.view",
+  "support.manage"
 ];
 
 function normalizeAdminPermissions(values) {
@@ -472,6 +474,134 @@ async function writeAdminAudit(actorUid, action, targetUid, details = {}) {
     createdAt: admin.firestore.FieldValue.serverTimestamp()
   });
 }
+
+/* =========================================================
+   CENTRO DE SOPORTE Y SOLICITUDES
+========================================================= */
+
+// Un cliente solo puede crear y consultar sus propios tickets.
+// El acceso administrativo se controla mediante permisos independientes.
+app.post("/api/support/tickets", requireUser, async (req, res) => {
+  try {
+    const subject = cleanText(req.body.subject, 120);
+    const message = cleanText(req.body.message, 3000);
+    const category = ["cuenta", "evaluacion", "pago", "informe", "tecnico", "otro"].includes(req.body.category)
+      ? req.body.category : "otro";
+    if (subject.length < 4 || message.length < 10) {
+      return sendError(res, 400, "Escribe un asunto y una descripción más completos.");
+    }
+    const account = await firebaseAuth.getUser(req.user.uid);
+    const ticketRef = db.collection("supportTickets").doc();
+    await ticketRef.set({
+      uid: req.user.uid,
+      email: String(account.email || req.user.email || "").toLowerCase(),
+      displayName: cleanText(account.displayName || "", 120),
+      subject,
+      category,
+      status: "open",
+      priority: "normal",
+      messages: [{
+        senderUid: req.user.uid,
+        senderRole: "customer",
+        message,
+        createdAt: new Date().toISOString()
+      }],
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    return res.status(201).json({ ok: true, ticketId: ticketRef.id });
+  } catch (error) {
+    console.error("Crear ticket de soporte:", error);
+    return sendError(res, 500, "No se pudo crear la solicitud de soporte.");
+  }
+});
+
+app.get("/api/support/tickets", requireUser, async (req, res) => {
+  try {
+    const snapshot = await db.collection("supportTickets")
+      .where("uid", "==", req.user.uid)
+      .limit(100)
+      .get();
+    const tickets = snapshot.docs.map(doc => {
+      const data = doc.data() || {};
+      return {
+        id: doc.id, subject: data.subject || "", category: data.category || "otro",
+        status: data.status || "open", priority: data.priority || "normal",
+        messages: Array.isArray(data.messages) ? data.messages : [],
+        createdAt: asDate(data.createdAt)?.toISOString() || null,
+        updatedAt: asDate(data.updatedAt)?.toISOString() || null
+      };
+    }).sort((a,b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    return res.json({ tickets });
+  } catch (error) {
+    console.error("Consultar tickets propios:", error);
+    return sendError(res, 500, "No se pudieron consultar tus solicitudes.");
+  }
+});
+
+app.get("/api/admin/support/tickets", requireUser, requireStaffAdmin("support.view"), async (req, res) => {
+  try {
+    const status = ["open", "in_progress", "waiting_customer", "resolved", "closed"].includes(req.query.status)
+      ? req.query.status : "";
+    let query = db.collection("supportTickets").orderBy("updatedAt", "desc").limit(150);
+    if (status) query = db.collection("supportTickets").where("status", "==", status).limit(150);
+    const snapshot = await query.get();
+    const tickets = snapshot.docs.map(doc => {
+      const data = doc.data() || {};
+      return {
+        id: doc.id, uid: data.uid || "", email: data.email || "",
+        displayName: data.displayName || "", subject: data.subject || "",
+        category: data.category || "otro", status: data.status || "open",
+        priority: data.priority || "normal",
+        messages: Array.isArray(data.messages) ? data.messages : [],
+        createdAt: asDate(data.createdAt)?.toISOString() || null,
+        updatedAt: asDate(data.updatedAt)?.toISOString() || null
+      };
+    }).sort((a,b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    return res.json({ tickets });
+  } catch (error) {
+    console.error("Consultar tickets administrativos:", error);
+    return sendError(res, 500, "No se pudo cargar la bandeja de soporte.");
+  }
+});
+
+app.patch("/api/admin/support/tickets/:id", requireUser, requireStaffAdmin("support.manage"), async (req, res) => {
+  try {
+    const ref = db.collection("supportTickets").doc(String(req.params.id || ""));
+    const snapshot = await ref.get();
+    if (!snapshot.exists) return sendError(res, 404, "No encontramos esa solicitud.");
+    const allowedStatuses = ["open", "in_progress", "waiting_customer", "resolved", "closed"];
+    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    if (req.body.status !== undefined) {
+      if (!allowedStatuses.includes(req.body.status)) return sendError(res, 400, "El estado seleccionado no es válido.");
+      updates.status = req.body.status;
+    }
+    if (req.body.priority !== undefined) {
+      if (!["low", "normal", "high", "urgent"].includes(req.body.priority)) return sendError(res, 400, "La prioridad seleccionada no es válida.");
+      updates.priority = req.body.priority;
+    }
+    const reply = cleanText(req.body.reply, 3000);
+    if (reply.length) {
+      updates.messages = admin.firestore.FieldValue.arrayUnion({
+        senderUid: req.user.uid,
+        senderRole: "admin",
+        message: reply,
+        createdAt: new Date().toISOString()
+      });
+    }
+    if (Object.keys(updates).length === 1) return sendError(res, 400, "No hay cambios para guardar.");
+    await ref.set(updates, { merge: true });
+    await writeAdminAudit(req.user.uid, "support.ticket.updated", snapshot.data()?.uid || null, {
+      ticketId: ref.id, status: updates.status || snapshot.data()?.status || "open",
+      priority: updates.priority || snapshot.data()?.priority || "normal",
+      replied: Boolean(reply)
+    });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("Actualizar ticket de soporte:", error);
+    return sendError(res, 500, "No se pudo actualizar la solicitud.");
+  }
+});
 
 /* =========================================================
    7. SESIÓN Y ROL DE LA CUENTA
