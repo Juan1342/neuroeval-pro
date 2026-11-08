@@ -551,6 +551,7 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       recommendations: calculated.recommendations,
       dimensions: calculated.dimensions,
       summary: calculated.summary,
+      attentionTasks: calculated.attentionTasks,
       disclaimer: calculated.disclaimer,
       paymentStatus: "pending",
       paymentProvider: "wompi",
@@ -1222,6 +1223,19 @@ function buildEvaluationPdf(evaluation, options = {}) {
           .text(explanation, { width: 480, lineGap: 2 });
         doc.moveDown(0.7);
       });
+
+      if (evaluation.attentionTasks) {
+        ensureSpace(55);
+        doc.font("Helvetica-Bold").fontSize(12).fillColor(navy)
+          .text("Retos visuales de atención");
+        doc.moveDown(0.35);
+        doc.font("Helvetica").fontSize(9).fillColor(muted)
+          .text(`Respuestas correctas: ${evaluation.attentionTasks.correct} de ${evaluation.attentionTasks.completed}.`, { width: 480 });
+        doc.moveDown(0.25);
+        doc.font("Helvetica").fontSize(8).fillColor(muted)
+          .text(evaluation.attentionTasks.note || "Actividad interactiva no diagnóstica.", { width: 480, lineGap: 3 });
+        doc.moveDown(0.7);
+      }
 
       if (evaluation.summary) {
         ensureSpace(70);
