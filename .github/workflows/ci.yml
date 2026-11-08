@@ -24,6 +24,11 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Diagnosticar vulnerabilidades de dependencias
+        run: |
+          npm audit --json > /tmp/neuroeval-npm-audit.json || true
+          node -e "const a=require('/tmp/neuroeval-npm-audit.json'); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities, vulnerabilities:Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,range:v.range,via:v.via,fixAvailable:v.fixAvailable,nodes:v.nodes}))}, null, 2))"
+
       - name: Comprobar sintaxis
         run: |
           node --check server.js
