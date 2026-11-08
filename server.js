@@ -1445,36 +1445,35 @@ app.get(
   requireAdmin,
   async (req, res) => {
     try {
-      const [
-        usersCountSnapshot,
-        evaluationsCountSnapshot,
-        evaluationsSnapshot
-      ] = await Promise.all([
+      const evaluationsRef = db.collection("evaluations");
+      const [usersCountSnapshot,evaluationsCountSnapshot,paidCountSnapshot,pendingCountSnapshot,usersSnapshot,evaluationsSnapshot,paidRevenueSnapshot] = await Promise.all([
         db.collection("users").count().get(),
-        db.collection("evaluations").count().get(),
-        db.collection("evaluations")
-          .orderBy("createdAt", "desc")
-          .limit(100)
-          .get()
+        evaluationsRef.count().get(),
+        evaluationsRef.where("paymentStatus","==","paid").count().get(),
+        evaluationsRef.where("paymentStatus","==","pending").count().get(),
+        db.collection("users").limit(100).get(),
+        evaluationsRef.orderBy("createdAt","desc").limit(100).get(),
+        evaluationsRef.where("paymentStatus","==","paid").aggregate({total:admin.firestore.AggregateField.sum("amountCop")}).get()
       ]);
-
-      const records = evaluationsSnapshot.docs.map((document) => {
-        const data = document.data();
-
+      const usersList=usersSnapshot.docs.map(document=>{
+        const data=document.data()||{};
+        return {uid:document.id,name:data.name||"",email:data.email||"",age:data.age??null,goal:data.goal||"",createdAt:asDate(data.createdAt)?.toISOString()||null};
+      }).sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
+      const records=evaluationsSnapshot.docs.map(document=>{
+        const data=document.data()||{};
         return {
-          id: document.id,
-          name: data.name || "",
-          email: data.email || "",
-          profile: data.profile || "",
-          paymentStatus: data.paymentStatus || "pending",
-          createdAt: asDate(data.createdAt)?.toISOString() || null
+          id:document.id,uid:data.uid||"",name:data.name||"",email:data.email||"",age:data.age??null,goal:data.goal||"",
+          profile:data.profile||"",paymentStatus:data.paymentStatus||"pending",paymentProvider:data.paymentProvider||"",
+          paymentReference:data.paymentReference||"",wompiTransactionId:data.wompiTransactionId||"",
+          wompiTransactionStatus:data.wompiTransactionStatus||"",amountCop:Number(data.amountCop||0),currency:data.currency||"COP",
+          createdAt:asDate(data.createdAt)?.toISOString()||null,updatedAt:asDate(data.updatedAt)?.toISOString()||null,
+          paidAt:asDate(data.paidAt)?.toISOString()||null
         };
       });
-
       return res.json({
-        users: usersCountSnapshot.data().count,
-        evaluations: evaluationsCountSnapshot.data().count,
-        records
+        users:usersCountSnapshot.data().count,evaluations:evaluationsCountSnapshot.data().count,
+        paid:paidCountSnapshot.data().count,pending:pendingCountSnapshot.data().count,
+        revenueCop:Number(paidRevenueSnapshot.data().total||0),usersList,records
       });
 
     } catch (error) {
