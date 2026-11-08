@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -18,16 +21,21 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+
+      - name: Actualizar lockfile sin ejecutar scripts
+        run: npm install --package-lock-only --ignore-scripts
 
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Diagnosticar vulnerabilidades de dependencias
+      - name: Revisar vulnerabilidades de dependencias
+        run: npm audit --json > /tmp/neuroeval-npm-audit.json || true
+
+      - name: Mostrar resumen de auditoría
         run: |
-          npm audit --json > /tmp/neuroeval-npm-audit.json || true
-          node -e "const a=require('/tmp/neuroeval-npm-audit.json'); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities, vulnerabilities:Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,range:v.range,via:v.via,fixAvailable:v.fixAvailable,nodes:v.nodes}))}, null, 2))"
+          node -e "const a=require('/tmp/neuroeval-npm-audit.json'); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities, vulnerabilities:Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,nodes:v.nodes}))}, null, 2))"
 
       - name: Comprobar sintaxis
         run: |
@@ -39,3 +47,13 @@ jobs:
 
       - name: Ejecutar pruebas
         run: npm test
+
+      - name: Guardar lockfile actualizado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: refresh dependency lockfile"
+            git push
+          fi
