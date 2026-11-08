@@ -140,6 +140,25 @@
     @keyframes fade { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
     @media(max-width:800px) { .hero-art{opacity:.22;right:-25px}.auth-grid{grid-template-columns:1fr}.auth-side{min-height:260px}.brain-illustration{font-size:70px}.score-grid{grid-template-columns:1fr}.benefits{grid-template-columns:1fr}.page{padding-top:24px} }
     @media(max-width:520px) { .topbar{height:65px;padding:0 16px}.brand{font-size:17px}.topbar-right{font-size:11px}.hero{border-radius:21px}.answer-list{grid-template-columns:1fr}.question-card{padding:22px 15px}.quiz-footer .btn{padding:12px}.section-heading h2{font-size:20px} }
+
+    .app-nav { position:sticky;top:76px;z-index:25;background:rgba(255,255,255,.96);border-bottom:1px solid #e9ecf5;backdrop-filter:blur(14px); }
+    .app-nav-inner { width:min(1160px,calc(100% - 36px));margin:auto;display:flex;gap:8px;overflow-x:auto;padding:10px 0;scrollbar-width:thin; }
+    .app-nav-btn { flex:none;border:1px solid transparent;background:transparent;color:#69728e;padding:10px 15px;border-radius:12px;font-size:13px;font-weight:800;white-space:nowrap; }
+    .app-nav-btn:hover,.app-nav-btn.active { background:#f0efff;color:#5148b8;border-color:#e4e1ff; }
+    .game-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px; }
+    .game-stage { max-width:820px;margin-left:auto;margin-right:auto;text-align:center; }
+    .game-sequence { font-size:clamp(32px,7vw,54px);font-weight:800;letter-spacing:.18em;color:#5148b8;padding:28px 12px;background:#f3f1ff;border-radius:18px;margin:20px 0; }
+    .game-symbol-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:430px;margin:20px auto; }
+    .game-symbol { min-height:66px;border:1px solid #e4e7f1;border-radius:13px;background:#fff;font-size:27px; }
+    .game-symbol.selected { background:#e9f9f5;border:2px solid #36b99a; }
+    .game-choice-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:480px;margin:20px auto; }
+    .game-choice { border:1px solid #e4e7f1;border-radius:13px;padding:16px;background:#fff;font-weight:800;color:#505a76; }
+    .game-choice:hover { background:#f2f0ff;border-color:#a9a1f4; }
+    .recommendation-tile { padding:17px 0;border-bottom:1px solid #edf0f6;color:#59637f;line-height:1.65;font-size:13px; }
+    .recommendation-tile strong { color:#28304e;font-size:14px; }
+    .recommendation-tile p { margin:5px 0 0; }
+    @media(max-width:800px) { .game-grid { grid-template-columns:1fr; }.app-nav { top:65px; } }
+    @media(max-width:520px) { .app-nav-inner { width:calc(100% - 20px);gap:4px; }.app-nav-btn { padding:9px 11px;font-size:12px; }.game-symbol-grid { gap:7px; }.game-symbol { min-height:56px; } }
   </style>
 </head>
 
@@ -166,6 +185,17 @@
       <span id="session-label" class="hidden"></span>
     </div>
   </header>
+
+
+  <nav id="app-nav" class="app-nav hidden" aria-label="Secciones principales">
+    <div class="app-nav-inner">
+      <button type="button" class="app-nav-btn active" data-nav="tests">🧠 <span>Pruebas</span></button>
+      <button type="button" class="app-nav-btn" data-nav="games">🎮 <span>Juegos</span></button>
+      <button type="button" class="app-nav-btn" data-nav="activities">✨ <span>Actividades</span></button>
+      <button type="button" class="app-nav-btn" data-nav="recommendations">🌿 <span>Recomendaciones</span></button>
+      <button type="button" class="app-nav-btn" data-nav="progress">📈 <span>Mi progreso</span></button>
+    </div>
+  </nav>
 
   <main class="page">
     <!-- ACCESO -->
@@ -301,6 +331,57 @@
       </div>
 
       <div class="notice mt-6">Las evaluaciones disponibles ofrecen información orientativa y no sustituyen una valoración profesional ni constituyen diagnósticos clínicos.</div>
+    </section>
+
+
+    <!-- JUEGOS GRATUITOS -->
+    <section id="games-view" class="hidden fade-in">
+      <div class="section-heading"><div><div class="eyebrow">Entrena jugando</div><h2>Juegos cognitivos gratuitos</h2><p>Retos breves de memoria, atención y razonamiento. Juega las veces que quieras.</p></div><span class="pill">100 % gratis</span></div>
+      <div class="game-grid">
+        <article class="evaluation-card available"><div class="evaluation-icon">🔢</div><div class="evaluation-status">Memoria de trabajo</div><h3>Secuencia relámpago</h3><p>Observa una serie de números durante unos segundos y trata de recordarla en el mismo orden.</p><button class="btn primary" type="button" data-game="memory">Jugar gratis →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🔎</div><div class="evaluation-status">Atención visual</div><h3>Cazador de símbolos</h3><p>Encuentra y selecciona todos los símbolos objetivo entre varios distractores.</p><button class="btn primary" type="button" data-game="search">Jugar gratis →</button></article>
+        <article class="evaluation-card available"><div class="evaluation-icon">🧩</div><div class="evaluation-status">Razonamiento</div><h3>Completa el patrón</h3><p>Identifica la regla de una secuencia y elige qué elemento continúa.</p><button class="btn primary" type="button" data-game="pattern">Jugar gratis →</button></article>
+      </div>
+      <div id="game-stage" class="card game-stage hidden mt-6" aria-live="polite"></div>
+      <p class="notice mt-5">Los juegos son ejercicios recreativos de práctica. Sus puntuaciones no son diagnósticos ni pruebas neuropsicológicas validadas.</p>
+    </section>
+
+    <!-- ACTIVIDADES GRATUITAS -->
+    <section id="activities-view" class="hidden fade-in">
+      <div class="section-heading"><div><div class="eyebrow">Pausas que ayudan</div><h2>Actividades para tu día</h2><p>Pequeños ejercicios gratuitos para practicar enfoque, organización y autorregulación.</p></div></div>
+      <div class="evaluation-grid">
+        <article class="evaluation-card"><div class="evaluation-icon">🌬️</div><h3>Respiración consciente</h3><p>Inhala suavemente durante 4 segundos, exhala durante 6. Repite cinco veces sin forzar la respiración.</p><button class="btn secondary" type="button" data-activity="breathing">Marcar como realizada</button></article>
+        <article class="evaluation-card"><div class="evaluation-icon">📝</div><h3>Divide una tarea</h3><p>Escribe una tarea pendiente y divídela en tres pasos pequeños y concretos. Empieza por el primero.</p><button class="btn secondary" type="button" data-activity="planning">Marcar como realizada</button></article>
+        <article class="evaluation-card"><div class="evaluation-icon">👀</div><h3>Pausa de observación</h3><p>Mira a tu alrededor y nombra mentalmente cinco cosas que ves, cuatro que sientes y tres que escuchas.</p><button class="btn secondary" type="button" data-activity="grounding">Marcar como realizada</button></article>
+        <article class="evaluation-card"><div class="evaluation-icon">🎯</div><h3>Enfoque de 10 minutos</h3><p>Elige una sola tarea, elimina una distracción y trabaja en ella durante diez minutos.</p><button class="btn secondary" type="button" data-activity="focus">Marcar como realizada</button></article>
+        <article class="evaluation-card"><div class="evaluation-icon">🧠</div><h3>Recuerdo del día</h3><p>Sin consultar el teléfono, recuerda tres cosas que aprendiste o hiciste hoy y en qué orden ocurrieron.</p><button class="btn secondary" type="button" data-activity="recall">Marcar como realizada</button></article>
+        <article class="evaluation-card"><div class="evaluation-icon">🚶</div><h3>Pausa de movimiento</h3><p>Levántate, cambia de postura y camina suavemente unos minutos si tus condiciones lo permiten.</p><button class="btn secondary" type="button" data-activity="movement">Marcar como realizada</button></article>
+      </div>
+      <p id="activity-message" class="message" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- RECOMENDACIONES -->
+    <section id="recommendations-view" class="hidden fade-in">
+      <div class="card account-view-card"><div class="eyebrow">Hábitos y bienestar</div><h2 class="text-2xl font-extrabold mt-2">Recomendaciones prácticas</h2><p class="muted-text mt-2">Ideas generales que puedes adaptar a tu rutina. No sustituyen una orientación profesional.</p>
+        <div class="recommendation-tile"><strong>1. Trabaja en bloques pequeños</strong><p>Elige una tarea, define un primer paso y dedica un periodo breve a completarlo. Haz una pausa antes de continuar.</p></div>
+        <div class="recommendation-tile"><strong>2. Reduce las distracciones visibles</strong><p>Deja a mano solo lo que necesitas y silencia notificaciones que no sean importantes durante tu bloque de enfoque.</p></div>
+        <div class="recommendation-tile"><strong>3. Usa recordatorios externos</strong><p>Apóyate en listas, alarmas y calendarios. No necesitas depender únicamente de la memoria.</p></div>
+        <div class="recommendation-tile"><strong>4. Practica de forma breve y constante</strong><p>Alterna juegos de memoria, búsqueda visual y actividades de organización. Observa cómo te sientes, sin convertir el puntaje en una etiqueta.</p></div>
+        <div class="recommendation-tile"><strong>5. Cuida el descanso y las pausas</strong><p>Procura horarios de sueño regulares y pausas de movimiento adecuadas a tus posibilidades.</p></div>
+        <div class="notice mt-5">Si las dificultades de atención, memoria, impulsividad o estado de ánimo afectan tu vida diaria, consulta con un profesional cualificado.</div>
+      </div>
+    </section>
+
+    <!-- PROGRESO -->
+    <section id="progress-view" class="hidden fade-in">
+      <div class="section-heading"><div><div class="eyebrow">Tu recorrido</div><h2>Mi progreso</h2><p>Resumen de los juegos y actividades completados en este dispositivo y cuenta.</p></div><button id="refresh-progress" class="btn outline" type="button">Actualizar</button></div>
+      <div class="score-grid">
+        <div class="score-card"><p class="muted-text">Juegos completados</p><div id="progress-games" class="score-number">0</div></div>
+        <div class="score-card"><p class="muted-text">Actividades realizadas</p><div id="progress-activities" class="score-number">0</div></div>
+        <div class="score-card"><p class="muted-text">Mejor puntuación</p><div id="progress-best" class="score-number">0%</div></div>
+      </div>
+      <div class="card"><h3 class="font-extrabold">Actividad reciente</h3><div id="progress-history" class="mt-4 muted-text">Aún no hay actividades registradas. ¡Prueba tu primer juego!</div></div>
+      <p class="notice mt-5">El progreso de esta sección se guarda en el navegador de este dispositivo. Si borras los datos del navegador o cambias de dispositivo, el historial local puede perderse.</p>
     </section>
 
     <!-- PERFIL DE USUARIO -->
