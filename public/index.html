@@ -488,6 +488,21 @@
       </div>
 
       <div class="notice mt-6">Las evaluaciones disponibles ofrecen información orientativa y no sustituyen una valoración profesional ni constituyen diagnósticos clínicos.</div>
+
+      <section class="card mt-7" aria-labelledby="customer-support-title">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div><div class="eyebrow">Estamos para ayudarte</div><h2 id="customer-support-title" class="text-xl font-extrabold">Centro de soporte</h2><p class="muted-text">Crea una solicitud y sigue la conversación con nuestro equipo.</p></div>
+          <button id="customer-support-refresh" class="btn outline" type="button">↻ Actualizar solicitudes</button>
+        </div>
+        <form id="customer-support-form" class="grid md:grid-cols-2 gap-3 mb-5">
+          <label class="text-sm font-bold">Asunto<input id="customer-support-subject" class="input mt-1" type="text" maxlength="120" minlength="4" required placeholder="Ej. No puedo descargar mi informe"></label>
+          <label class="text-sm font-bold">Categoría<select id="customer-support-category" class="input mt-1"><option value="cuenta">Cuenta y acceso</option><option value="evaluacion">Evaluaciones</option><option value="pago">Pagos</option><option value="informe">Informe y PDF</option><option value="tecnico">Problema técnico</option><option value="otro">Otro</option></select></label>
+          <label class="text-sm font-bold md:col-span-2">¿En qué podemos ayudarte?<textarea id="customer-support-message" class="input mt-1" rows="3" maxlength="3000" minlength="10" required placeholder="Describe lo que ocurrió y qué necesitas…"></textarea></label>
+          <div class="md:col-span-2 flex flex-wrap items-center gap-3"><button id="customer-support-submit" class="btn primary" type="submit">Enviar solicitud</button><p id="customer-support-status" class="muted-text text-sm" role="status" aria-live="polite"></p></div>
+        </form>
+        <div class="flex items-center justify-between gap-3 mb-3"><h3 class="font-extrabold">Mis solicitudes</h3><span class="muted-text text-xs">Tus conversaciones son privadas.</span></div>
+        <div id="customer-support-list" class="space-y-3"><p class="muted-text">Cargando tus solicitudes…</p></div>
+      </section>
     </section>
 
 
