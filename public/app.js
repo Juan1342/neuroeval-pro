@@ -760,6 +760,7 @@ function setAdminTab(tab) {
     payments: hasAdminPermission("payments.view"),
     pricing: hasAdminPermission("pricing.manage"),
     settings: hasAdminPermission("settings.view"),
+    health: hasAdminPermission("settings.view"),
     administrators: currentIsPrimaryAdmin,
     audit: hasAdminPermission("audit.view")
   };
@@ -779,6 +780,7 @@ function setAdminTab(tab) {
   if (selected === "administrators") loadAdminAdministrators();
   if (selected === "audit") loadAdminAudit();
   if (selected === "settings") loadAdminHealth();
+  if (selected === "health") loadAdminHealthDetails();
 }
 
 function showProfile() {
@@ -1624,6 +1626,31 @@ function renderAdminPayments(records) {
   if(!records.length)return adminEmptyRow(tbody,7,"No hay transacciones registradas.");
   records.forEach(record=>{const row=document.createElement("tr");adminCell(row,formatAdminDate(record.paidAt||record.updatedAt||record.createdAt));adminCell(row,record.name||record.email);adminCell(row,formatCop(record.amountCop));adminCell(row,record.paymentStatus==="paid"?"Aprobado":record.paymentStatus||"Pendiente");adminCell(row,record.paymentReference);adminCell(row,record.wompiTransactionId);adminCell(row,record.wompiTransactionStatus);tbody.appendChild(row);});
 }
+async function loadAdminHealthDetails() {
+  const target = $("admin-health-checks"), summary = $("admin-health-summary"), runtime = $("admin-health-runtime");
+  if (!target || !hasAdminPermission("settings.view")) return;
+  summary.textContent = "Ejecutando diagnóstico…"; target.replaceChildren(); runtime.replaceChildren();
+  try {
+    const response = await api("/api/admin/health/details");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudo consultar el diagnóstico.");
+    summary.textContent = data.ok ? "Diagnóstico completado. No se detectaron errores en las comprobaciones ejecutadas." : "Se detectaron errores. Revisa el detalle.";
+    const labels = { operational: "● Operativo", configured: "● Configurado", warning: "● Advertencia", not_configured: "● No configurado", error: "● Error" };
+    data.checks.forEach(check => {
+      const card=document.createElement("div"); card.className="card";
+      const title=document.createElement("strong"); title.textContent=check.label;
+      const state=document.createElement("p"); state.className="text-sm font-bold mt-2"; state.textContent=labels[check.status]||"Estado desconocido";
+      state.className += check.status==="error" ? " text-red-400" : ["warning","not_configured"].includes(check.status) ? " text-amber-300" : " text-emerald-400";
+      const detail=document.createElement("p"); detail.className="muted-text text-sm mt-1"; detail.textContent=check.detail;
+      card.append(title,state,detail); target.appendChild(card);
+    });
+    [["Tiempo activo",Math.floor(data.uptimeSeconds/3600)+" h"],["Respuesta",data.responseMs+" ms"],["Memoria RAM",data.memory.rssMb+" MB"],["Motor Node.js",data.runtime]].forEach(([label,value])=>{
+      const card=document.createElement("div");card.className="card";const title=document.createElement("p");title.className="muted-text text-xs";title.textContent=label;const amount=document.createElement("strong");amount.className="text-lg";amount.textContent=value;card.append(title,amount);runtime.appendChild(card);
+    });
+    $("admin-health-checked-at").textContent="Última comprobación: "+new Date(data.checkedAt).toLocaleString("es-CO");
+  } catch(error) { summary.textContent="No fue posible ejecutar el diagnóstico: "+error.message; }
+}
+
 async function loadAdminHealth() {
   const target=$("admin-system-status");if(!target||!hasAdminPermission("settings.view"))return;target.textContent="Consultando servicios…";
   try{
@@ -2226,6 +2253,7 @@ function registerEventListeners() {
   $("admin-client-search").addEventListener("input", filterAdminTables);
   $("admin-evaluation-search").addEventListener("input", filterAdminTables);
   $("admin-health-refresh").addEventListener("click", loadAdminHealth);
+  $("admin-health-details-refresh").addEventListener("click", loadAdminHealthDetails);
   $("admin-profile-open").addEventListener("click", showProfile);
 
   // Limpia el parámetro de retorno después de procesar la sesión.
