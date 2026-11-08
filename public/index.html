@@ -306,6 +306,15 @@
       .admin-sidebar .admin-tab { width:auto;flex:none;white-space:nowrap; }
     }
 
+  
+    .text-slate-500,.text-slate-600,.text-slate-700,.text-gray-500,.text-gray-600 { color:#b7c1df!important; }
+    .text-indigo-600,.text-indigo-700 { color:#c4a7ff!important; }
+    .border-slate-200,.border-gray-200 { border-color:#30395e!important; }
+    .bg-white { background-color:#171d39!important; }
+    input[type="checkbox"],input[type="radio"] { accent-color:#a16bff; }
+    .admin-content .card { background:linear-gradient(145deg,#171d39,#11162d);border-color:#30395e; }
+    .admin-content .card h2 { color:#f0efff; }
+
   </style>
 </head>
 
@@ -690,7 +699,7 @@
       </div>
       <div class="admin-content">
       <div id="admin-panel-overview" class="admin-panel space-y-5">
-        <div class="grid sm:grid-cols-2 xl:grid-cols-5 gap-3">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-3">
           <div class="card"><p class="muted-text">Clientes registrados</p><div id="stat-users" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Evaluaciones</p><div id="stat-evals" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Pagadas</p><div id="stat-paid" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Pendientes</p><div id="stat-pending" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Fallidos</p><div id="stat-failed" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Ingresos confirmados</p><div id="stat-revenue" class="text-2xl font-extrabold mt-2">$0 COP</div></div>
         </div>
         <div class="grid lg:grid-cols-3 gap-4">
