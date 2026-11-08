@@ -922,7 +922,7 @@ function openGame(game) {
     if(game==="math"){
       const x=2+Math.floor(Math.random()*(10+level*4)),y=2+Math.floor(Math.random()*Math.max(5,level*3));
       const mul=level>=4&&Math.random()>.45,sub=!mul&&level>=2&&Math.random()>.5;
-      const answer=mul?x*y:x+y,question=mul?x+" × "+y:sub?(x+y)+" − "+y:x+" + "+y;
+      const answer=mul?x*y:sub?x:x+y,question=mul?x+" × "+y:sub?(x+y)+" − "+y:x+" + "+y;
       const box=document.createElement("div");box.className="game-sequence";box.textContent=question+" = ?";
       intro.textContent="Resuelve mentalmente antes de que termine el tiempo.";content.appendChild(box);
       choices([answer,answer+2,Math.max(0,answer-3),answer+5].sort(()=>Math.random()-.5),answer,"¡Cálculo correcto!",Math.max(5,15-Math.floor(level/2)));
@@ -998,7 +998,7 @@ function completeActivity(activity) {
 function navigateSection(section) {
   document.querySelectorAll("[data-nav]").forEach(button => button.classList.toggle("active", button.dataset.nav === section));
   const views = { tests:"dashboard-view", games:"games-view", activities:"activities-view", recommendations:"recommendations-view", progress:"progress-view" };
-  if (section === "progress") renderProgress();
+  if (section === "progress" || section === "games") renderProgress();
   show(views[section] || "dashboard-view");
 }
 
