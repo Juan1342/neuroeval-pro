@@ -368,9 +368,21 @@ const ADMIN_PERMISSION_CATALOG = [
   "evaluations.pdf",
   "payments.view",
   "settings.view",
-  "administrators.manage",
   "audit.view"
 ];
+
+function normalizeAdminPermissions(values) {
+  const permissions = new Set(
+    Array.isArray(values)
+      ? values.filter(item => ADMIN_PERMISSION_CATALOG.includes(item))
+      : []
+  );
+  if (permissions.has("evaluations.responses") || permissions.has("evaluations.pdf")) {
+    permissions.add("evaluations.view");
+  }
+  if (permissions.size) permissions.add("dashboard.view");
+  return [...permissions];
+}
 
 async function getPrimaryAdminAccount(uid) {
   const account = await firebaseAuth.getUser(uid);
@@ -1508,9 +1520,7 @@ app.get("/api/admin/administrators", requireUser, requireAdmin, async (req, res)
 app.post("/api/admin/administrators", requireUser, requireAdmin, async (req, res) => {
   try {
     const email = String(req.body.email || "").trim().toLowerCase();
-    const permissions = Array.isArray(req.body.permissions)
-      ? [...new Set(req.body.permissions.filter(item => ADMIN_PERMISSION_CATALOG.includes(item)))]
-      : [];
+    const permissions = normalizeAdminPermissions(req.body.permissions);
     if (!isValidEmail(email)) return sendError(res, 400, "Escribe un correo válido.");
     if (!permissions.length) return sendError(res, 400, "Selecciona al menos un permiso.");
     if (email === ADMIN_EMAIL) return sendError(res, 400, "La cuenta principal no puede registrarse como colaborador.");
@@ -1556,7 +1566,7 @@ app.patch("/api/admin/administrators/:uid", requireUser, requireAdmin, async (re
     }
     const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
     if (Array.isArray(req.body.permissions)) {
-      updates.permissions = [...new Set(req.body.permissions.filter(item => ADMIN_PERMISSION_CATALOG.includes(item)))];
+      updates.permissions = normalizeAdminPermissions(req.body.permissions);
       if (!updates.permissions.length) return sendError(res, 400, "Selecciona al menos un permiso o desactiva al colaborador.");
     }
     if (typeof req.body.active === "boolean") updates.status = req.body.active ? "active" : "inactive";
