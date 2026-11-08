@@ -1621,7 +1621,18 @@ function renderAdminEvaluations(records,targetId="admin-rows") {
 function renderAdminClients(users) {
   const tbody=$("admin-client-rows");if(!tbody)return;tbody.replaceChildren();
   if(!users.length)return adminEmptyRow(tbody,6,"Todavía no hay perfiles registrados.");
-  users.forEach(user=>{const row=document.createElement("tr");adminCell(row,formatAdminDate(user.createdAt));adminCell(row,user.name);adminCell(row,user.email);adminCell(row,user.age==null?"—":user.age);adminCell(row,user.goal);adminCell(row,user.uid);tbody.appendChild(row);});
+  users.forEach(user=>{
+    const row=document.createElement("tr");
+    adminCell(row,formatAdminDate(user.createdAt));
+    const nameCell=document.createElement("td");
+    const open=document.createElement("button");
+    open.type="button";open.className="text-indigo-600 font-bold underline";
+    open.textContent=user.name||"Ver expediente";
+    open.addEventListener("click",()=>viewAdminClient(user.uid));
+    nameCell.appendChild(open);row.appendChild(nameCell);
+    adminCell(row,user.email);adminCell(row,user.age==null?"—":user.age);adminCell(row,user.goal);adminCell(row,user.uid);
+    tbody.appendChild(row);
+  });
 }
 function renderAdminPayments(records) {
   const tbody=$("admin-payment-rows");if(!tbody)return;tbody.replaceChildren();
@@ -2109,6 +2120,50 @@ function appendAdminDetailLine(container, label, value) {
     value === null || value === undefined || value === "" ? "—" : String(value)
   ));
   container.appendChild(line);
+}
+
+async function viewAdminClient(uid) {
+  if (!currentIsAdmin || !hasAdminPermission("clients.view")) {
+    alert("No tienes permisos para consultar expedientes de clientes.");
+    return;
+  }
+  const dialog=$("admin-detail"),content=$("admin-detail-content");
+  content.replaceChildren();
+  const loading=document.createElement("p");loading.textContent="Cargando expediente protegido…";content.appendChild(loading);
+  dialog.classList.remove("hidden");dialog.setAttribute("aria-hidden","false");$("admin-detail-close").focus();
+  try {
+    const response=await api(`/api/admin/clients/${encodeURIComponent(uid)}`);
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"No se pudo consultar el expediente.");
+    const client=data.client||{};
+    content.replaceChildren();
+    const heading=document.createElement("h3");heading.className="text-lg font-extrabold mb-3";heading.textContent="Expediente del cliente";content.appendChild(heading);
+    appendAdminDetailLine(content,"Nombre",client.name);
+    appendAdminDetailLine(content,"Correo",client.email);
+    appendAdminDetailLine(content,"Edad",client.age);
+    appendAdminDetailLine(content,"Objetivo",client.goal);
+    appendAdminDetailLine(content,"UID",client.uid);
+    appendAdminDetailLine(content,"Registro",formatAdminDate(client.createdAt));
+    if(client.account){
+      appendAdminDetailLine(content,"Correo verificado",client.account.emailVerified?"Sí":"No");
+      appendAdminDetailLine(content,"Cuenta",client.account.disabled?"Deshabilitada":"Activa");
+      appendAdminDetailLine(content,"Último acceso",formatAdminDate(client.account.lastSignInAt));
+    }
+    const sub=document.createElement("h4");sub.className="font-extrabold mt-5 mb-2";sub.textContent=`Historial de evaluaciones (${data.evaluationCount||0})`;content.appendChild(sub);
+    const evaluations=Array.isArray(data.evaluations)?data.evaluations:[];
+    if(!evaluations.length){const empty=document.createElement("p");empty.className="muted-text";empty.textContent="Este cliente todavía no tiene evaluaciones.";content.appendChild(empty);}
+    evaluations.forEach(item=>{
+      const card=document.createElement("div");card.className="rounded-xl border border-slate-200 p-3 mb-2";
+      const title=document.createElement("p");title.className="font-bold";title.textContent=item.name||"Evaluación";
+      const meta=document.createElement("p");meta.className="text-sm text-slate-600";meta.textContent=`${formatAdminDate(item.createdAt)} · Estado: ${item.paymentStatus||"pendiente"}`;
+      card.append(title,meta);
+      if(data.paymentsVisible){const amount=document.createElement("p");amount.className="text-sm text-slate-600";amount.textContent="Importe: "+formatCop(item.amountCop);card.appendChild(amount);}
+      content.appendChild(card);
+    });
+    const note=document.createElement("p");note.className="notice mt-4";note.textContent="Este expediente muestra datos de perfil y metadatos de evaluaciones. Las respuestas clínicas y los informes completos mantienen sus permisos independientes.";content.appendChild(note);
+  } catch(error) {
+    content.replaceChildren();const message=document.createElement("p");message.textContent="No se pudo cargar el expediente: "+error.message;content.appendChild(message);
+  }
 }
 
 async function viewAdminEvaluation(id) {
