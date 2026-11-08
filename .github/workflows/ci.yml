@@ -25,17 +25,19 @@ jobs:
           cache: npm
 
       - name: Actualizar lockfile sin ejecutar scripts
-        run: npm install --package-lock-only --ignore-scripts
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          npm audit fix --package-lock-only
 
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Revisar vulnerabilidades de dependencias
-        run: npm audit --json > /tmp/neuroeval-npm-audit.json || true
+      - name: Bloquear dependencias vulnerables
+        run: npm audit --audit-level=moderate
 
-      - name: Mostrar resumen de auditoría
+      - name: Verificar APIs modulares y transporte de correo
         run: |
-          node -e "const a=require('/tmp/neuroeval-npm-audit.json'); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities, vulnerabilities:Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,nodes:v.nodes}))}, null, 2))"
+          node -e "require('firebase-admin/app'); require('firebase-admin/auth'); require('firebase-admin/firestore'); const mailer=require('nodemailer'); if(typeof mailer.createTransport!=='function') process.exit(1); console.log('Firebase Admin modular y Nodemailer disponibles')"
 
       - name: Comprobar sintaxis
         run: |
