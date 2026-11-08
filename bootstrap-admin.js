@@ -2,7 +2,8 @@
 
 require("dotenv").config();
 
-const admin = require("firebase-admin");
+const { getApps, initializeApp, cert, applicationDefault } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
 
 const ADMIN_EMAIL = "jzamorazapata@gmail.com";
 
@@ -20,18 +21,18 @@ async function main() {
 
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
-  if (!admin.apps.length) {
-    admin.initializeApp({
+  if (!getApps().length) {
+    initializeApp({
       credential: serviceAccountJson
-        ? admin.credential.cert(JSON.parse(serviceAccountJson))
-        : admin.credential.applicationDefault(),
+        ? cert(JSON.parse(serviceAccountJson))
+        : applicationDefault(),
       ...(process.env.FIREBASE_PROJECT_ID
         ? { projectId: process.env.FIREBASE_PROJECT_ID }
         : {})
     });
   }
 
-  const auth = admin.auth();
+  const auth = getAuth();
   let user;
 
   try {
