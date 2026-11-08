@@ -1786,53 +1786,6 @@ app.patch("/api/admin/promo-codes/:code", requireUser, requireStaffAdmin("pricin
   }
 });
 
-/* PRECIOS Y PROMOCIONES */
-app.get("/api/admin/pricing", requireUser, requireStaffAdmin("pricing.manage"), async (req, res) => {
-  try {
-    const pricing = await getPricingConfig();
-    const snapshot = await db.collection("promoCodes").orderBy("createdAt", "desc").limit(200).get();
-    const promos = snapshot.docs.map(doc => { const d=doc.data()||{}; return { code:doc.id, discountType:d.discountType, discountValue:d.discountValue, maxUses:d.maxUses||0, uses:d.uses||0, startsAt:d.startsAt||null, expiresAt:d.expiresAt||null, newCustomersOnly:d.newCustomersOnly===true, active:d.active===true, createdAt:asDate(d.createdAt)?.toISOString()||null }; });
-    return res.json({ pricing, promos });
-  } catch(error) { console.error("Consultar precios y promociones:",error); return sendError(res,500,"No se pudo consultar la configuración comercial."); }
-});
-app.put("/api/admin/pricing", requireUser, requireStaffAdmin("pricing.manage"), async (req,res) => {
-  try {
-    const priceCop=Number(req.body.priceCop);
-    if(!Number.isSafeInteger(priceCop)||priceCop<100||priceCop>100000000) return sendError(res,400,"El precio debe ser un valor entero entre $100 y $100.000.000 COP.");
-    await db.collection("platformSettings").doc("pricing").set({services:{[EVALUATION_SERVICE_ID]:{label:EVALUATION_SERVICE_LABEL,priceCop,active:true}},updatedAt:admin.firestore.FieldValue.serverTimestamp(),updatedBy:req.user.uid},{merge:true});
-    await writeAdminAudit(req.user.uid,"pricing.updated",null,{serviceId:EVALUATION_SERVICE_ID,priceCop});
-    return res.json({ok:true,pricing:{serviceId:EVALUATION_SERVICE_ID,label:EVALUATION_SERVICE_LABEL,priceCop,currency:CURRENCY}});
-  } catch(error) { console.error("Actualizar precio:",error); return sendError(res,500,"No se pudo actualizar el precio."); }
-});
-app.post("/api/admin/promo-codes", requireUser, requireStaffAdmin("pricing.manage"), async (req,res) => {
-  try {
-    const code=String(req.body.code||"").trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"").slice(0,40);
-    const discountType=req.body.discountType==="fixed"?"fixed":"percentage";
-    const discountValue=Number(req.body.discountValue), maxUses=Number(req.body.maxUses||0);
-    const startsAt=req.body.startsAt?new Date(req.body.startsAt):null, expiresAt=req.body.expiresAt?new Date(req.body.expiresAt):null;
-    if(!/^[A-Z0-9][A-Z0-9_-]{2,39}$/.test(code)) return sendError(res,400,"El código debe tener entre 3 y 40 caracteres alfanuméricos.");
-    if(!Number.isSafeInteger(discountValue)||discountValue<1||(discountType==="percentage"&&discountValue>99)||(discountType==="fixed"&&discountValue>100000000)) return sendError(res,400,"El descuento no es válido.");
-    if(!Number.isSafeInteger(maxUses)||maxUses<0||maxUses>1000000) return sendError(res,400,"El límite de usos no es válido.");
-    if(startsAt&&Number.isNaN(startsAt.getTime())) return sendError(res,400,"La fecha de inicio no es válida.");
-    if(expiresAt&&Number.isNaN(expiresAt.getTime())) return sendError(res,400,"La fecha de vencimiento no es válida.");
-    if(startsAt&&expiresAt&&expiresAt<=startsAt) return sendError(res,400,"El vencimiento debe ser posterior al inicio.");
-    const promoRef=db.collection("promoCodes").doc(code);
-    if((await promoRef.get()).exists) return sendError(res,409,"Ese código ya existe. Elige otro.");
-    await promoRef.create({discountType,discountValue,maxUses,uses:0,startsAt:startsAt?startsAt.toISOString():null,expiresAt:expiresAt?expiresAt.toISOString():null,newCustomersOnly:req.body.newCustomersOnly===true,serviceIds:[EVALUATION_SERVICE_ID],active:true,createdBy:req.user.uid,createdAt:admin.firestore.FieldValue.serverTimestamp()});
-    await writeAdminAudit(req.user.uid,"promo.created",null,{code,discountType,discountValue,maxUses});
-    return res.status(201).json({ok:true,code});
-  } catch(error) { console.error("Crear código promocional:",error); return sendError(res,500,"No se pudo crear el código promocional."); }
-});
-app.patch("/api/admin/promo-codes/:code", requireUser, requireStaffAdmin("pricing.manage"), async (req,res) => {
-  try {
-    const code=String(req.params.code||"").trim().toUpperCase(), active=req.body.active===true, ref=db.collection("promoCodes").doc(code);
-    if(!(await ref.get()).exists) return sendError(res,404,"No encontramos ese código.");
-    await ref.set({active,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
-    await writeAdminAudit(req.user.uid,active?"promo.activated":"promo.disabled",null,{code});
-    return res.json({ok:true,code,active});
-  } catch(error) { console.error("Actualizar código promocional:",error); return sendError(res,500,"No se pudo actualizar el código."); }
-});
-
 app.get(
   "/api/admin/overview",
   requireUser,
