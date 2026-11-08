@@ -2014,6 +2014,75 @@ app.get(
 );
 
 app.get(
+  "/api/admin/clients/:uid",
+  requireUser,
+  requireStaffAdmin("clients.view"),
+  async (req, res) => {
+    try {
+      const uid = String(req.params.uid || "").trim();
+      if (!uid || uid.length > 128) return sendError(res, 400, "El identificador del cliente no es válido.");
+
+      const [profileSnapshot, evaluationsSnapshot] = await Promise.all([
+        db.collection("users").doc(uid).get(),
+        db.collection("evaluations").where("uid", "==", uid).limit(100).get()
+      ]);
+      let account = null;
+      try {
+        const authUser = await firebaseAuth.getUser(uid);
+        account = {
+          email: String(authUser.email || "").toLowerCase(),
+          emailVerified: authUser.emailVerified === true,
+          disabled: authUser.disabled === true,
+          createdAt: authUser.metadata?.creationTime || null,
+          lastSignInAt: authUser.metadata?.lastSignInTime || null
+        };
+      } catch (accountError) {
+        console.warn("No se pudo consultar metadatos de autenticación del cliente:", accountError.code || accountError.message);
+      }
+
+      const profile = profileSnapshot.exists ? profileSnapshot.data() || {} : {};
+      const canViewPayments = req.adminAccess?.isPrimaryAdmin === true || (req.adminAccess?.permissions || []).includes("payments.view");
+      const evaluations = evaluationsSnapshot.docs.map(document => {
+        const data = document.data() || {};
+        const item = {
+          id: document.id,
+          name: data.name || profile.name || "",
+          goal: data.goal || profile.goal || "",
+          paymentStatus: data.paymentStatus || "pending",
+          createdAt: asDate(data.createdAt)?.toISOString() || null,
+          updatedAt: asDate(data.updatedAt)?.toISOString() || null
+        };
+        if (canViewPayments) {
+          item.amountCop = Number(data.amountCop || 0);
+          item.paymentProvider = data.paymentProvider || "";
+          item.paidAt = asDate(data.paidAt)?.toISOString() || null;
+        }
+        return item;
+      }).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+
+      return res.json({
+        client: {
+          uid,
+          name: profile.name || "",
+          email: String(profile.email || account?.email || "").toLowerCase(),
+          age: profile.age ?? null,
+          goal: profile.goal || "",
+          createdAt: asDate(profile.createdAt)?.toISOString() || account?.createdAt || null,
+          updatedAt: asDate(profile.updatedAt)?.toISOString() || null,
+          account
+        },
+        evaluations,
+        evaluationCount: evaluations.length,
+        paymentsVisible: canViewPayments
+      });
+    } catch (error) {
+      console.error("Detalle administrativo del cliente:", error);
+      return sendError(res, 500, "No se pudo consultar el expediente del cliente.");
+    }
+  }
+);
+
+app.get(
   "/api/admin/evaluations/:id",
   requireUser,
   requireStaffAdmin("evaluations.responses"),
