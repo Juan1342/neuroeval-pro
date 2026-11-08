@@ -1649,7 +1649,7 @@ app.get(
       const can = permission => req.adminAccess?.isPrimaryAdmin === true || permissions.includes(permission);
       const visibleRecords = records.map(record => {
         const item = { ...record };
-        if (!can("evaluations.results")) delete item.profile;
+        if (!can("evaluations.responses")) delete item.profile;
         if (!can("payments.view")) {
           [
             "paymentStatus", "paymentProvider", "paymentReference",
