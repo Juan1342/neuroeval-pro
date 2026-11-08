@@ -549,6 +549,9 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       profile: calculated.profile,
       profileDescription: calculated.profileDescription,
       recommendations: calculated.recommendations,
+      dimensions: calculated.dimensions,
+      summary: calculated.summary,
+      disclaimer: calculated.disclaimer,
       paymentStatus: "pending",
       paymentProvider: "wompi",
       paymentReference: reference,
@@ -1188,39 +1191,57 @@ function buildEvaluationPdf(evaluation, options = {}) {
 
       const scores = evaluation.scores || {};
 
-      const dimensions = [
-        ["Atención y función ejecutiva", scores.inattention],
-        ["Inquietud e impulsividad", scores.hyperactivity],
-        ["Indicadores de estrés y contexto", scores.differential]
-      ];
+      const dimensionLabels = {
+        inattention: "Atención sostenida y memoria cotidiana",
+        executive: "Organización y funciones ejecutivas",
+        hyperactivity: "Inquietud e impulsividad",
+        emotionalContext: "Regulación emocional",
+        context: "Estrés, preocupación y descanso",
+        impact: "Impacto en la vida cotidiana",
+        history: "Historia y presencia en distintos entornos"
+      };
+      const dimensions = Object.entries(dimensionLabels)
+        .filter(([key]) => typeof scores[key] === "number")
+        .map(([key, label]) => [label, scores[key], evaluation.dimensions?.[key]?.explanation || "Porcentaje descriptivo de las respuestas de esta dimensión."]);
 
-      dimensions.forEach(([label, value]) => {
-        ensureSpace(42);
-        const score = Math.max(
-          0,
-          Math.min(100, Number(value || 0))
-        );
-
+      dimensions.forEach(([label, value, explanation]) => {
+        ensureSpace(76);
+        const score = Math.max(0, Math.min(100, Number(value || 0)));
         doc
           .font("Helvetica-Bold")
           .fontSize(9)
           .fillColor(navy)
           .text(`${label}: ${score}%`);
-
         const x = 55;
         const y = doc.y + 4;
         const width = 480;
-
-        doc
-          .roundedRect(x, y, width, 7, 3)
-          .fill("#E8EAF4");
-
-        doc
-          .roundedRect(x, y, width * score / 100, 7, 3)
-          .fill(purple);
-
-        doc.moveDown(1.3);
+        doc.roundedRect(x, y, width, 7, 3).fill("#E8EAF4");
+        doc.roundedRect(x, y, width * score / 100, 7, 3).fill(purple);
+        doc.moveDown(1.1);
+        doc.font("Helvetica").fontSize(8).fillColor(muted)
+          .text(explanation, { width: 480, lineGap: 2 });
+        doc.moveDown(0.7);
       });
+
+      if (evaluation.summary) {
+        ensureSpace(70);
+        doc.font("Helvetica-Bold").fontSize(13).fillColor(navy)
+          .text("Contexto e impacto cotidiano");
+        doc.moveDown(0.4);
+        const summaryLabels = [
+          ["Estrés y descanso", evaluation.summary.contextInfluence],
+          ["Impacto cotidiano", evaluation.summary.dailyImpact],
+          ["Historia y contextos", evaluation.summary.childhoodAndSettings]
+        ];
+        summaryLabels.forEach(([label, value]) => {
+          if (!value) return;
+          ensureSpace(24);
+          doc.font("Helvetica-Bold").fontSize(9).fillColor(navy)
+            .text(`${label}: `, { continued: true });
+          doc.font("Helvetica").fontSize(9).fillColor(muted).text(String(value));
+        });
+        doc.moveDown(0.8);
+      }
 
       doc.moveDown(0.5);
 
@@ -1240,18 +1261,23 @@ function buildEvaluationPdf(evaluation, options = {}) {
         : [];
 
       recommendations.forEach((item, index) => {
-        ensureSpace(34);
-        doc
-          .font("Helvetica")
-          .fontSize(9)
-          .fillColor(muted)
-          .text(`${index + 1}. ${item}`, {
-            width: 480,
-            lineGap: 3
-          });
-
-        doc.moveDown(0.35);
+        ensureSpace(48);
+        const title = typeof item === "string" ? `${index + 1}. Orientación` : `${index + 1}. ${item.title || "Orientación"}`;
+        const detail = typeof item === "string" ? item : (item.detail || "");
+        doc.font("Helvetica-Bold").fontSize(9).fillColor(navy)
+          .text(title, { width: 480 });
+        doc.font("Helvetica").fontSize(9).fillColor(muted)
+          .text(detail, { width: 480, lineGap: 3 });
+        doc.moveDown(0.5);
       });
+
+      ensureSpace(80);
+      doc.font("Helvetica-Bold").fontSize(11).fillColor(navy)
+        .text("Alcance y límites del informe");
+      doc.moveDown(0.35);
+      doc.font("Helvetica").fontSize(8).fillColor(muted)
+        .text(evaluation.disclaimer || "Este autorregistro es orientativo y no constituye una prueba diagnóstica. Los porcentajes describen las respuestas y no representan la probabilidad de tener un trastorno.", { width: 480, lineGap: 3 });
+      doc.moveDown(0.8);
 
       if (options.includeAnswers) {
         doc.addPage();
