@@ -1590,7 +1590,7 @@ async function loadAdmin() {
   if(!currentIsAdmin){alert("No tienes permisos para consultar esta sección.");return;}
   try{
     const response=await api("/api/admin/overview");const data=await response.json();adminOverviewCache=data;
-    $("stat-users").textContent=data.users??0;$("stat-evals").textContent=data.evaluations??0;$("stat-paid").textContent=data.paid??0;$("stat-pending").textContent=data.pending??0;$("stat-revenue").textContent=formatCop(data.revenueCop??0);
+    $("stat-users").textContent=data.users??0;$("stat-evals").textContent=data.evaluations??0;$("stat-paid").textContent=data.paid??0;$("stat-pending").textContent=data.pending??0;$("stat-failed").textContent=data.failed??0;$("stat-revenue").textContent=formatCop(data.revenueCop??0);
     $("admin-account-name").textContent=currentUser?.displayName||"Administrador";$("admin-account-email").textContent=currentUser?.email||"—";
     const records=Array.isArray(data.records)?data.records:[],users=Array.isArray(data.usersList)?data.usersList:[];
     renderAdminEvaluations(records.slice(0,8),"admin-recent-rows");renderAdminEvaluations(records);renderAdminClients(users);
