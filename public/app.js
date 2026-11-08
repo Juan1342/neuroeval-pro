@@ -882,7 +882,7 @@ function openGame(game) {
   function renderChallenge(){
     if(!active)return;clearClock();updateLevel();content.innerHTML="";controls.innerHTML="";feedback.textContent="";
     if(game==="memory"){
-      const len=Math.min(3+Math.floor((level-1)/2),14),seq=Array.from({length:len},()=>Math.floor(Math.random()*10));
+      const len=Math.min(3+Math.floor((level-1)/2),24),seq=Array.from({length:len},()=>Math.floor(Math.random()*10));
       const display=document.createElement("div");display.className="game-sequence";display.textContent=seq.join(" · ");
       intro.textContent="Memoriza los "+len+" dígitos. Luego escríbelos en el mismo orden.";content.appendChild(display);
       const begin=gameButton("Estoy listo",()=>{
@@ -897,7 +897,7 @@ function openGame(game) {
       },"btn primary");content.appendChild(begin);
     }
     if(game==="search"||game==="count"){
-      const target=game==="search"?"★":"●",total=Math.min(18+level*2,64),amount=Math.min(3+Math.floor(level/2),Math.floor(total/3));
+      const target=game==="search"?"★":"●",total=Math.min(18+level*2,100),amount=Math.min(3+Math.floor(level/2),Math.floor(total/3));
       const symbols=Array.from({length:total},()=>"▲");const positions=new Set();
       while(positions.size<amount)positions.add(Math.floor(Math.random()*total));positions.forEach(i=>symbols[i]=target);
       const grid=document.createElement("div");grid.className="game-symbol-grid";
@@ -929,7 +929,7 @@ function openGame(game) {
     }
     if(game==="words"){
       const bank=["NUBE","LÁPIZ","RÍO","TAZA","LUNA","FLOR","RELOJ","PAN","LLAVE","MONTAÑA","LIBRO","VENTANA","CAMINO","NARANJA","ESTRELLA","JARDÍN","MÚSICA","TREN"];
-      const len=Math.min(3+Math.floor(level/2),10),selected=bank.slice().sort(()=>Math.random()-.5).slice(0,len);
+      const len=Math.min(3+Math.floor(level/2),16),selected=bank.slice().sort(()=>Math.random()-.5).slice(0,len);
       const display=document.createElement("div");display.className="game-sequence";display.textContent=selected.join(" · ");intro.textContent="Memoriza estas "+len+" palabras y después reconoce una.";content.appendChild(display);
       content.appendChild(gameButton("Ocultar y jugar",()=>{
         const correct=selected[Math.floor(Math.random()*selected.length)],decoys=bank.filter(w=>!selected.includes(w)).sort(()=>Math.random()-.5).slice(0,3);
@@ -940,7 +940,7 @@ function openGame(game) {
       },"btn primary"));
     }
     if(game==="odd"){
-      const total=Math.min(12+level,40),odd=level<4?"◆":level<8?"◉":level<12?"◎":"◌",index=Math.floor(Math.random()*total),grid=document.createElement("div");grid.className="game-symbol-grid";
+      const total=Math.min(12+level,80),odd=level<4?"◆":level<8?"◉":level<12?"◎":"◌",index=Math.floor(Math.random()*total),grid=document.createElement("div");grid.className="game-symbol-grid";
       intro.textContent="Toca el único símbolo diferente. Los distractores se parecen cada vez más.";
       for(let i=0;i<total;i++){const symbol=i===index?odd:"●";grid.appendChild(gameButton(symbol,()=>finish(i===index,i===index?100:0,i===index?"¡Detectaste el intruso!":"Ese no era el símbolo diferente."),"game-symbol"));}
       content.appendChild(grid);
@@ -955,7 +955,7 @@ function openGame(game) {
       content.appendChild(grid);
     }
     if(game==="spatial"){
-      const arrows=["↑","→","↓","←"],start=Math.floor(Math.random()*4),turns=1+Math.floor(Math.random()*Math.min(level+1,7)),answer=arrows[(start+turns)%4];
+      const arrows=["↑","→","↓","←"],start=Math.floor(Math.random()*4),turns=1+Math.floor(Math.random()*Math.min(level+1,30)),answer=arrows[(start+turns)%4];
       const box=document.createElement("div");box.className="game-sequence";box.textContent=arrows[start]+" ↻ "+turns+" giros";
       intro.textContent="Imagina que la flecha gira 90° a la derecha en cada giro. ¿Hacia dónde apunta?";content.appendChild(box);
       choices(arrows.slice().sort(()=>Math.random()-.5),answer,"Después de "+turns+" giros apunta "+answer+".");
@@ -977,7 +977,7 @@ function openGame(game) {
       choices([answer,answer+n,answer-2,answer+5].sort(()=>Math.random()-.5),answer,"¡Deducción correcta!");
     }
     if(game==="dual"){
-      const starCount=3+Math.floor(Math.random()*Math.min(5+level,12)),triCount=2+Math.floor(Math.random()*Math.min(4+level,10));
+      const starCount=3+Math.floor(Math.random()*Math.min(5+level,20)),triCount=2+Math.floor(Math.random()*Math.min(4+level,20));
       const all=[...Array.from({length:starCount},()=>"★"),...Array.from({length:triCount},()=>"▲")].sort(()=>Math.random()-.5);
       const box=document.createElement("div");box.className="game-sequence";box.textContent=all.join("  ");intro.textContent="Doble misión: cuenta las estrellas y los triángulos. Debes acertar ambas cantidades.";content.appendChild(box);
       const form=document.createElement("form");form.className="max-w-sm mx-auto grid grid-cols-2 gap-3";
