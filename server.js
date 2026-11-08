@@ -877,7 +877,7 @@ app.post(
           const promoSnapshot = await transactionWriter.get(promoRef);
           promo = promoSnapshot.exists ? promoSnapshot.data() || {} : null;
           if (!promo) return { error: "invalid-promo" };
-          const promoError = validatePromoWindow(promo);
+          const promoError = evaluation.promoCode === requestedPromoCode ? "" : validatePromoWindow(promo);
           if (promoError) return { error: "promo-unavailable", message: promoError };
           if (Array.isArray(promo.serviceIds) && promo.serviceIds.length && !promo.serviceIds.includes(evaluation.serviceId || EVALUATION_SERVICE_ID)) return { error: "promo-service" };
           if (promo.newCustomersOnly) {
@@ -905,7 +905,7 @@ app.post(
           updatedAt: admin.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
         return { reference, amountCop, originalAmountCop: basePrice, discountCop, promoCode: appliedCode };
-      });      });
+      });
 
       if (payment.error === "already-paid") {
         return sendError(res, 409, "Esta evaluación ya aparece pagada.");
