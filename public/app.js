@@ -711,6 +711,7 @@ async function handleAuthState(user) {
 ========================================================= */
 
 function showDashboard(name) {
+  document.querySelectorAll("[data-nav]").forEach(button => button.classList.toggle("active", button.dataset.nav === "tests"));
   const displayName = (name || "bienvenido").trim();
   $("dashboard-greeting").textContent = displayName
     ? `Hola, ${displayName}`
@@ -820,7 +821,7 @@ function openGame(game) {
     const sequence = Array.from({length:5}, () => Math.floor(Math.random()*9)+1);
     const display = document.createElement("div"); display.className = "game-sequence"; display.textContent = sequence.join("  "); content.appendChild(display);
     const start = document.createElement("button"); start.className = "btn primary"; start.textContent = "Comenzar"; content.appendChild(start);
-    start.addEventListener("click", () => { start.disabled = true; feedback.textContent = "Observa con atención…"; window.setTimeout(() => { display.textContent = "?  ?  ?  ?  ?"; const form = document.createElement("form"); form.className = "max-w-sm mx-auto mt-4"; const input = document.createElement("input"); input.className = "field text-center"; input.inputMode = "numeric"; input.maxLength = 5; input.placeholder = "Escribe los 5 números"; input.required = true; const submit = document.createElement("button"); submit.className = "btn primary mt-3"; submit.textContent = "Comprobar"; form.append(input,submit); content.appendChild(form); form.addEventListener("submit", event => { event.preventDefault(); const answer = input.value.replace(/\\D/g,"").split("").map(Number); const correct = answer.filter((value,index) => value === sequence[index]).length; const score = Math.round(correct/sequence.length*100); feedback.textContent = `Resultado: ${correct} de 5 posiciones correctas (${score}%).`; recordGame("Secuencia relámpago",score,`${correct}/5 posiciones`); form.remove(); }); }, 3500); });
+    start.addEventListener("click", () => { start.disabled = true; feedback.textContent = "Observa con atención…"; window.setTimeout(() => { display.textContent = "?  ?  ?  ?  ?"; const form = document.createElement("form"); form.className = "max-w-sm mx-auto mt-4"; const input = document.createElement("input"); input.className = "field text-center"; input.inputMode = "numeric"; input.maxLength = 5; input.placeholder = "Escribe los 5 números"; input.required = true; const submit = document.createElement("button"); submit.className = "btn primary mt-3"; submit.textContent = "Comprobar"; form.append(input,submit); content.appendChild(form); form.addEventListener("submit", event => { event.preventDefault(); const answer = input.value.replace(/\D/g,"").split("").map(Number); const correct = answer.filter((value,index) => value === sequence[index]).length; const score = Math.round(correct/sequence.length*100); feedback.textContent = `Resultado: ${correct} de 5 posiciones correctas (${score}%).`; recordGame("Secuencia relámpago",score,`${correct}/5 posiciones`); form.remove(); }); }, 3500); });
   } else if (game === "search") {
     title.textContent = "Cazador de símbolos"; intro.textContent = "Selecciona todas las estrellas ★. Evita tocar los demás símbolos.";
     const symbols = ["★","●","◆","▲","✚","★","■","●","◆","★","▲","✚","■","★","●","◆","▲","■","★","✚"];
