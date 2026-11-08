@@ -207,6 +207,7 @@
         </button>
         <div id="account-menu" class="account-menu hidden" role="menu">
           <div class="account-menu-head"><strong id="account-menu-name">Mi cuenta</strong><small id="account-email"></small></div>
+          <button id="menu-admin" class="hidden" type="button" role="menuitem">🛡️ &nbsp; Panel de administración</button>
           <button id="menu-profile" type="button" role="menuitem">👤 &nbsp; Perfil</button>
           <button id="menu-tests" type="button" role="menuitem">🧠 &nbsp; Pruebas</button>
           <button id="menu-settings" type="button" role="menuitem">⚙️ &nbsp; Configuración</button>
@@ -565,36 +566,22 @@
 
     <!-- ADMINISTRACIÓN -->
     <section id="admin-view" class="hidden fade-in">
-      <div class="hero mb-7" style="min-height:210px">
-        <div class="hero-copy">
-          <div class="eyebrow">Administración segura</div>
-          <h1 style="font-size:clamp(29px,4vw,42px)">Panel de control.</h1>
-          <p>Consulta los registros de evaluaciones y administra la información disponible para tu cuenta.</p>
-        </div>
-        <div class="hero-art"><span>🛡️</span></div>
+      <div class="hero mb-7" style="min-height:190px"><div class="hero-copy"><div class="eyebrow">Administración segura</div><h1 style="font-size:clamp(29px,4vw,42px)">Centro de administración.</h1><p>Gestiona clientes, evaluaciones, pagos e informes desde un solo lugar.</p></div><div class="hero-art"><span>🛡️</span></div></div>
+      <div class="flex flex-wrap gap-2 mb-5" role="tablist" aria-label="Opciones administrativas">
+        <button class="btn primary admin-tab" data-admin-tab="overview" type="button">📊 Resumen</button><button class="btn outline admin-tab" data-admin-tab="clients" type="button">👥 Clientes</button><button class="btn outline admin-tab" data-admin-tab="evaluations" type="button">🧠 Evaluaciones</button><button class="btn outline admin-tab" data-admin-tab="payments" type="button">💳 Pagos</button><button class="btn outline admin-tab" data-admin-tab="settings" type="button">⚙️ Configuración</button>
       </div>
-      <div class="grid md:grid-cols-2 gap-4 mb-5">
-        <div class="card"><p class="muted-text">Usuarios registrados</p><div id="stat-users" class="text-4xl font-extrabold mt-2">0</div></div>
-        <div class="card"><p class="muted-text">Evaluaciones recibidas</p><div id="stat-evals" class="text-4xl font-extrabold mt-2">0</div></div>
-      </div>
-      <div class="card">
-        <div class="flex justify-between items-center flex-wrap gap-3 mb-5">
-          <div><h2 class="text-xl font-extrabold">Registros de evaluaciones</h2><p class="muted-text">Información protegida, visible solo para administración autorizada.</p></div>
-          <div class="flex gap-2"><button id="admin-refresh" class="btn secondary" type="button">↻ Actualizar</button><button id="admin-logout" class="btn outline" type="button">Salir</button></div>
+      <div id="admin-panel-overview" class="admin-panel space-y-5">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-5 gap-3">
+          <div class="card"><p class="muted-text">Clientes registrados</p><div id="stat-users" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Evaluaciones</p><div id="stat-evals" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Pagadas</p><div id="stat-paid" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Pendientes</p><div id="stat-pending" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Ingresos confirmados</p><div id="stat-revenue" class="text-2xl font-extrabold mt-2">$0 COP</div></div>
         </div>
-        <div class="admin-table-wrap">
-          <table><thead><tr><th>Fecha</th><th>Nombre</th><th>Correo</th><th>Resultado</th><th>Acción</th></tr></thead><tbody id="admin-rows"><tr><td colspan="5">Cargando...</td></tr></tbody></table>
-        </div>
+        <div class="card"><div class="flex justify-between items-center flex-wrap gap-3 mb-5"><div><h2 class="text-xl font-extrabold">Actividad reciente</h2><p class="muted-text">Últimas evaluaciones recibidas.</p></div><div class="flex gap-2"><button id="admin-open-evaluations" class="btn outline" type="button">Ver todas</button><button id="admin-refresh" class="btn secondary" type="button">↻ Actualizar</button></div></div><div class="admin-table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Correo</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="admin-recent-rows"><tr><td colspan="5">Cargando...</td></tr></tbody></table></div></div>
       </div>
-      <div id="admin-detail" class="hidden fixed inset-0 z-50 bg-slate-950/60 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" aria-hidden="true">
-        <div class="mx-auto mt-4 max-w-3xl max-h-[88vh] overflow-y-auto rounded-2xl bg-white p-5 sm:p-7 shadow-2xl">
-          <div class="flex items-center justify-between gap-4 mb-4">
-            <h2 id="admin-detail-title" class="text-xl font-extrabold">Detalle de evaluación</h2>
-            <button id="admin-detail-close" type="button" class="btn outline" aria-label="Cerrar detalle">Cerrar ✕</button>
-          </div>
-          <div id="admin-detail-content" aria-live="polite"></div>
-        </div>
-      </div>
+      <div id="admin-panel-clients" class="admin-panel hidden"><div class="card"><div class="flex flex-wrap justify-between items-center gap-3 mb-5"><div><h2 class="text-xl font-extrabold">Clientes registrados</h2><p class="muted-text">Perfiles asociados a las cuentas de la plataforma.</p></div><input id="admin-client-search" class="input max-w-sm" type="search" placeholder="Buscar por nombre o correo" aria-label="Buscar clientes"></div><div class="admin-table-wrap"><table><thead><tr><th>Registro</th><th>Nombre</th><th>Correo</th><th>Edad</th><th>Objetivo</th><th>UID</th></tr></thead><tbody id="admin-client-rows"><tr><td colspan="6">Cargando...</td></tr></tbody></table></div><p class="notice mt-4">Se muestran hasta los 100 perfiles más recientes.</p></div></div>
+      <div id="admin-panel-evaluations" class="admin-panel hidden"><div class="card"><div class="flex flex-wrap justify-between items-center gap-3 mb-5"><div><h2 class="text-xl font-extrabold">Historial de evaluaciones</h2><p class="muted-text">Consulta estados, respuestas, resultados e informes.</p></div><input id="admin-evaluation-search" class="input max-w-sm" type="search" placeholder="Buscar por cliente, correo o estado" aria-label="Buscar evaluaciones"></div><div class="admin-table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Correo</th><th>Resultado</th><th>Pago</th><th>Acciones</th></tr></thead><tbody id="admin-rows"><tr><td colspan="6">Cargando...</td></tr></tbody></table></div><p class="notice mt-4">Se muestran hasta las 100 evaluaciones más recientes. El detalle protegido incluye respuestas y resultados almacenados.</p></div></div>
+      <div id="admin-panel-payments" class="admin-panel hidden"><div class="card"><div class="mb-5"><h2 class="text-xl font-extrabold">Pagos y transacciones Wompi</h2><p class="muted-text">Seguimiento de referencias, identificadores y confirmaciones recibidas por webhook.</p></div><div class="admin-table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Valor</th><th>Estado</th><th>Referencia</th><th>ID transacción</th><th>Confirmación</th></tr></thead><tbody id="admin-payment-rows"><tr><td colspan="7">Cargando...</td></tr></tbody></table></div></div></div>
+      <div id="admin-panel-settings" class="admin-panel hidden"><div class="grid md:grid-cols-2 gap-4"><div class="card"><h2 class="text-xl font-extrabold">Perfil administrador</h2><p class="muted-text mt-2">Cuenta autenticada y permisos activos.</p><div class="profile-row mt-4"><span>Nombre</span><strong id="admin-account-name">—</strong></div><div class="profile-row"><span>Correo</span><strong id="admin-account-email">—</strong></div><div class="profile-row"><span>Rol</span><strong>Administrador</strong></div><button id="admin-profile-open" class="btn outline mt-5" type="button">Ver perfil de cuenta</button></div><div class="card"><div class="flex items-center justify-between gap-3"><h2 class="text-xl font-extrabold">Estado de servicios</h2><button id="admin-health-refresh" class="btn outline" type="button">Actualizar</button></div><div id="admin-system-status" class="mt-4 space-y-3"><p class="muted-text">Consulta el estado de los servicios conectados.</p></div><p class="notice mt-4">Esta vista muestra estados de conexión, nunca claves privadas ni secretos de integración.</p></div></div></div>
+      <div class="flex flex-wrap gap-2 mt-6"><button id="admin-logout" class="btn outline" type="button">Cerrar sesión</button></div>
+      <div id="admin-detail" class="hidden fixed inset-0 z-50 bg-slate-950/60 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="admin-detail-title" aria-hidden="true"><div class="mx-auto mt-4 max-w-3xl max-h-[88vh] overflow-y-auto rounded-2xl bg-white p-5 sm:p-7 shadow-2xl"><div class="flex items-center justify-between gap-4 mb-4"><h2 id="admin-detail-title" class="text-xl font-extrabold">Detalle de evaluación</h2><button id="admin-detail-close" type="button" class="btn outline" aria-label="Cerrar detalle">Cerrar ✕</button></div><div id="admin-detail-content" aria-live="polite"></div></div></div>
     </section>
   </main>
 
