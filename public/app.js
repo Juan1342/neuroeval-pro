@@ -886,7 +886,14 @@ function startParentEvaluation(event) {
   currentEvaluationType = "parent_observation";
   parentEvaluationContext = { childAge, relationship, settings, consent: true };
   profileData = { ...(profileData || {}), name: profileData?.name || currentUser.displayName || currentUser.email, goal: "Observación familiar de indicadores asociados al TDAH" };
-  questions = parentQuestionBank.map(([category, question, dimension, icon, example]) => [category, question, dimension, icon, example, "frequency"]);
+  questions = parentQuestionBank.map(([category, question, dimension, icon, example]) => {
+    const ageExample = childAge <= 7
+      ? example + " Considera juegos, cuentos y rutinas breves propias de su edad."
+      : childAge <= 12
+        ? example + " Considera deberes, actividades escolares y rutinas en casa."
+        : example + " Considera responsabilidades, actividades académicas y relaciones propias de la adolescencia.";
+    return [category, question, dimension, icon, ageExample, "frequency"];
+  });
   activeChoices = parentFrequencyChoices;
   answers = new Array(questions.length).fill(null);
   currentIndex = 0;
@@ -1578,11 +1585,11 @@ async function loadOwnResult(evaluationId) {
     const dimensionMeta = evaluation.dimensions || {};
     const scores = evaluation.scores || {};
     const labels = {
-      inattention: "Atención sostenida y memoria cotidiana",
+      inattention: evaluation.evaluationType === "parent_observation" ? "Atención y seguimiento de tareas" : "Atención sostenida y memoria cotidiana",
       executive: "Organización y funciones ejecutivas",
-      hyperactivity: "Inquietud e impulsividad",
+      hyperactivity: evaluation.evaluationType === "parent_observation" ? "Actividad motora e inquietud" : "Inquietud e impulsividad",
       emotionalContext: "Regulación emocional",
-      context: "Duración, entornos y observación externa",
+      context: evaluation.evaluationType === "parent_observation" ? "Duración, entornos y observación externa" : "Estrés, preocupación y descanso",
       contextFactors: "Otros factores que conviene considerar",
       impact: "Impacto en la vida cotidiana",
       history: "Historia y presencia en distintos entornos",
@@ -1625,7 +1632,7 @@ async function loadOwnResult(evaluationId) {
     const summary = evaluation.summary || {};
     $("result-summary").innerHTML = "";
     [
-      ["Otros factores que pueden influir", summary.contextInfluence],
+      [evaluation.evaluationType === "parent_observation" ? "Otros factores que pueden influir" : "Estrés y descanso", summary.contextInfluence],
       ["Impacto cotidiano", summary.dailyImpact],
       ["Historia y contextos", summary.childhoodAndSettings]
     ].forEach(([label, value]) => {
