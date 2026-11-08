@@ -190,6 +190,106 @@
     @media(prefers-reduced-motion:reduce) { .game-card,.game-card-icon,.game-stage,.game-sequence,.activity-card { animation:none!important;transition:none!important; } }
 
     @media(max-width:520px) { .app-nav-inner { width:calc(100% - 20px);gap:4px; }.app-nav-btn { padding:9px 11px;font-size:12px; }.game-symbol-grid { gap:7px; }.game-symbol { min-height:56px; } }
+  
+    /* NeuroEval Pro · sistema visual oscuro inspirado en las tres referencias */
+    :root {
+      color-scheme: dark;
+      --navy:#080b1b; --navy2:#111632; --purple:#9b72ff;
+      --cyan:#54e4db; --ink:#f0efff; --muted:#a1a9c8;
+      --surface:#151a33; --bg:#090d1e;
+      --line:#2a3155; --violet-glow:#a16eff;
+    }
+    body { color:var(--ink);background:radial-gradient(ellipse at 15% -10%,#27205a 0,transparent 34%),radial-gradient(ellipse at 100% 10%,#102d49 0,transparent 28%),var(--bg); }
+    .topbar,.app-nav { background:rgba(9,13,30,.91);border-color:#252c4d; }
+    .brand { color:#fff; }
+    .brand-mark { background:linear-gradient(140deg,#b17aff,#6355db);box-shadow:0 0 26px #966bff55; }
+    .topbar-right { color:#aab1cf; }
+    .account-menu-toggle,.account-menu { color:#f1efff;background:#171d38;border-color:#30385f; }
+    .account-avatar { background:#34275f;color:#d6c3ff; }
+    .account-menu-head { border-color:#30385a; }
+    .account-menu-head strong,.profile-row strong { color:#f5f3ff; }
+    .account-menu button { color:#c4c9e2; }
+    .account-menu button:hover { background:#28254d;color:#d4bdff; }
+    .page { color:var(--ink); }
+    .hero { background:radial-gradient(circle at 83% 20%,#7b4bd4 0,transparent 30%),linear-gradient(120deg,#0d132c,#20204f 62%,#432d78);border:1px solid #51418b;box-shadow:0 24px 70px #0005; }
+    .hero-art { background:linear-gradient(145deg,#c49aff,#6154c8);box-shadow:0 0 0 22px #ffffff0a,0 0 0 45px #ffffff08,0 0 55px #a46dff55; }
+    .eyebrow { color:#c5a8ff; }
+    .hero p { color:#d6d8f4; }
+    .section-heading h2,.auth-card h2,.evaluation-card h3,.recommendation-tile strong { color:#f2f0ff; }
+    .section-heading p,.muted-text { color:#a4accb; }
+    .card,.evaluation-card,.question-card,.payment-card,.game-stage { background:linear-gradient(145deg,#171d39,#11162d);border-color:#2b345a;color:#f0efff;box-shadow:0 16px 42px #0004; }
+    .auth-side { background:radial-gradient(circle at 80% 15%,#694cae 0,transparent 42%),linear-gradient(145deg,#24204c,#142e43);border:1px solid #544184;color:#fff; }
+    .auth-side p { color:#c3c9e3; }
+    .field,.input { background:#0d1329!important;color:#f2f0ff!important;border-color:#343d66!important; }
+    .field::placeholder,.input::placeholder { color:#7e89ad!important; }
+    .field:focus,.input:focus { border-color:#a27aff!important;box-shadow:0 0 0 3px #9a6cff2a!important;background:#111832!important; }
+    .field-label { color:#c6cbe1; }
+    .tabs { background:#0c1228; }
+    .tabs button { color:#a1a9c8; }
+    .tabs button.active { color:#e5d8ff;background:#30245a;box-shadow:inset 0 0 0 1px #7655b7; }
+    .primary,.game-card .btn { background:linear-gradient(110deg,#a16bff,#6557df);color:#fff;box-shadow:0 8px 24px #8e60ff40; }
+    .primary:hover { box-shadow:0 12px 30px #8e60ff60; }
+    .secondary,.pill { background:#29244f;color:#d7c7ff; }
+    .outline,.google-btn { background:#171d38;color:#d9def5;border:1px solid #374064; }
+    .outline:hover,.google-btn:hover { background:#24294b;border-color:#8b70d2; }
+    .notice { background:#14253a;border-color:#28506a;color:#b9d7e5; }
+    .message { color:#68e3c2; }
+    .progress-wrap,.score-track { background:#303858; }
+    .progress-fill,.score-track span { background:linear-gradient(90deg,#a16bff,#56e2d8);box-shadow:0 0 14px #9a6cff66; }
+    .question-icon,.question-visual,.evaluation-icon { background:linear-gradient(145deg,#33265d,#16404a);color:#e9dfff; }
+    .answer-option,.game-choice,.game-symbol { background:#151b35;border-color:#333d65;color:#dce1f7; }
+    .answer-option:hover,.game-choice:hover,.game-symbol:hover { background:#29234c;border-color:#a27aff; }
+    .answer-option.selected { background:#302653;border-color:#a783ff;color:#fff; }
+    .question-example { background:#101831;border-color:#2d385e;color:#bdc6e2; }
+    .question-example.memory-stimulus { background:linear-gradient(135deg,#302453,#123b43);border-color:#7255ad;color:#eee4ff; }
+    .quiz-encouragement { background:#12342f;border-color:#24665c;color:#a7f1df; }
+    .price { color:#f2eaff; }
+    .benefit,.score-card { background:linear-gradient(145deg,#202747,#171d36);border:1px solid #30395e;color:#b9c2df; }
+    .score-number { color:#c6a6ff; }
+    .recommendation-list,.recommendation-tile { color:#c0c8e2; }
+    .recommendation-tile { background:linear-gradient(110deg,#1b2140,#151b33);border-color:#30395c; }
+    .recommendation-tile:hover { border-color:#9671e6; }
+    .app-nav-btn { color:#b2bad7; }
+    .app-nav-btn:hover,.app-nav-btn.active { background:#302653;color:#e2d4ff;border-color:#7255b1; }
+    .game-grid .game-card:nth-child(3n+1) { background:linear-gradient(145deg,#1d2042,#302253);border-color:#57417f; }
+    .game-grid .game-card:nth-child(3n+2) { background:linear-gradient(145deg,#142b3d,#16434a);border-color:#28636a; }
+    .game-grid .game-card:nth-child(3n) { background:linear-gradient(145deg,#35233a,#4a2c3c);border-color:#80506b; }
+    .game-card .evaluation-status { background:#10162dcc;color:#d5c2ff; }
+    .game-stage { background:radial-gradient(circle at 95% 0,#40316c 0,transparent 35%),linear-gradient(145deg,#171d39,#11162d);border-color:#59468a; }
+    .game-stage .game-sequence { background:linear-gradient(120deg,#302453,#16414a 60%,#452a40);color:#f2eaff;border-color:#6e5b9e; }
+    .admin-table-wrap th { color:#c5cbe4;background:#202746; }
+    table th { color:#c5cbe4;background:#202746; }
+    table td { color:#c1c9e2;border-color:#2b3455; }
+    table tr:hover td { background:#1d2544; }
+    .profile-row { border-color:#30385a;color:#aeb7d6; }
+    .footer { color:#737fa5; }
+    #admin-detail { background:#050817e8!important; }
+    #admin-detail > div { background:#151b35!important;color:#f0efff; }
+    #admin-detail-content .text-slate-700,#admin-detail-content .text-slate-600 { color:#c7cde5!important; }
+    #admin-detail-content .border-slate-200 { border-color:#30395e!important; }
+    .status-dot { box-shadow:0 0 12px #36d9a0; }
+    .admin-tab { border-radius:12px; }
+    .admin-tab.active { background:linear-gradient(110deg,#a16bff,#6557df);color:white;border-color:transparent; }
+    .chart-card { background:linear-gradient(145deg,#171d39,#11162d);border:1px solid #30395e;border-radius:20px;padding:22px;min-width:0; }
+    .chart-title { color:#f0efff;font-weight:800;font-size:15px; }
+    .chart-subtitle { color:#929dbc;font-size:11px;margin-top:4px; }
+    .chart-bars { height:178px;display:flex;align-items:end;gap:clamp(5px,1.3vw,14px);padding:16px 4px 25px;border-bottom:1px solid #343d61; }
+    .chart-bar-col { flex:1;min-width:0;height:100%;display:flex;align-items:end;justify-content:center;position:relative; }
+    .chart-bar { width:min(30px,75%);min-height:4px;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#c08aff,#7056df);box-shadow:0 0 18px #986bff35;transition:height .5s ease; }
+    .chart-bar-col:nth-child(3n+2) .chart-bar { background:linear-gradient(180deg,#69e9df,#258caa); }
+    .chart-bar-label { position:absolute;bottom:-22px;font-size:10px;color:#929dbc; }
+    .chart-legend { display:flex;flex-wrap:wrap;gap:14px;margin-top:17px;color:#aeb8d5;font-size:11px; }
+    .legend-dot { display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px; }
+    .status-donut { width:150px;height:150px;border-radius:50%;margin:8px auto 14px;position:relative;display:grid;place-items:center;background:conic-gradient(#a16bff 0 var(--paid),#51d9d1 var(--paid) var(--pending),#f39b66 var(--pending) 100%); }
+    .status-donut:after { content:"";position:absolute;inset:20px;border-radius:50%;background:#171d39; }
+    .status-donut-center { position:relative;z-index:1;text-align:center;color:#fff;font-size:25px;font-weight:800; }
+    .status-donut-center small { display:block;font-size:10px;font-weight:600;color:#9da8c9; }
+    .radar-wrap { display:grid;grid-template-columns:minmax(220px,340px) 1fr;gap:22px;align-items:center;background:linear-gradient(145deg,#171d39,#11162d);border:1px solid #30395e;border-radius:20px;padding:22px;margin:20px 0; }
+    .radar-svg { width:100%;max-width:340px;overflow:visible; }
+    .radar-copy { color:#b9c3df;font-size:12px;line-height:1.8; }
+    .radar-copy strong { display:block;color:#eee7ff;font-size:14px;margin-bottom:5px; }
+    @media(max-width:700px) { .radar-wrap { grid-template-columns:1fr;justify-items:center; }.radar-copy { width:100%; } }
+
   </style>
 </head>
 
@@ -549,6 +649,7 @@
         <h2 id="result-profile" class="text-2xl font-extrabold mt-3"></h2>
         <p id="result-description" class="muted-text mt-3"></p>
         <div class="section-heading"><div><h2>Dimensiones exploradas</h2><p>Indicadores descriptivos calculados a partir de tus respuestas.</p></div></div>
+        <div id="result-radar" class="radar-wrap hidden" aria-label="Gráfica radar de dimensiones"><div id="result-radar-chart"></div><div class="radar-copy"><strong>Mapa de dimensiones</strong><span>Comparación visual de los indicadores del autorregistro. Los valores describen respuestas y no representan probabilidades ni un diagnóstico clínico.</span></div></div>
         <div id="score-list" class="score-grid"></div>
         <div id="result-dimension-explanations" class="mt-3"></div>
         <div class="notice mt-4"><strong>Actividades interactivas de atención y memoria</strong><p id="attention-task-summary" class="mt-2"></p></div>
@@ -573,6 +674,10 @@
       <div id="admin-panel-overview" class="admin-panel space-y-5">
         <div class="grid sm:grid-cols-2 xl:grid-cols-5 gap-3">
           <div class="card"><p class="muted-text">Clientes registrados</p><div id="stat-users" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Evaluaciones</p><div id="stat-evals" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Pagadas</p><div id="stat-paid" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Pendientes</p><div id="stat-pending" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Fallidos</p><div id="stat-failed" class="text-3xl font-extrabold mt-2">0</div></div><div class="card"><p class="muted-text">Ingresos confirmados</p><div id="stat-revenue" class="text-2xl font-extrabold mt-2">$0 COP</div></div>
+        </div>
+        <div class="grid lg:grid-cols-3 gap-4">
+          <div class="chart-card lg:col-span-2"><div class="flex justify-between items-start gap-3"><div><h2 class="chart-title">Evolución de evaluaciones</h2><p class="chart-subtitle">Distribución mensual de los registros recientes disponibles</p></div><span class="pill">Tendencia</span></div><div id="admin-monthly-chart" class="chart-bars" aria-label="Gráfica mensual de evaluaciones"><p class="chart-subtitle">Cargando datos…</p></div><div class="chart-legend"><span><i class="legend-dot" style="background:#a16bff"></i>Evaluaciones registradas</span><span id="admin-chart-sample-note">Muestra disponible</span></div></div>
+          <div class="chart-card"><h2 class="chart-title">Estado de pagos</h2><p class="chart-subtitle">Proporción según los registros disponibles</p><div id="admin-payment-donut" class="status-donut" style="--paid:0%;--pending:0%"><div class="status-donut-center">—<small>Sin datos</small></div></div><div id="admin-payment-legend" class="chart-legend justify-center"></div></div>
         </div>
         <div class="card"><div class="flex justify-between items-center flex-wrap gap-3 mb-5"><div><h2 class="text-xl font-extrabold">Actividad reciente</h2><p class="muted-text">Últimas evaluaciones recibidas.</p></div><div class="flex gap-2"><button id="admin-open-evaluations" class="btn outline" type="button">Ver todas</button><button id="admin-refresh" class="btn secondary" type="button">↻ Actualizar</button></div></div><div class="admin-table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Correo</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="admin-recent-rows"><tr><td colspan="5">Cargando...</td></tr></tbody></table></div></div>
       </div>
@@ -611,6 +716,6 @@
 </div>
 
 <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
-<script type="module" src="/app.js?v=neuroeval-admin-rbac-20261108-1"></script>
+<script type="module" src="/app.js?v=neuroeval-visual-system-20261108-1"></script>
 </body>
 </html>
