@@ -42,10 +42,10 @@ let currentRecommendations = [];
 
 const choices = [
   "Nunca",
-  "Raramente",
+  "Rara vez",
   "A veces",
-  "A menudo",
-  "Muy a menudo"
+  "Con frecuencia",
+  "Casi siempre"
 ];
 
 const points = [0, 1, 2, 3, 4];
@@ -54,26 +54,7 @@ const points = [0, 1, 2, 3, 4];
    2. BANCO DE PREGUNTAS
 ========================================================= */
 
-const bank = [
-  ["Atención y enfoque", "¿Te cuesta mantener la atención en tareas que requieren esfuerzo mental prolongado?", "inattention"],
-  ["Atención y enfoque", "¿Comienzas proyectos con entusiasmo, pero te cuesta terminarlos?", "inattention"],
-  ["Atención y enfoque", "¿Pierdes u olvidas objetos cotidianos importantes?", "inattention"],
-  ["Atención y enfoque", "¿Te distraes fácilmente con ruidos o estímulos del entorno?", "inattention"],
-  ["Atención y enfoque", "¿Te resulta difícil organizar los pasos para cumplir una meta?", "inattention"],
-  ["Atención y enfoque", "¿Olvidas citas, compromisos o tareas habituales?", "inattention"],
-  ["Inquietud e impulsividad", "¿Sientes necesidad de moverte cuando debes permanecer sentado?", "hyperactivity"],
-  ["Inquietud e impulsividad", "¿Interrumpes o respondes antes de que terminen de hablar?", "hyperactivity"],
-  ["Inquietud e impulsividad", "¿Tomas decisiones apresuradas de las que luego te arrepientes?", "hyperactivity"],
-  ["Inquietud e impulsividad", "¿Te cuesta esperar tu turno?", "hyperactivity"],
-  ["Inquietud e impulsividad", "¿Te sientes inquieto incluso en momentos de descanso?", "hyperactivity"],
-  ["Función ejecutiva", "¿Pospones tareas hasta que el plazo está muy cerca?", "inattention"],
-  ["Función ejecutiva", "¿Te cuesta priorizar cuando tienes varias tareas?", "inattention"],
-  ["Diagnóstico diferencial", "¿Tus dificultades de atención aparecen junto con preocupación o tensión frecuente?", "differential"],
-  ["Diagnóstico diferencial", "¿Tu concentración empeoró recientemente debido a fatiga o estrés?", "differential"],
-  ["Historia", "¿Recuerdas dificultades similares durante tu infancia, antes de los 12 años?", "inattention"],
-  ["Diagnóstico diferencial", "¿Los problemas varían mucho según tu descanso o carga de trabajo?", "differential"],
-  ["Organización", "¿Te cuesta calcular cuánto tiempo necesitas para completar actividades?", "inattention"]
-];
+const bank = [];
 
 /* =========================================================
    3. INICIALIZAR FIREBASE
@@ -588,14 +569,10 @@ async function confirmPasswordReset(event) {
 
 async function startQuiz(name, age, goal) {
   profileData = { name, age, goal };
-
-  questions = [...bank]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 15);
-
-  answers = new Array(15).fill(null);
+  // Orden temático fijo para que la experiencia tenga una progresión comprensible.
+  questions = [...bank];
+  answers = new Array(questions.length).fill(null);
   currentIndex = 0;
-
   renderQuestion();
   show("quiz-view");
 }
@@ -603,48 +580,47 @@ async function startQuiz(name, age, goal) {
 function renderQuestion() {
   const question = questions[currentIndex];
   const percentage = Math.round(((currentIndex + 1) / questions.length) * 100);
+  const progress = (currentIndex + 1) / questions.length;
 
-  $("progress-label").textContent =
-    `Pregunta ${currentIndex + 1} de ${questions.length}`;
-
+  $("progress-label").textContent = `Pregunta ${currentIndex + 1} de ${questions.length}`;
   $("progress-pct").textContent = `${percentage}%`;
   $("progress-bar").style.width = `${percentage}%`;
-
   $("q-category").textContent = question[0];
   $("q-text").textContent = question[1];
-
+  $("q-visual").textContent = question[3] || "💭";
+  $("q-example").textContent = question[4] || "Piensa en una situación habitual de tu vida cotidiana.";
   $("prev-question").disabled = currentIndex === 0;
+
+  const encouragement = progress < 0.25
+    ? "Tómate tu tiempo. Responde pensando en lo que suele ocurrirte, no en un día excepcional."
+    : progress < 0.5
+      ? "¡Vas muy bien! Sigue a tu ritmo; cada respuesta ayuda a construir una imagen más completa."
+      : progress < 0.75
+        ? "¡Ya superaste la mitad! Mantén la concentración: estás avanzando muy bien."
+        : progress < 0.92
+          ? "¡Último tramo! Ya falta poco. Respira y responde con tranquilidad."
+          : "¡Casi terminamos! Una respuesta honesta es más útil que intentar elegir la respuesta perfecta.";
+  $("quiz-encouragement").textContent = encouragement;
 
   const answersContainer = $("answers");
   answersContainer.innerHTML = "";
-
   choices.forEach((label, index) => {
     const button = document.createElement("button");
-
     button.type = "button";
     button.className = "answer-option";
-
-    if (answers[currentIndex] === index) {
-      button.classList.add("selected");
-    }
-
-    button.textContent =
-      `${answers[currentIndex] === index ? "✓  " : ""}${label}`;
-
+    if (answers[currentIndex] === index) button.classList.add("selected");
+    button.textContent = `${answers[currentIndex] === index ? "✓  " : ""}${label}`;
+    button.setAttribute("aria-pressed", String(answers[currentIndex] === index));
     button.addEventListener("click", () => {
       answers[currentIndex] = index;
       renderQuestion();
     });
-
     answersContainer.appendChild(button);
   });
 
-  const isLast = currentIndex === questions.length - 1;
-
-  $("next-question").textContent = isLast
+  $("next-question").textContent = currentIndex === questions.length - 1
     ? "Finalizar evaluación"
     : "Siguiente →";
-
   $("next-question").disabled = answers[currentIndex] === null;
 }
 
@@ -672,106 +648,13 @@ async function nextQuestion() {
 ========================================================= */
 
 function calculateEvaluation() {
-  const sums = {
-    inattention: 0,
-    hyperactivity: 0,
-    differential: 0
-  };
-
-  const counts = {
-    inattention: 0,
-    hyperactivity: 0,
-    differential: 0
-  };
-
   const qa = questions.map((question, index) => ({
     category: question[0],
     question: question[1],
     dimension: question[2],
-    answer: choices[answers[index]],
-    points: points[answers[index]]
+    answer: choices[answers[index]]
   }));
-
-  qa.forEach((answer) => {
-    sums[answer.dimension] += answer.points;
-    counts[answer.dimension]++;
-  });
-
-  const scores = {};
-
-  Object.keys(sums).forEach((key) => {
-    scores[key] = counts[key]
-      ? Math.round((sums[key] / (counts[key] * 4)) * 100)
-      : 0;
-  });
-
-  let profile;
-  let description;
-  let recommendations;
-
-  if (scores.differential >= 60) {
-    profile = "Indicadores asociados a estrés o sobrecarga";
-    description =
-      "Tus respuestas señalan factores que podrían relacionarse con estrés, fatiga o tensión y que pueden influir en la concentración. Es importante explorar el contexto y otras posibles causas.";
-
-    recommendations = [
-      "Revisar hábitos de sueño, descanso y carga de actividades.",
-      "Registrar cuándo aparecen las dificultades y qué situaciones las intensifican.",
-      "Consultar con un profesional de salud si estas dificultades afectan tu vida cotidiana."
-    ];
-
-  } else if (scores.inattention >= 60 && scores.hyperactivity >= 60) {
-    profile = "Elevación de indicadores de inatención e inquietud";
-    description =
-      "Tus respuestas muestran frecuencia elevada en las dimensiones exploradas. Este resultado no confirma TDAH y requiere una valoración profesional para comprender su origen.";
-
-    recommendations = [
-      "Solicitar orientación con psicología clínica o psiquiatría.",
-      "Preparar ejemplos concretos de dificultades en distintos contextos.",
-      "Explorar la historia de estas experiencias y su impacto funcional."
-    ];
-
-  } else if (scores.inattention >= 60) {
-    profile = "Elevación de indicadores de inatención";
-    description =
-      "Tus respuestas muestran dificultades frecuentes relacionadas con atención y organización. Se requiere una evaluación profesional para conocer su origen.";
-
-    recommendations = [
-      "Dividir tareas grandes en pasos breves y concretos.",
-      "Utilizar recordatorios externos y calendarios.",
-      "Consultar con un profesional cualificado si las dificultades persisten."
-    ];
-
-  } else if (scores.hyperactivity >= 60) {
-    profile = "Elevación de indicadores de inquietud e impulsividad";
-    description =
-      "Se observan respuestas frecuentes relacionadas con inquietud o impulsividad. Estas respuestas no constituyen por sí solas un diagnóstico.";
-
-    recommendations = [
-      "Practicar pausas planificadas y estrategias de autorregulación.",
-      "Registrar situaciones que desencadenan inquietud o impulsividad.",
-      "Buscar orientación profesional si afecta el funcionamiento diario."
-    ];
-
-  } else {
-    profile = "Indicadores bajos o moderados en este autorregistro";
-    description =
-      "Las respuestas no muestran una elevación marcada en las dimensiones exploradas. Esto no descarta dificultades ni sustituye una evaluación si existe preocupación.";
-
-    recommendations = [
-      "Mantener hábitos de sueño y organización saludables.",
-      "Observar si las dificultades aparecen en situaciones específicas.",
-      "Solicitar orientación profesional si las dificultades persisten o afectan tu vida diaria."
-    ];
-  }
-
-  return {
-    answers: qa,
-    scores,
-    profile,
-    profileDescription: description,
-    recommendations
-  };
+  return { answers: qa, scores: {}, recommendations: [] };
 }
 
 async function finishEvaluation() {
@@ -983,7 +866,6 @@ async function loadOwnResult(evaluationId) {
     const response = await api(
       `/api/my-evaluations/${encodeURIComponent(evaluationId)}`
     );
-
     const data = await response.json();
     const evaluation = data.evaluation || data;
 
@@ -995,61 +877,77 @@ async function loadOwnResult(evaluationId) {
 
     $("result-name").textContent =
       `${evaluation.name || profileData?.name || ""} · ${currentUser.email}`;
+    $("result-profile").textContent = evaluation.profile || "Resumen orientativo";
+    $("result-description").textContent = evaluation.profileDescription || "";
 
-    $("result-profile").textContent =
-      evaluation.profile || "Resumen de autorregistro";
-
-    $("result-description").textContent =
-      evaluation.profileDescription || evaluation.description || "";
-
-    const scores = evaluation.scores || currentScores || {};
-
-    const dimensions = [
-      ["Atención y función ejecutiva", "inattention"],
-      ["Inquietud e impulsividad", "hyperactivity"],
-      ["Indicadores de estrés y contexto", "differential"]
-    ];
-
+    const dimensionMeta = evaluation.dimensions || {};
+    const scores = evaluation.scores || {};
+    const labels = {
+      inattention: "Atención sostenida y memoria cotidiana",
+      executive: "Organización y funciones ejecutivas",
+      hyperactivity: "Inquietud e impulsividad",
+      emotionalContext: "Regulación emocional",
+      context: "Estrés, preocupación y descanso",
+      impact: "Impacto en la vida cotidiana",
+      history: "Historia y presencia en distintos entornos"
+    };
     $("score-list").innerHTML = "";
+    $("result-dimension-explanations").innerHTML = "";
 
-    dimensions.forEach(([label, key]) => {
+    Object.entries(labels).forEach(([key, label]) => {
+      if (typeof scores[key] !== "number") return;
       const value = Math.max(0, Math.min(100, Number(scores[key] || 0)));
-
       const card = document.createElement("div");
       card.className = "score-card";
-
       const title = document.createElement("p");
       title.className = "text-xs font-bold text-slate-500";
       title.textContent = label;
-
       const number = document.createElement("div");
       number.className = "score-number";
       number.textContent = `${value}%`;
-
       const track = document.createElement("div");
       track.className = "score-track";
-
       const fill = document.createElement("span");
       fill.style.width = `${value}%`;
-
       track.appendChild(fill);
       card.append(title, number, track);
       $("score-list").appendChild(card);
+
+      const explanation = document.createElement("p");
+      explanation.className = "muted-text mb-3";
+      explanation.textContent = dimensionMeta[key]?.explanation || "Porcentaje descriptivo de las respuestas de esta dimensión; no equivale a una probabilidad clínica.";
+      $("result-dimension-explanations").appendChild(explanation);
+    });
+
+    const summary = evaluation.summary || {};
+    $("result-summary").innerHTML = "";
+    [
+      ["Estrés y descanso", summary.contextInfluence],
+      ["Impacto cotidiano", summary.dailyImpact],
+      ["Historia y contextos", summary.childhoodAndSettings]
+    ].forEach(([label, value]) => {
+      if (!value) return;
+      const p = document.createElement("p");
+      p.className = "text-sm text-slate-600 mb-2";
+      const strong = document.createElement("strong");
+      strong.textContent = label + ": ";
+      p.append(strong, document.createTextNode(value));
+      $("result-summary").appendChild(p);
     });
 
     $("recommendations").innerHTML = "";
-
-    const recommendations =
-      evaluation.recommendations || currentRecommendations || [];
-
-    recommendations.forEach((recommendation) => {
+    (evaluation.recommendations || []).forEach((recommendation) => {
       const item = document.createElement("li");
-      item.textContent = recommendation;
+      const title = document.createElement("strong");
+      title.textContent = recommendation.title || "Orientación";
+      const detail = document.createElement("p");
+      detail.className = "muted-text";
+      detail.textContent = recommendation.detail || String(recommendation);
+      item.append(title, detail);
+      item.className = "mb-4";
       $("recommendations").appendChild(item);
     });
-
     show("result-view");
-
   } catch (error) {
     alert("No se pudo cargar el informe: " + error.message);
   }
