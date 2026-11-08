@@ -100,6 +100,9 @@
     .answer-option { padding:16px;border:1px solid #e3e7f1;background:#fff;border-radius:13px;text-align:left;color:#4c5672;font-weight:600;font-size:13px; }
     .answer-option:hover { border-color:#aaa2fa;background:#f8f7ff; }
     .answer-option.selected { border:2px solid #7569e9;background:#f1efff;color:#5147ba;padding:15px; }
+    .question-visual { width:92px;height:92px;border-radius:26px;background:linear-gradient(145deg,#e9e7ff,#ddf8f5);display:grid;place-items:center;font-size:48px;margin:28px auto 14px;box-shadow:0 12px 26px #5149bb14; }
+    .question-example { max-width:650px;margin:0 auto 22px;padding:14px 17px;border-radius:14px;background:#f7f8fd;border:1px solid #edf0f7;color:#68718c;font-size:13px;line-height:1.65;text-align:left; }
+    .quiz-encouragement { max-width:800px;margin:14px auto 0;padding:13px 17px;border-radius:13px;background:#effaf8;border:1px solid #d8f2ed;color:#287d70;font-size:13px;text-align:center;line-height:1.55; }
     .quiz-footer { display:flex;justify-content:space-between;gap:12px;margin-top:28px; }
     .payment-card { max-width:760px;margin:0 auto;text-align:center;padding:clamp(25px,5vw,50px); }
     .price { font-family:"Manrope";font-size:50px;font-weight:800;letter-spacing:-2px;color:#24204f;margin:10px 0; }
@@ -338,22 +341,24 @@
         <div class="hero-copy">
           <div class="eyebrow">Tu espacio de exploración</div>
           <h1 style="font-size:clamp(27px,4vw,38px)">Vamos paso a paso.</h1>
-          <p>Responde según lo que has experimentado habitualmente. No hay respuestas buenas ni malas.</p>
+          <p>Son 24 preguntas breves sobre situaciones cotidianas. Responde según lo que te ocurre habitualmente; no hay respuestas buenas ni malas.</p>
         </div>
-        <div class="hero-art" style="width:130px;height:130px"><span style="font-size:65px">✨</span></div>
+        <div class="hero-art" style="width:130px;height:130px"><span style="font-size:65px">🧠</span></div>
       </div>
 
       <div class="card question-card">
         <div class="quiz-top">
           <span id="q-category" class="pill">Atención y enfoque</span>
-          <span id="progress-label" class="text-xs font-bold text-slate-500">Pregunta 1 de 15</span>
+          <span id="progress-label" class="text-xs font-bold text-slate-500">Pregunta 1 de 24</span>
         </div>
         <div class="progress-wrap"><div id="progress-bar" class="progress-fill"></div></div>
-        <div class="flex justify-between text-xs text-slate-400 mt-2"><span>Progreso</span><b id="progress-pct">7%</b></div>
-        <div class="question-icon mt-8">💭</div>
+        <div class="flex justify-between text-xs text-slate-400 mt-2"><span>Tu progreso</span><b id="progress-pct">4%</b></div>
+        <div id="q-visual" class="question-visual" aria-hidden="true">💭</div>
         <h2 id="q-text">¿Te cuesta mantener la atención?</h2>
-        <p class="muted-text mb-5">Selecciona la opción que mejor describa tu experiencia.</p>
+        <div id="q-example" class="question-example">Piensa en una situación habitual de tu vida cotidiana.</div>
+        <p class="muted-text mb-5">Selecciona la frecuencia que mejor describa tu experiencia.</p>
         <div id="answers" class="answer-list"></div>
+        <div id="quiz-encouragement" class="quiz-encouragement" role="status" aria-live="polite">Tómate tu tiempo. No hay respuestas correctas o incorrectas.</div>
         <div class="quiz-footer">
           <button id="prev-question" class="btn outline" type="button">← Anterior</button>
           <button id="next-question" class="btn primary" type="button" disabled>Siguiente →</button>
@@ -400,7 +405,10 @@
         <p id="result-description" class="muted-text mt-3"></p>
         <div class="section-heading"><div><h2>Dimensiones exploradas</h2><p>Indicadores descriptivos calculados a partir de tus respuestas.</p></div></div>
         <div id="score-list" class="score-grid"></div>
-        <div class="section-heading"><div><h2>Orientaciones sugeridas</h2><p>Ideas generales para continuar explorando tus hábitos.</p></div></div>
+        <div id="result-dimension-explanations" class="mt-3"></div>
+        <div class="section-heading"><div><h2>Contexto e impacto cotidiano</h2><p>Aspectos que ayudan a interpretar las respuestas con cautela.</p></div></div>
+        <div id="result-summary" class="mb-5"></div>
+        <div class="section-heading"><div><h2>Orientaciones personalizadas</h2><p>Estrategias relacionadas con las áreas que destacaron en tus respuestas.</p></div></div>
         <ul id="recommendations" class="recommendation-list"></ul>
         <div class="notice">Este informe no es un diagnóstico clínico ni una escala validada. Los porcentajes representan únicamente la distribución de respuestas de este cuestionario y no deben interpretarse como probabilidad de tener un trastorno. Si tienes inquietudes, consulta con un profesional cualificado.</div>
         <div class="flex flex-wrap gap-3 mt-6">
@@ -449,6 +457,6 @@
 </div>
 
 <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
-<script type="module" src="/app.js?v=google-redirect-20261107-5"></script>
+<script type="module" src="/app.js?v=neuroeval-interactive-20261107-1"></script>
 </body>
 </html>
