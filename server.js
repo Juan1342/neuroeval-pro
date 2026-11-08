@@ -1446,11 +1446,12 @@ app.get(
   async (req, res) => {
     try {
       const evaluationsRef = db.collection("evaluations");
-      const [usersCountSnapshot,evaluationsCountSnapshot,paidCountSnapshot,pendingCountSnapshot,usersSnapshot,evaluationsSnapshot,paidRevenueSnapshot] = await Promise.all([
+      const [usersCountSnapshot,evaluationsCountSnapshot,paidCountSnapshot,pendingCountSnapshot,failedCountSnapshot,usersSnapshot,evaluationsSnapshot,paidRevenueSnapshot] = await Promise.all([
         db.collection("users").count().get(),
         evaluationsRef.count().get(),
         evaluationsRef.where("paymentStatus","==","paid").count().get(),
         evaluationsRef.where("paymentStatus","==","pending").count().get(),
+        evaluationsRef.where("paymentStatus","==","failed").count().get(),
         db.collection("users").limit(100).get(),
         evaluationsRef.orderBy("createdAt","desc").limit(100).get(),
         evaluationsRef.where("paymentStatus","==","paid").aggregate({total:admin.firestore.AggregateField.sum("amountCop")}).get()
@@ -1472,7 +1473,7 @@ app.get(
       });
       return res.json({
         users:usersCountSnapshot.data().count,evaluations:evaluationsCountSnapshot.data().count,
-        paid:paidCountSnapshot.data().count,pending:pendingCountSnapshot.data().count,
+        paid:paidCountSnapshot.data().count,pending:pendingCountSnapshot.data().count,failed:failedCountSnapshot.data().count,
         revenueCop:Number(paidRevenueSnapshot.data().total||0),usersList,records
       });
 
