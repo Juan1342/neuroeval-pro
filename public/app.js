@@ -738,6 +738,7 @@ function showDashboard(name) {
     ? `Hola, ${displayName}`
     : "Bienvenido a NeuroEval Pro";
   show("dashboard-view");
+  loadCustomerSupportTickets();
 }
 
 function showAdmin() {
@@ -1852,6 +1853,135 @@ async function loadAdminCommercialAnalytics() {
   }catch(error){summary.textContent="No se pudo cargar la analítica: "+error.message;revenue.textContent="—";conversion.textContent="—";promos.textContent="—";}
 }
 
+async function loadCustomerSupportTickets() {
+  const target = $("customer-support-list");
+  if (!target || !currentUser) return;
+  target.textContent = "Cargando tus solicitudes…";
+  try {
+    const response = await api("/api/support/tickets");
+    const data = await response.json();
+    renderCustomerSupportTickets(Array.isArray(data.tickets) ? data.tickets : []);
+  } catch (error) {
+    target.textContent = "No se pudieron cargar tus solicitudes: " + error.message;
+  }
+}
+
+function renderCustomerSupportTickets(tickets) {
+  const target = $("customer-support-list");
+  if (!target) return;
+  target.replaceChildren();
+  if (!tickets.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted-text text-sm";
+    empty.textContent = "Todavía no tienes solicitudes. Si necesitas ayuda, puedes crear la primera desde el formulario.";
+    target.appendChild(empty);
+    return;
+  }
+  const statusLabels = { open: "Abierto", in_progress: "En gestión", waiting_customer: "Necesitamos tu respuesta", resolved: "Resuelto", closed: "Cerrado" };
+  const categoryLabels = { cuenta: "Cuenta", evaluacion: "Evaluación", pago: "Pago", informe: "Informe", tecnico: "Técnico", otro: "Otro" };
+  tickets.forEach(ticket => {
+    const card = document.createElement("article");
+    card.className = "rounded-2xl border border-slate-200 p-4 space-y-3";
+    const header = document.createElement("div");
+    header.className = "flex flex-wrap items-start justify-between gap-2";
+    const titleWrap = document.createElement("div");
+    const title = document.createElement("h4");
+    title.className = "font-extrabold";
+    title.textContent = ticket.subject || "Solicitud de soporte";
+    const meta = document.createElement("p");
+    meta.className = "muted-text text-xs mt-1";
+    meta.textContent = (categoryLabels[ticket.category] || "Otro") + " · Actualizada " + formatAdminDate(ticket.updatedAt || ticket.createdAt);
+    titleWrap.append(title, meta);
+    const state = document.createElement("span");
+    state.className = "pill";
+    state.textContent = statusLabels[ticket.status] || ticket.status;
+    header.append(titleWrap, state);
+    card.appendChild(header);
+
+    const conversation = document.createElement("div");
+    conversation.className = "space-y-2";
+    (ticket.messages || []).forEach(message => {
+      const bubble = document.createElement("div");
+      bubble.className = "rounded-xl p-3 " + (message.senderRole === "admin" ? "bg-violet-500/10 mr-4" : "bg-slate-500/10 ml-4");
+      const who = document.createElement("strong");
+      who.className = "text-xs";
+      who.textContent = message.senderRole === "admin" ? "Equipo de NeuroEval Pro" : "Tú";
+      const body = document.createElement("p");
+      body.className = "text-sm whitespace-pre-wrap mt-1";
+      body.textContent = message.message || "";
+      bubble.append(who, body);
+      conversation.appendChild(bubble);
+    });
+    card.appendChild(conversation);
+
+    if (ticket.status !== "closed" && (ticket.messages || []).length < 100) {
+      const replyForm = document.createElement("form");
+      replyForm.className = "flex flex-col sm:flex-row gap-2";
+      const reply = document.createElement("textarea");
+      reply.className = "input flex-1";
+      reply.rows = 2;
+      reply.maxLength = 3000;
+      reply.required = true;
+      reply.placeholder = "Escribe un mensaje para continuar la conversación…";
+      const send = document.createElement("button");
+      send.type = "submit";
+      send.className = "btn primary";
+      send.textContent = "Enviar mensaje";
+      replyForm.append(reply, send);
+      replyForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        const message = reply.value.trim();
+        if (message.length < 2) return;
+        send.disabled = true;
+        try {
+          await api("/api/support/tickets/" + encodeURIComponent(ticket.id) + "/messages", {
+            method: "POST",
+            body: JSON.stringify({ message })
+          });
+          await loadCustomerSupportTickets();
+        } catch (error) {
+          alert(error.message);
+          send.disabled = false;
+        }
+      });
+      card.appendChild(replyForm);
+    } else if (ticket.status === "closed") {
+      const note = document.createElement("p");
+      note.className = "muted-text text-xs";
+      note.textContent = "Esta solicitud está cerrada. Si necesitas más ayuda, crea una nueva solicitud.";
+      card.appendChild(note);
+    }
+    target.appendChild(card);
+  });
+}
+
+async function createCustomerSupportTicket(event) {
+  event.preventDefault();
+  const submit = $("customer-support-submit");
+  const status = $("customer-support-status");
+  const subject = $("customer-support-subject").value.trim();
+  const message = $("customer-support-message").value.trim();
+  status.textContent = "Enviando tu solicitud…";
+  submit.disabled = true;
+  try {
+    await api("/api/support/tickets", {
+      method: "POST",
+      body: JSON.stringify({
+        subject,
+        message,
+        category: $("customer-support-category").value
+      })
+    });
+    $("customer-support-form").reset();
+    status.textContent = "Tu solicitud fue enviada. Podrás seguir aquí las respuestas del equipo.";
+    await loadCustomerSupportTickets();
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+  }
+}
+
 async function loadAdminSupportTickets() {
   const target = $("admin-support-list");
   if (!target || !hasAdminPermission("support.view")) return;
@@ -2448,6 +2578,8 @@ function registerEventListeners() {
   $("refresh-progress").addEventListener("click", renderProgress);
   $("menu-tests").addEventListener("click", () => { closeAccountMenu(); navigateSection("tests"); });
   $("dashboard-logout").addEventListener("click", logout);
+  $("customer-support-form").addEventListener("submit", createCustomerSupportTicket);
+  $("customer-support-refresh").addEventListener("click", loadCustomerSupportTickets);
 
   $("prev-question").addEventListener("click", previousQuestion);
   $("next-question").addEventListener("click", nextQuestion);
