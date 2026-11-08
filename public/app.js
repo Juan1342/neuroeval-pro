@@ -650,6 +650,8 @@ async function handleAuthState(user) {
     const sessionData = await sessionResponse.json();
     currentIsAdmin = sessionData.isAdmin === true;
     currentIsPrimaryAdmin = sessionData.isPrimaryAdmin === true;
+    const backupExportButton = $("admin-backup-export");
+    if (backupExportButton) backupExportButton.hidden = !currentIsPrimaryAdmin;
     currentAdminPermissions = Array.isArray(sessionData.permissions)
       ? sessionData.permissions
       : [];
