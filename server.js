@@ -1422,7 +1422,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
         .font("Helvetica")
         .fontSize(10)
         .fillColor("#D8D9F3")
-        .text("INFORME DE AUTORREGISTRO COGNITIVO", 55, 82);
+        .text(evaluation.evaluationType === "parent_observation" ? "INFORME DE OBSERVACIÓN FAMILIAR" : "INFORME DE AUTORREGISTRO COGNITIVO", 55, 82);
 
       doc
         .fillColor("#FFFFFF")
@@ -1442,7 +1442,9 @@ function buildEvaluationPdf(evaluation, options = {}) {
       const details = [
         ["Nombre", evaluation.name || "No registrado"],
         ["Correo", evaluation.email || "No registrado"],
-        ["Edad", evaluation.age ?? "No registrada"],
+        ...(evaluation.evaluationType === "parent_observation"
+          ? [["Edad del menor", evaluation.parentContext?.childAge ?? "No registrada"], ["Parentesco de quien responde", evaluation.parentContext?.relationship || "No especificado"], ["Entornos observados", (evaluation.parentContext?.settings || []).join(", ") || "No especificados"]]
+          : [["Edad", evaluation.age ?? "No registrada"]]),
         ["Objetivo", evaluation.goal || "No especificado"],
         [
           "Fecha",
@@ -1509,7 +1511,8 @@ function buildEvaluationPdf(evaluation, options = {}) {
       const dimensionLabels = {
         inattention: "Atención sostenida y memoria cotidiana",
         executive: "Organización y funciones ejecutivas",
-        hyperactivity: "Inquietud e impulsividad",
+        hyperactivity: "Actividad motora e inquietud",
+        impulsivity: "Impulsividad y espera de turnos",
         emotionalContext: "Regulación emocional",
         context: "Estrés, preocupación y descanso",
         impact: "Impacto en la vida cotidiana",
