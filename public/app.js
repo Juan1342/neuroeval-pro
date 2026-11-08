@@ -1653,8 +1653,15 @@ function renderAdminDashboardCharts(records) {
     const label=document.createElement("span");label.className="chart-bar-label";label.textContent=item.label;
     col.append(bar,label);monthly.appendChild(col);
   });
+  if (!hasAdminPermission("payments.view")) {
+    donut.style.background="conic-gradient(#394363 0 100%)";
+    donut.innerHTML='<div class="status-donut-center">🔒<small>Acceso restringido</small></div>';
+    $("admin-payment-legend").textContent="Tu rol no permite consultar los pagos.";
+    $("admin-chart-sample-note").textContent="Basado en registros visibles";
+    return;
+  }
   const paid=records.filter(item=>item.paymentStatus==="paid").length;
-  const pending=records.filter(item=>item.paymentStatus==="pending"||!item.paymentStatus).length;
+  const pending=records.filter(item=>item.paymentStatus==="pending").length;
   const failed=records.filter(item=>["failed","declined","error"].includes(String(item.paymentStatus||"").toLowerCase())).length;
   const total=paid+pending+failed;
   if(total){
