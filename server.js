@@ -1615,7 +1615,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
           ensureSpace(24);
           doc.font("Helvetica-Bold").fontSize(9).fillColor(navy)
             .text(`${label}: `, { continued: true });
-          doc.font("Helvetica").fontSize(9).fillColor(muted).text(String(value));
+          doc.font("Helvetica").fontSize(9).fillColor(muted).text(Array.isArray(value) ? value.join(" · ") : String(value));
         });
         doc.moveDown(0.8);
       }
