@@ -860,6 +860,7 @@ function openParentEvaluation() {
   $("parent-setting-home").checked = true;
   $("parent-setting-school").checked = false;
   $("parent-setting-social").checked = false;
+  $("parent-guardian-consent").checked = false;
   showMessage("parent-intro-message", "");
   show("parent-intro-view");
 }
@@ -879,8 +880,11 @@ function startParentEvaluation(event) {
   if (!relationship || !settings.length) {
     return showMessage("parent-intro-message", "Indica tu parentesco y al menos un entorno de observación.", true);
   }
+  if (!$("parent-guardian-consent").checked) {
+    return showMessage("parent-intro-message", "Confirma que tienes autorización para proporcionar esta información.", true);
+  }
   currentEvaluationType = "parent_observation";
-  parentEvaluationContext = { childAge, relationship, settings };
+  parentEvaluationContext = { childAge, relationship, settings, consent: true };
   profileData = { ...(profileData || {}), name: profileData?.name || currentUser.displayName || currentUser.email, goal: "Observación familiar de indicadores asociados al TDAH" };
   questions = parentQuestionBank.map(([category, question, dimension, icon, example]) => [category, question, dimension, icon, example, "frequency"]);
   activeChoices = parentFrequencyChoices;
