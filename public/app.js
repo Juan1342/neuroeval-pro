@@ -40,6 +40,9 @@ let isHandlingAuth = false;
 let profileData = null;
 let currentScores = null;
 let currentRecommendations = [];
+let currentEvaluationType = "self_report";
+let parentEvaluationContext = null;
+let activeChoices = choices;
 
 const choices = [
   "Nunca",
@@ -410,7 +413,8 @@ function show(viewId) {
     "quiz-view",
     "payment-view",
     "result-view",
-    "admin-view"
+    "admin-view",
+    "parent-intro-view"
   ];
 
   views.forEach((id) => {
@@ -819,6 +823,72 @@ function toggleAccountMenu() {
   $("account-menu-toggle").setAttribute("aria-expanded", String(willOpen));
 }
 
+const parentFrequencyChoices = ["Nunca", "Algunas veces", "A menudo", "Muy a menudo"];
+const parentQuestionBank = [
+["Atención","¿Comete errores por descuido en tareas, deberes o actividades que sabe realizar?","inattention","🔎","Por ejemplo, omite partes de una instrucción o no revisa lo que hizo."],
+["Atención","¿Le cuesta mantener la atención durante juegos, lecturas, conversaciones o tareas apropiadas para su edad?","inattention","📚","Piensa en actividades que normalmente disfruta y requieren continuidad."],
+["Atención","¿Parece no escuchar cuando un adulto le habla directamente, aunque no haya una distracción evidente?","inattention","👂","Por ejemplo, hay que repetirle varias veces una indicación sencilla."],
+["Atención","¿Empieza instrucciones o tareas, pero deja pasos sin completar aunque haya entendido qué debe hacer?","inattention","🧩","Considera rutinas, deberes y pequeñas responsabilidades."],
+["Atención","¿Tiene dificultad para organizar sus tareas, materiales o actividades diarias?","inattention","📋","Por ejemplo, no sabe por dónde empezar o pierde el orden de los pasos."],
+["Atención","¿Evita o demora actividades que requieren concentración sostenida?","inattention","📖","Por ejemplo, deberes, lectura o tareas que exigen esfuerzo mental continuo."],
+["Atención","¿Pierde con frecuencia objetos necesarios para sus actividades?","inattention","🎒","Por ejemplo, útiles escolares, juguetes, libros, prendas o materiales."],
+["Atención","¿Se distrae fácilmente con ruidos, movimientos, conversaciones u otros estímulos?","inattention","🔔","Observa si le cuesta retomar lo que estaba haciendo."],
+["Atención","¿Olvida con frecuencia actividades o responsabilidades habituales para su edad?","inattention","🗓️","Por ejemplo, llevar materiales, terminar una rutina o recordar una indicación."],
+["Actividad e inquietud","¿Mueve constantemente manos o pies, se retuerce en la silla o cambia de postura cuando se espera que permanezca sentado?","hyperactivity","🪑","Ten en cuenta lo esperable para su edad y la situación."],
+["Actividad e inquietud","¿Se levanta de su asiento en momentos en los que normalmente se espera que permanezca sentado?","hyperactivity","🚶","Por ejemplo, durante comidas, clase o actividades tranquilas."],
+["Actividad e inquietud","¿Corre, trepa o se mueve en situaciones en las que no resulta apropiado?","hyperactivity","🏃","En adolescentes puede manifestarse como inquietud interna."],
+["Actividad e inquietud","¿Le cuesta jugar o realizar actividades tranquilas sin hacer mucho ruido o movimiento?","hyperactivity","🎲","Compara con otros niños de edad y contexto similares."],
+["Actividad e inquietud","¿Parece estar constantemente en movimiento, como si le costara bajar el ritmo?","hyperactivity","⚡","Observa si ocurre incluso cuando la actividad requiere calma."],
+["Actividad e inquietud","¿Habla mucho más de lo esperado para la situación y le cuesta detenerse?","hyperactivity","💬","Considera conversaciones, clase y reuniones familiares."],
+["Impulsividad","¿Responde antes de que terminen de hacerle una pregunta o interrumpe para contestar?","impulsivity","🙋","Observa si puede esperar a escuchar la pregunta completa."],
+["Impulsividad","¿Le cuesta esperar su turno en juegos, filas o conversaciones?","impulsivity","⏳","Piensa en situaciones cotidianas repetidas."],
+["Impulsividad","¿Interrumpe conversaciones, juegos o actividades de otras personas sin advertirlo?","impulsivity","🗣️","Por ejemplo, se incorpora a una actividad o toma la palabra repentinamente."],
+["Contexto","¿Las conductas señaladas se presentan desde hace aproximadamente seis meses o más?","context","📆","Si comenzaron hace poco, anota cuándo aparecieron."],
+["Contexto","¿Recuerdas comportamientos similares antes de los 12 años?","context","🧒","Piensa en informes escolares, recuerdos familiares o comentarios docentes."],
+["Contexto","¿Has observado estas conductas en al menos dos entornos, como casa y colegio?","context","🏠","También pueden ser actividades extracurriculares u otros espacios."],
+["Impacto cotidiano","¿Estas conductas afectan de forma clara su aprendizaje, convivencia, amistades o rutinas?","impact","🎯","Describe consecuencias concretas, no solo que el comportamiento resulte molesto."],
+["Contexto","¿Un docente u otro cuidador ha expresado preocupaciones similares?","context","👥","Si es posible, contrasta lo observado con alguien que lo conozca en otro entorno."],
+["Factores adicionales","¿Hay factores recientes que podrían influir, como cambios familiares, sueño insuficiente, estrés, dificultades de aprendizaje o problemas de salud?","context","🌙","No atribuyas automáticamente estas conductas al TDAH."]
+];
+
+function openParentEvaluation() {
+  if (!currentUser) return show("auth-view");
+  $("parent-observer-name").value = profileData?.name || currentUser.displayName || "";
+  $("parent-child-age").value = "";
+  $("parent-relationship").value = "";
+  $("parent-setting-home").checked = true;
+  $("parent-setting-school").checked = false;
+  $("parent-setting-social").checked = false;
+  showMessage("parent-intro-message", "");
+  show("parent-intro-view");
+}
+
+function startParentEvaluation(event) {
+  event.preventDefault();
+  const childAge = Number($("parent-child-age").value);
+  const relationship = $("parent-relationship").value;
+  const settings = [
+    $("parent-setting-home").checked ? "casa" : null,
+    $("parent-setting-school").checked ? "colegio" : null,
+    $("parent-setting-social").checked ? "social" : null
+  ].filter(Boolean);
+  if (!Number.isInteger(childAge) || childAge < 4 || childAge > 17) {
+    return showMessage("parent-intro-message", "Esta orientación está diseñada para edades de 4 a 17 años.", true);
+  }
+  if (!relationship || !settings.length) {
+    return showMessage("parent-intro-message", "Indica tu parentesco y al menos un entorno de observación.", true);
+  }
+  currentEvaluationType = "parent_observation";
+  parentEvaluationContext = { childAge, relationship, settings };
+  profileData = { ...(profileData || {}), name: profileData?.name || currentUser.displayName || currentUser.email, goal: "Observación familiar de indicadores asociados al TDAH" };
+  questions = parentQuestionBank.map(([category, question, dimension, icon, example]) => [category, question, dimension, icon, example, "frequency"]);
+  activeChoices = parentFrequencyChoices;
+  answers = new Array(questions.length).fill(null);
+  currentIndex = 0;
+  renderQuestion();
+  show("quiz-view");
+}
+
 function startAdhdEvaluation() {
   if (!currentUser) {
     show("auth-view");
@@ -1156,6 +1226,9 @@ async function confirmPasswordReset(event) {
 ========================================================= */
 
 async function startQuiz(name, age, goal) {
+  currentEvaluationType = "self_report";
+  parentEvaluationContext = null;
+  activeChoices = choices;
   profileData = { name, age, goal };
   // Orden temático fijo para que la experiencia tenga una progresión comprensible.
   questions = [...bank];
@@ -1193,7 +1266,7 @@ function renderQuestion() {
   const answersContainer = $("answers");
   answersContainer.innerHTML = "";
   const isInteractive = question[5] === "task" || question[5] === "study";
-  const options = isInteractive ? question[6] : choices;
+  const options = isInteractive ? question[6] : activeChoices;
   $("q-example").classList.toggle("memory-stimulus", question[5] === "study");
   if (question[5] === "study") {
     $("q-text").textContent = "Observa y memoriza estos elementos. No los anotes: te preguntaremos por ellos más adelante.";
@@ -1249,7 +1322,7 @@ function calculateEvaluation() {
     category: question[0],
     question: question[1],
     dimension: question[2],
-    answer: question[5] === "task" || question[5] === "study" ? answers[index] : choices[answers[index]]
+    answer: question[5] === "task" || question[5] === "study" ? answers[index] : activeChoices[answers[index]]
   }));
   return { answers: qa, scores: {}, recommendations: [] };
 }
@@ -1269,6 +1342,8 @@ async function finishEvaluation() {
       email: currentUser.email,
       age: profileData.age,
       goal: profileData.goal,
+      evaluationType: currentEvaluationType,
+      parentContext: currentEvaluationType === "parent_observation" ? parentEvaluationContext : null,
       answers: result.answers,
       scores: result.scores,
       profile: result.profile,
@@ -1487,8 +1562,9 @@ async function loadOwnResult(evaluationId) {
       return;
     }
 
-    $("result-name").textContent =
-      `${evaluation.name || profileData?.name || ""} · ${currentUser.email}`;
+    $("result-name").textContent = evaluation.evaluationType === "parent_observation"
+      ? `Informe de observación familiar · ${evaluation.parentContext?.childAge || "—"} años · ${currentUser.email}`
+      : `${evaluation.name || profileData?.name || ""} · ${currentUser.email}`;
     $("result-profile").textContent = evaluation.profile || "Resumen orientativo";
     $("result-description").textContent = evaluation.profileDescription || "";
 
@@ -1501,7 +1577,8 @@ async function loadOwnResult(evaluationId) {
       emotionalContext: "Regulación emocional",
       context: "Estrés, preocupación y descanso",
       impact: "Impacto en la vida cotidiana",
-      history: "Historia y presencia en distintos entornos"
+      history: "Historia y presencia en distintos entornos",
+      impulsivity: "Impulsividad y espera de turnos"
     };
     $("score-list").innerHTML = "";
     $("result-dimension-explanations").innerHTML = "";
@@ -2572,6 +2649,8 @@ function registerEventListeners() {
   });
 
   $("start-adhd-evaluation").addEventListener("click", startAdhdEvaluation);
+  $("start-parent-evaluation").addEventListener("click", openParentEvaluation);
+  $("parent-evaluation-form").addEventListener("submit", startParentEvaluation);
   document.querySelectorAll("[data-nav]").forEach(button => button.addEventListener("click", () => navigateSection(button.dataset.nav)));
   document.querySelectorAll("[data-game]").forEach(button => button.addEventListener("click", () => openGame(button.dataset.game)));
   document.querySelectorAll("[data-activity]").forEach(button => button.addEventListener("click", () => completeActivity(button.dataset.activity)));
