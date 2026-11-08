@@ -74,8 +74,30 @@ const APP_ORIGIN = String(
   process.env.APP_ORIGIN || `http://localhost:${PORT}`
 ).replace(/\/+$/, "");
 
-const EVAL_PRICE_COP = 4000;
+const DEFAULT_EVAL_PRICE_COP = 4000;
+const EVALUATION_SERVICE_ID = "adhd_evaluation";
+const EVALUATION_SERVICE_LABEL = "Evaluación integral";
 const CURRENCY = "COP";
+async function getPricingConfig() {
+  const snapshot = await db.collection("platformSettings").doc("pricing").get();
+  const data = snapshot.exists ? snapshot.data() || {} : {};
+  const configured = Number(data.services?.[EVALUATION_SERVICE_ID]?.priceCop);
+  const priceCop = Number.isSafeInteger(configured) && configured >= 100 ? configured : DEFAULT_EVAL_PRICE_COP;
+  return { serviceId: EVALUATION_SERVICE_ID, label: EVALUATION_SERVICE_LABEL, priceCop, currency: CURRENCY };
+}
+function calculatePromoDiscount(promo, basePrice) {
+  const value = Number(promo.discountValue || 0);
+  return promo.discountType === "percentage" ? Math.min(basePrice - 1, Math.floor(basePrice * value / 100)) : Math.min(basePrice - 1, Math.floor(value));
+}
+function validatePromoWindow(promo, now = new Date()) {
+  if (!promo || promo.active !== true) return "Este código promocional no está activo.";
+  const startsAt = promo.startsAt ? new Date(promo.startsAt) : null;
+  const expiresAt = promo.expiresAt ? new Date(promo.expiresAt) : null;
+  if (startsAt && !Number.isNaN(startsAt.getTime()) && now < startsAt) return "Este código todavía no está vigente.";
+  if (expiresAt && !Number.isNaN(expiresAt.getTime()) && now > expiresAt) return "Este código promocional venció.";
+  if (Number(promo.maxUses || 0) > 0 && Number(promo.uses || 0) >= Number(promo.maxUses)) return "Este código alcanzó el límite de usos.";
+  return "";
+}
 
 const { calculateEvaluationOnServer } = require("./lib/evaluation");
 const { decideWompiTransition } = require("./lib/payment-state");
@@ -368,6 +390,7 @@ const ADMIN_PERMISSION_CATALOG = [
   "evaluations.pdf",
   "payments.view",
   "settings.view",
+  "pricing.manage",
   "audit.view"
 ];
 
@@ -511,7 +534,7 @@ app.get("/api/health", (req, res) => {
     ),
     wompiEnvironment,
     demoPaymentEnabled: ALLOW_DEMO_PAY,
-    evaluationPriceCop: EVAL_PRICE_COP,
+    evaluationPriceCop: DEFAULT_EVAL_PRICE_COP,
     time: new Date().toISOString()
   });
 });
@@ -633,6 +656,7 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       return sendError(res, 400, "La edad recibida no es válida.");
     }
 
+    const pricing = await getPricingConfig();
     const reference = makeReference();
     const evaluation = {
       uid: req.user.uid,
@@ -652,7 +676,12 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       paymentStatus: "pending",
       paymentProvider: "wompi",
       paymentReference: reference,
-      amountCop: EVAL_PRICE_COP,
+      serviceId: pricing.serviceId,
+      serviceLabel: pricing.label,
+      originalAmountCop: pricing.priceCop,
+      discountCop: 0,
+      amountCop: pricing.priceCop,
+      promoCode: null,
       currency: CURRENCY,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -667,7 +696,7 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       id: document.id,
       reference,
       paymentStatus: "pending",
-      amountCop: EVAL_PRICE_COP,
+      amountCop: pricing.priceCop,
       currency: CURRENCY
     });
   } catch (error) {
@@ -833,47 +862,50 @@ app.post(
         return sendError(res, 404, "No encontramos esa evaluación.");
       }
 
+      const requestedPromoCode = String(req.body.promoCode || "").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 40);
       const payment = await db.runTransaction(async (transactionWriter) => {
         const snapshot = await transactionWriter.get(result.ref);
-
-        if (!snapshot.exists) {
-          return { error: "not-found" };
-        }
-
+        if (!snapshot.exists) return { error: "not-found" };
         const evaluation = snapshot.data() || {};
-
-        if (evaluation.paymentStatus === "paid") {
-          return { error: "already-paid" };
+        if (evaluation.paymentStatus === "paid") return { error: "already-paid" };
+        if (String(evaluation.wompiTransactionStatus || "").toUpperCase() === "APPROVED") return { error: "reconciliation-required" };
+        const basePrice = Number(evaluation.originalAmountCop || evaluation.amountCop || DEFAULT_EVAL_PRICE_COP);
+        if (!Number.isSafeInteger(basePrice) || basePrice < 100) return { error: "invalid-price" };
+        let promo = null, promoRef = null;
+        if (requestedPromoCode) {
+          promoRef = db.collection("promoCodes").doc(requestedPromoCode);
+          const promoSnapshot = await transactionWriter.get(promoRef);
+          promo = promoSnapshot.exists ? promoSnapshot.data() || {} : null;
+          if (!promo) return { error: "invalid-promo" };
+          const promoError = validatePromoWindow(promo);
+          if (promoError) return { error: "promo-unavailable", message: promoError };
+          if (Array.isArray(promo.serviceIds) && promo.serviceIds.length && !promo.serviceIds.includes(evaluation.serviceId || EVALUATION_SERVICE_ID)) return { error: "promo-service" };
+          if (promo.newCustomersOnly) {
+            const priorPaid = await transactionWriter.get(db.collection("evaluations").where("uid", "==", req.user.uid).where("paymentStatus", "==", "paid").limit(1));
+            if (!priorPaid.empty) return { error: "promo-new-customer" };
+          }
+          if (evaluation.promoCode && evaluation.promoCode !== requestedPromoCode) return { error: "promo-locked" };
         }
-
-        const wompiStatus = String(
-          evaluation.wompiTransactionStatus || ""
-        ).toUpperCase();
-
-        if (wompiStatus === "APPROVED") {
-          return { error: "reconciliation-required" };
+        let discountCop = Number(evaluation.discountCop || 0);
+        let appliedCode = evaluation.promoCode || null;
+        let amountCop = Number(evaluation.amountCop || basePrice);
+        if (requestedPromoCode && !evaluation.promoCode) {
+          discountCop = calculatePromoDiscount(promo, basePrice);
+          amountCop = Math.max(1, basePrice - discountCop);
+          appliedCode = requestedPromoCode;
+          transactionWriter.set(promoRef, { uses: admin.firestore.FieldValue.increment(1), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
         }
-
-        // Cada apertura de checkout recibe una referencia nueva. Wompi no permite
-        // reutilizar referencias, incluso si el intento anterior quedó pendiente
-        // porque su webhook no llegó al servidor.
+        if (!Number.isSafeInteger(amountCop) || amountCop < 1) return { error: "invalid-price" };
         const reference = makeReference();
-
-        transactionWriter.set(
-          result.ref,
-          {
-            paymentReference: reference,
-            paymentStatus: "pending",
-            paymentProvider: "wompi",
-            wompiTransactionId: admin.firestore.FieldValue.delete(),
-            wompiTransactionStatus: admin.firestore.FieldValue.delete(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          },
-          { merge: true }
-        );
-
-        return { reference };
-      });
+        transactionWriter.set(result.ref, {
+          originalAmountCop: basePrice, discountCop, amountCop, promoCode: appliedCode,
+          paymentReference: reference, paymentStatus: "pending", paymentProvider: "wompi",
+          wompiTransactionId: admin.firestore.FieldValue.delete(),
+          wompiTransactionStatus: admin.firestore.FieldValue.delete(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        return { reference, amountCop, originalAmountCop: basePrice, discountCop, promoCode: appliedCode };
+      });      });
 
       if (payment.error === "already-paid") {
         return sendError(res, 409, "Esta evaluación ya aparece pagada.");
@@ -885,12 +917,15 @@ app.post(
           "La transacción aparece aprobada y requiere reconciliación del pago."
         );
       }
-      if (payment.error) {
-        return sendError(res, 404, "No encontramos esa evaluación.");
-      }
-
+      if (payment.error === "invalid-promo") return sendError(res, 400, "El código promocional no existe.");
+      if (payment.error === "promo-unavailable") return sendError(res, 400, payment.message || "El código promocional no está disponible.");
+      if (payment.error === "promo-service") return sendError(res, 400, "Este código no aplica a esta evaluación.");
+      if (payment.error === "promo-new-customer") return sendError(res, 400, "Este código es exclusivo para nuevos clientes.");
+      if (payment.error === "promo-locked") return sendError(res, 409, "Ya se aplicó otro código a esta evaluación. No es posible sustituirlo.");
+      if (payment.error === "invalid-price") return sendError(res, 500, "El precio configurado no es válido.");
+      if (payment.error) return sendError(res, 404, "No encontramos esa evaluación.");
       const reference = payment.reference;
-      const amountInCents = EVAL_PRICE_COP * 100;
+      const amountInCents = payment.amountCop * 100;
       const signatureString =
         `${reference}${amountInCents}${CURRENCY}${WOMPI_INTEGRITY_SECRET}`;
       const signature = sha256(signatureString);
@@ -901,6 +936,10 @@ app.post(
         publicKey: WOMPI_PUBLIC_KEY,
         currency: CURRENCY,
         amountInCents,
+        amountCop: payment.amountCop,
+        originalAmountCop: payment.originalAmountCop,
+        discountCop: payment.discountCop,
+        promoCode: payment.promoCode,
         reference,
         signature,
         redirectUrl
@@ -977,24 +1016,13 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
       });
     }
 
-    if (
-      amountInCents !== EVAL_PRICE_COP * 100 ||
-      currency !== CURRENCY
-    ) {
-      console.error("Importe o moneda no coinciden:", {
-        reference,
-        amountInCents,
-        currency
-      });
-
-      return res.status(200).json({
-        ok: true,
-        ignored: true,
-        reason: "El importe o la moneda no coinciden."
-      });
-    }
-
     const query = await db
+      .collection("evaluations")
+      .where("paymentReference", "==", reference)
+      .limit(1)
+      .get();
+
+    if (query.empty) {    const query = await db
       .collection("evaluations")
       .where("paymentReference", "==", reference)
       .limit(1)
@@ -1009,6 +1037,11 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
     }
 
     const evaluationRef = query.docs[0].ref;
+    const expectedAmountInCents = Number(query.docs[0].data()?.amountCop || DEFAULT_EVAL_PRICE_COP) * 100;
+    if (amountInCents !== expectedAmountInCents || currency !== CURRENCY) {
+      console.error("Importe o moneda no coinciden:", { reference, amountInCents, expectedAmountInCents, currency });
+      return res.status(200).json({ ok: true, ignored: true, reason: "El importe o la moneda no coinciden." });
+    }
     const outcome = await db.runTransaction(async (transactionWriter) => {
       const snapshot = await transactionWriter.get(evaluationRef);
 
@@ -1020,12 +1053,8 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
 
       // La referencia debe seguir siendo la activa: una notificación de un
       // intento anterior no puede afectar un reintento con nueva referencia.
-      if (evaluation.paymentReference !== reference) {
-        return {
-          ignored: true,
-          reason: "La referencia ya no corresponde al intento de pago activo."
-        };
-      }
+      if (evaluation.paymentReference !== reference) return { ignored: true, reason: "La referencia ya no corresponde al intento de pago activo." };
+      if (Number(evaluation.amountCop || DEFAULT_EVAL_PRICE_COP) * 100 !== amountInCents || currency !== CURRENCY) return { ignored: true, reason: "El importe ya no coincide con el precio registrado." };
 
       const decision = decideWompiTransition(evaluation, {
         status,
@@ -1761,6 +1790,53 @@ app.patch("/api/admin/promo-codes/:code", requireUser, requireStaffAdmin("pricin
     console.error("Actualizar código promocional:", error);
     return sendError(res, 500, "No se pudo actualizar el código.");
   }
+});
+
+/* PRECIOS Y PROMOCIONES */
+app.get("/api/admin/pricing", requireUser, requireStaffAdmin("pricing.manage"), async (req, res) => {
+  try {
+    const pricing = await getPricingConfig();
+    const snapshot = await db.collection("promoCodes").orderBy("createdAt", "desc").limit(200).get();
+    const promos = snapshot.docs.map(doc => { const d=doc.data()||{}; return { code:doc.id, discountType:d.discountType, discountValue:d.discountValue, maxUses:d.maxUses||0, uses:d.uses||0, startsAt:d.startsAt||null, expiresAt:d.expiresAt||null, newCustomersOnly:d.newCustomersOnly===true, active:d.active===true, createdAt:asDate(d.createdAt)?.toISOString()||null }; });
+    return res.json({ pricing, promos });
+  } catch(error) { console.error("Consultar precios y promociones:",error); return sendError(res,500,"No se pudo consultar la configuración comercial."); }
+});
+app.put("/api/admin/pricing", requireUser, requireStaffAdmin("pricing.manage"), async (req,res) => {
+  try {
+    const priceCop=Number(req.body.priceCop);
+    if(!Number.isSafeInteger(priceCop)||priceCop<100||priceCop>100000000) return sendError(res,400,"El precio debe ser un valor entero entre $100 y $100.000.000 COP.");
+    await db.collection("platformSettings").doc("pricing").set({services:{[EVALUATION_SERVICE_ID]:{label:EVALUATION_SERVICE_LABEL,priceCop,active:true}},updatedAt:admin.firestore.FieldValue.serverTimestamp(),updatedBy:req.user.uid},{merge:true});
+    await writeAdminAudit(req.user.uid,"pricing.updated",null,{serviceId:EVALUATION_SERVICE_ID,priceCop});
+    return res.json({ok:true,pricing:{serviceId:EVALUATION_SERVICE_ID,label:EVALUATION_SERVICE_LABEL,priceCop,currency:CURRENCY}});
+  } catch(error) { console.error("Actualizar precio:",error); return sendError(res,500,"No se pudo actualizar el precio."); }
+});
+app.post("/api/admin/promo-codes", requireUser, requireStaffAdmin("pricing.manage"), async (req,res) => {
+  try {
+    const code=String(req.body.code||"").trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"").slice(0,40);
+    const discountType=req.body.discountType==="fixed"?"fixed":"percentage";
+    const discountValue=Number(req.body.discountValue), maxUses=Number(req.body.maxUses||0);
+    const startsAt=req.body.startsAt?new Date(req.body.startsAt):null, expiresAt=req.body.expiresAt?new Date(req.body.expiresAt):null;
+    if(!/^[A-Z0-9][A-Z0-9_-]{2,39}$/.test(code)) return sendError(res,400,"El código debe tener entre 3 y 40 caracteres alfanuméricos.");
+    if(!Number.isSafeInteger(discountValue)||discountValue<1||(discountType==="percentage"&&discountValue>99)||(discountType==="fixed"&&discountValue>100000000)) return sendError(res,400,"El descuento no es válido.");
+    if(!Number.isSafeInteger(maxUses)||maxUses<0||maxUses>1000000) return sendError(res,400,"El límite de usos no es válido.");
+    if(startsAt&&Number.isNaN(startsAt.getTime())) return sendError(res,400,"La fecha de inicio no es válida.");
+    if(expiresAt&&Number.isNaN(expiresAt.getTime())) return sendError(res,400,"La fecha de vencimiento no es válida.");
+    if(startsAt&&expiresAt&&expiresAt<=startsAt) return sendError(res,400,"El vencimiento debe ser posterior al inicio.");
+    const promoRef=db.collection("promoCodes").doc(code);
+    if((await promoRef.get()).exists) return sendError(res,409,"Ese código ya existe. Elige otro.");
+    await promoRef.create({discountType,discountValue,maxUses,uses:0,startsAt:startsAt?startsAt.toISOString():null,expiresAt:expiresAt?expiresAt.toISOString():null,newCustomersOnly:req.body.newCustomersOnly===true,serviceIds:[EVALUATION_SERVICE_ID],active:true,createdBy:req.user.uid,createdAt:admin.firestore.FieldValue.serverTimestamp()});
+    await writeAdminAudit(req.user.uid,"promo.created",null,{code,discountType,discountValue,maxUses});
+    return res.status(201).json({ok:true,code});
+  } catch(error) { console.error("Crear código promocional:",error); return sendError(res,500,"No se pudo crear el código promocional."); }
+});
+app.patch("/api/admin/promo-codes/:code", requireUser, requireStaffAdmin("pricing.manage"), async (req,res) => {
+  try {
+    const code=String(req.params.code||"").trim().toUpperCase(), active=req.body.active===true, ref=db.collection("promoCodes").doc(code);
+    if(!(await ref.get()).exists) return sendError(res,404,"No encontramos ese código.");
+    await ref.set({active,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    await writeAdminAudit(req.user.uid,active?"promo.activated":"promo.disabled",null,{code});
+    return res.json({ok:true,code,active});
+  } catch(error) { console.error("Actualizar código promocional:",error); return sendError(res,500,"No se pudo actualizar el código."); }
 });
 
 app.get(
