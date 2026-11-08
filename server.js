@@ -8,7 +8,9 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
-const admin = require("firebase-admin");
+const { getApps, initializeApp, cert, applicationDefault } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const https = require("https");
@@ -125,7 +127,7 @@ const WOMPI_EVENTS_SECRET =
    2. FIREBASE ADMIN
 ========================================================= */
 
-if (!admin.apps.length) {
+if (!getApps().length) {
   let credential;
 
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
@@ -134,7 +136,7 @@ if (!admin.apps.length) {
         process.env.FIREBASE_SERVICE_ACCOUNT_JSON
       );
 
-      credential = admin.credential.cert(serviceAccount);
+      credential = cert(serviceAccount);
     } catch (error) {
       console.error(
         "FIREBASE_SERVICE_ACCOUNT_JSON no es válido:",
@@ -143,10 +145,10 @@ if (!admin.apps.length) {
       process.exit(1);
     }
   } else {
-    credential = admin.credential.applicationDefault();
+    credential = applicationDefault();
   }
 
-  admin.initializeApp({
+  initializeApp({
     credential,
     ...(FIREBASE_PROJECT_ID
       ? { projectId: FIREBASE_PROJECT_ID }
@@ -154,8 +156,8 @@ if (!admin.apps.length) {
   });
 }
 
-const db = admin.firestore();
-const firebaseAuth = admin.auth();
+const db = getFirestore();
+const firebaseAuth = getAuth();
 
 /* =========================================================
    3. CORS, SEGURIDAD Y MIDDLEWARE
@@ -491,7 +493,7 @@ async function writeAdminAudit(actorUid, action, targetUid, details = {}) {
     action,
     targetUid: targetUid || null,
     details,
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: FieldValue.serverTimestamp()
   });
 }
 
@@ -526,8 +528,8 @@ app.post("/api/support/tickets", supportCreateLimiter, requireUser, async (req, 
         message,
         createdAt: new Date().toISOString()
       }],
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
     });
     return res.status(201).json({ ok: true, ticketId: ticketRef.id });
   } catch (error) {
@@ -582,7 +584,7 @@ app.post("/api/support/tickets/:id/messages", requireUser, async (req, res) => {
       transaction.update(ref, {
         messages: nextMessages,
         status: ["resolved", "waiting_customer"].includes(data.status) ? "in_progress" : (data.status || "open"),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp()
       });
       return { status: 200, ok: true };
     });
@@ -626,7 +628,7 @@ app.patch("/api/admin/support/tickets/:id", requireUser, requireStaffAdmin("supp
     const snapshot = await ref.get();
     if (!snapshot.exists) return sendError(res, 404, "No encontramos esa solicitud.");
     const allowedStatuses = ["open", "in_progress", "waiting_customer", "resolved", "closed"];
-    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    const updates = { updatedAt: FieldValue.serverTimestamp() };
     if (req.body.status !== undefined) {
       if (!allowedStatuses.includes(req.body.status)) return sendError(res, 400, "El estado seleccionado no es válido.");
       updates.status = req.body.status;
@@ -641,7 +643,7 @@ app.patch("/api/admin/support/tickets/:id", requireUser, requireStaffAdmin("supp
       if (existingMessages.length >= 100) {
         return sendError(res, 409, "Esta conversación alcanzó el límite de mensajes. Crea una nueva solicitud para continuar.");
       }
-      updates.messages = admin.firestore.FieldValue.arrayUnion({
+      updates.messages = FieldValue.arrayUnion({
         senderUid: req.user.uid,
         senderRole: "admin",
         message: reply,
@@ -795,12 +797,12 @@ app.post("/api/profile", requireUser, async (req, res) => {
       email: String(req.user.email || "").toLowerCase(),
       age,
       goal: goal || "Autoconocimiento",
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp()
     };
 
     if (!existing.exists) {
       profile.createdAt =
-        admin.firestore.FieldValue.serverTimestamp();
+        FieldValue.serverTimestamp();
     }
 
     await userRef.set(profile, { merge: true });
@@ -877,8 +879,8 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       amountCop: pricing.priceCop,
       promoCode: null,
       currency: CURRENCY,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
     };
 
     const document = await db.collection("evaluations").add(evaluation);
@@ -1087,16 +1089,16 @@ app.post(
           discountCop = calculatePromoDiscount(promo, basePrice);
           amountCop = Math.max(1, basePrice - discountCop);
           appliedCode = requestedPromoCode;
-          transactionWriter.set(promoRef, { uses: admin.firestore.FieldValue.increment(1), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          transactionWriter.set(promoRef, { uses: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
         }
         if (!Number.isSafeInteger(amountCop) || amountCop < 1) return { error: "invalid-price" };
         const reference = makeReference();
         transactionWriter.set(result.ref, {
           originalAmountCop: basePrice, discountCop, amountCop, promoCode: appliedCode,
           paymentReference: reference, paymentStatus: "pending", paymentProvider: "wompi",
-          wompiTransactionId: admin.firestore.FieldValue.delete(),
-          wompiTransactionStatus: admin.firestore.FieldValue.delete(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          wompiTransactionId: FieldValue.delete(),
+          wompiTransactionStatus: FieldValue.delete(),
+          updatedAt: FieldValue.serverTimestamp()
         }, { merge: true });
         return { reference, amountCop, originalAmountCop: basePrice, discountCop, promoCode: appliedCode };
       });
@@ -1255,11 +1257,11 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
 
       const update = {
         ...decision.update,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp()
       };
 
       if (decision.update.setPaidAt) {
-        update.paidAt = admin.firestore.FieldValue.serverTimestamp();
+        update.paidAt = FieldValue.serverTimestamp();
         delete update.setPaidAt;
       }
 
@@ -1315,8 +1317,8 @@ app.post(
         {
           paymentStatus: "paid",
           paymentProvider: "demo",
-          paidAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          paidAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp()
         },
         { merge: true }
       );
@@ -1817,8 +1819,8 @@ app.post("/api/admin/administrators", requireUser, requireAdmin, async (req, res
       permissions,
       status: "active",
       grantedBy: req.user.uid,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
     }, { merge: true });
     await writeAdminAudit(req.user.uid, "administrator.created_or_reactivated", account.uid, { email, permissions });
     return res.status(201).json({ ok: true, uid: account.uid, email, permissions, status: "active" });
@@ -1839,7 +1841,7 @@ app.patch("/api/admin/administrators/:uid", requireUser, requireAdmin, async (re
     if (String(current.email || "").toLowerCase() === ADMIN_EMAIL) {
       return sendError(res, 403, "La cuenta principal está protegida.");
     }
-    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    const updates = { updatedAt: FieldValue.serverTimestamp() };
     if (Array.isArray(req.body.permissions)) {
       updates.permissions = normalizeAdminPermissions(req.body.permissions);
       if (!updates.permissions.length) return sendError(res, 400, "Selecciona al menos un permiso o desactiva al colaborador.");
@@ -1922,7 +1924,7 @@ app.put("/api/admin/pricing", requireUser, requireStaffAdmin("pricing.manage"), 
     if (!Number.isSafeInteger(priceCop) || priceCop < 100 || priceCop > 100000000) return sendError(res, 400, "El precio debe ser un valor entero entre $100 y $100.000.000 COP.");
     await db.collection("platformSettings").doc("pricing").set({
       services: { [EVALUATION_SERVICE_ID]: { label: EVALUATION_SERVICE_LABEL, priceCop, active: true } },
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
       updatedBy: req.user.uid
     }, { merge: true });
     await writeAdminAudit(req.user.uid, "pricing.updated", null, { serviceId: EVALUATION_SERVICE_ID, priceCop });
@@ -1957,7 +1959,7 @@ app.post("/api/admin/promo-codes", requireUser, requireStaffAdmin("pricing.manag
       newCustomersOnly: req.body.newCustomersOnly === true,
       serviceIds: [EVALUATION_SERVICE_ID],
       active: true, createdBy: req.user.uid,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     };
     await promoRef.create(promo);
     await writeAdminAudit(req.user.uid, "promo.created", null, { code, discountType, discountValue, maxUses });
@@ -1975,7 +1977,7 @@ app.patch("/api/admin/promo-codes/:code", requireUser, requireStaffAdmin("pricin
     const ref = db.collection("promoCodes").doc(code);
     const snapshot = await ref.get();
     if (!snapshot.exists) return sendError(res, 404, "No encontramos ese código.");
-    await ref.set({ active, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await ref.set({ active, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     await writeAdminAudit(req.user.uid, active ? "promo.activated" : "promo.disabled", null, { code });
     return res.json({ ok: true, code, active });
   } catch (error) {
@@ -2394,7 +2396,7 @@ app.post(
         salt,
         expiresAt,
         attempts: 0,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
+        createdAt: FieldValue.serverTimestamp()
       });
 
       try {
@@ -2494,7 +2496,7 @@ app.post(
         // solicitudes simultáneas puedan utilizarlo a la vez.
         transactionWriter.update(resetRef, {
           status: "processing",
-          consumedAt: admin.firestore.FieldValue.serverTimestamp()
+          consumedAt: FieldValue.serverTimestamp()
         });
 
         return { valid: true };
