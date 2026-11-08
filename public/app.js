@@ -1249,6 +1249,8 @@ async function startQuiz(name, age, goal) {
   answers = new Array(questions.length).fill(null);
   currentIndex = 0;
   renderQuestion();
+  const quizIntro = $("quiz-view").querySelector(".hero-copy");
+  if (quizIntro) { quizIntro.querySelector(".eyebrow").textContent = "Tu espacio de exploración"; quizIntro.querySelector("p").textContent = "Responde según tus propias experiencias de atención, organización e impulsividad. No hay respuestas buenas ni malas."; }
   show("quiz-view");
 }
 
