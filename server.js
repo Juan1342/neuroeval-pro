@@ -580,7 +580,7 @@ app.post("/api/support/tickets/:id/messages", requireUser, async (req, res) => {
       }];
       transaction.update(ref, {
         messages: nextMessages,
-        status: data.status === "resolved" ? "open" : (data.status || "open"),
+        status: ["resolved", "waiting_customer"].includes(data.status) ? "in_progress" : (data.status || "open"),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
       return { status: 200, ok: true };
