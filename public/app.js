@@ -1171,6 +1171,7 @@ function resetPasswordRecoveryForm(email = "") {
   $("reset-new-password").value = "";
   $("confirm-reset-form").classList.add("hidden");
   $("request-code-form").classList.remove("hidden");
+  $("reset-intro").classList.remove("hidden");
   showMessage("reset-message", "");
 }
 
@@ -1238,13 +1239,15 @@ async function confirmPasswordReset(event) {
       throw new Error(data.error || "No se pudo cambiar la contraseña.");
     }
 
-    showMessage("reset-message", data.message || "Contraseña actualizada.");
-    // Evitar que el código y la contraseña queden visibles o reutilizables
-    // al iniciar una recuperación posterior desde el mismo dispositivo.
+    // Mostrar únicamente la confirmación y el botón para volver al acceso.
+    $("reset-intro").classList.add("hidden");
+    $("request-code-form").classList.add("hidden");
+    $("confirm-reset-form").classList.add("hidden");
+    showMessage("reset-message", "Tu contraseña se actualizó correctamente.");
+    // Evitar que el código y la contraseña queden visibles o reutilizables.
     $("reset-code").value = "";
     $("reset-new-password").value = "";
     $("confirm-reset-form").reset();
-    $("confirm-reset-form").classList.add("hidden");
 
   } catch (error) {
     showMessage("reset-message", error.message, true);
