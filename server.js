@@ -267,13 +267,23 @@ const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const RESEND_FROM = process.env.RESEND_FROM || "";
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
+const BREVO_FROM_EMAIL = process.env.BREVO_FROM_EMAIL || SMTP_FROM || SMTP_USER;
+const BREVO_FROM_NAME = process.env.BREVO_FROM_NAME || "NeuroEval Pro";
 const EMAIL_PROVIDER = String(
-  process.env.EMAIL_PROVIDER || (RESEND_API_KEY ? "resend" : "smtp")
+  process.env.EMAIL_PROVIDER ||
+    (BREVO_API_KEY ? "brevo" : RESEND_API_KEY ? "resend" : "smtp")
 ).trim().toLowerCase();
 
 let smtpConnectionVerified = false;
 const resendConfigured = Boolean(
   EMAIL_PROVIDER === "resend" && RESEND_API_KEY && RESEND_FROM
+);
+const brevoConfigured = Boolean(
+  EMAIL_PROVIDER === "brevo" &&
+  BREVO_API_KEY &&
+  BREVO_FROM_EMAIL &&
+  isValidEmail(BREVO_FROM_EMAIL)
 );
 
 if (
@@ -309,11 +319,46 @@ if (
     });
 }
 
-const emailConfigured = EMAIL_PROVIDER === "resend"
-  ? resendConfigured
-  : EMAIL_PROVIDER === "smtp" && Boolean(mailer);
+const emailConfigured = EMAIL_PROVIDER === "brevo"
+  ? brevoConfigured
+  : EMAIL_PROVIDER === "resend"
+    ? resendConfigured
+    : EMAIL_PROVIDER === "smtp" && Boolean(mailer);
 
 async function sendTransactionalEmail({ to, subject, text, html }) {
+  if (EMAIL_PROVIDER === "brevo") {
+    if (!brevoConfigured) {
+      throw new Error("Brevo no está configurado. Revisa BREVO_API_KEY y BREVO_FROM_EMAIL.");
+    }
+
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": BREVO_API_KEY,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        sender: { name: BREVO_FROM_NAME, email: BREVO_FROM_EMAIL },
+        to: [{ email: to }],
+        subject,
+        textContent: text,
+        htmlContent: html
+      }),
+      signal: AbortSignal.timeout(15000)
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const detail = cleanText(
+        result.message || result.code || `HTTP ${response.status}`,
+        300
+      );
+      throw new Error(`Brevo rechazó el envío (${response.status}): ${detail}`);
+    }
+    return result;
+  }
+
   if (EMAIL_PROVIDER === "resend") {
     if (!resendConfigured) {
       throw new Error("Resend no está configurado. Revisa RESEND_API_KEY y RESEND_FROM.");
@@ -765,6 +810,7 @@ app.get("/api/health", (req, res) => {
     smtpConnectionVerified: Boolean(mailer) && smtpConnectionVerified,
     emailProvider: EMAIL_PROVIDER,
     emailConfigured,
+    brevoConfigured,
     resendConfigured,
     emailConnectionVerified: EMAIL_PROVIDER === "smtp"
       ? (Boolean(mailer) && smtpConnectionVerified)
