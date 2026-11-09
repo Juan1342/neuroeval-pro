@@ -422,9 +422,11 @@
     <!-- RECUPERACIÓN DE CONTRASEÑA -->
     <section id="forgot-view" class="hidden fade-in">
       <div class="card max-w-xl mx-auto">
-        <div class="question-icon">🔐</div>
-        <h2 class="text-2xl font-extrabold text-center">Recupera tu acceso</h2>
-        <p class="muted-text text-center mt-2">Te enviaremos un código de verificación de seis dígitos a tu correo.</p>
+        <div id="reset-intro">
+          <div class="question-icon">🔐</div>
+          <h2 class="text-2xl font-extrabold text-center">Recupera tu acceso</h2>
+          <p class="muted-text text-center mt-2">Te enviaremos un código de verificación de seis dígitos a tu correo.</p>
+        </div>
         <form id="request-code-form" class="mt-5" autocomplete="off">
           <label class="field-label" for="reset-email">Correo de tu cuenta</label>
           <input class="field" id="reset-email" type="email" autocomplete="off" placeholder="tucorreo@ejemplo.com" required>
