@@ -9,8 +9,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
@@ -355,28 +354,7 @@ async function initializeFirebase() {
 
     const firebaseApp = initializeApp(config);
     auth = getAuth(firebaseApp);
-    console.info("[NeuroEval Pro] Google redirect diagnostic build 20261107-6");
-
-    // Diagnóstico temporal: registra únicamente estados, nunca tokens ni datos personales.
-    try {
-      const redirectResult = await getRedirectResult(auth);
-      console.info("[NeuroEval Pro][Google redirect result]", {
-        resultReceived: Boolean(redirectResult),
-        resultHasUser: Boolean(redirectResult?.user),
-        authCurrentUserPresent: Boolean(auth.currentUser),
-        providerId: redirectResult?.providerId || null
-      });
-    } catch (error) {
-      console.error("[NeuroEval Pro][Google redirect result]", {
-        code: error?.code || "sin-codigo",
-        message: error?.message || "Sin mensaje"
-      });
-      showMessage(
-        "auth-message",
-        `No se pudo completar el acceso con Google. Código: ${error?.code || "sin-codigo"}. Detalle: ${error?.message || "Sin detalles"}`,
-        true
-      );
-    }
+    console.info("[NeuroEval Pro] Google popup diagnostic build 20261109-1");
 
     registerEventListeners();
 
@@ -594,11 +572,10 @@ async function loginWithGoogle() {
     showMessage("auth-message", "Conectando con Google...");
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
-    showMessage("auth-message", "Redirigiendo a Google para completar el acceso...");
-    await signInWithRedirect(auth, provider);
+    showMessage("auth-message", "Abriendo Google para completar el acceso...");
+    await signInWithPopup(auth, provider);
   } catch (error) {
-    // Diagnóstico temporal para identificar fallos de OAuth en staging.
-    console.error("[NeuroEval Pro][Google sign-in]", {
+    console.error("[NeuroEval Pro][Google popup sign-in]", {
       code: error?.code || "sin-codigo",
       message: error?.message || "Sin mensaje",
       name: error?.name || "Error"
