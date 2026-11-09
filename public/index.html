@@ -425,16 +425,16 @@
         <div class="question-icon">🔐</div>
         <h2 class="text-2xl font-extrabold text-center">Recupera tu acceso</h2>
         <p class="muted-text text-center mt-2">Te enviaremos un código de verificación de seis dígitos a tu correo.</p>
-        <form id="request-code-form" class="mt-5">
+        <form id="request-code-form" class="mt-5" autocomplete="off">
           <label class="field-label" for="reset-email">Correo de tu cuenta</label>
-          <input class="field" id="reset-email" type="email" placeholder="tucorreo@ejemplo.com" required>
+          <input class="field" id="reset-email" type="email" autocomplete="off" placeholder="tucorreo@ejemplo.com" required>
           <button class="btn primary w-full mt-4" type="submit">Enviar código</button>
         </form>
-        <form id="confirm-reset-form" class="hidden mt-5">
+        <form id="confirm-reset-form" class="hidden mt-5" autocomplete="off">
           <label class="field-label" for="reset-code">Código de seis dígitos</label>
-          <input class="field" id="reset-code" inputmode="numeric" maxlength="6" placeholder="000000" required>
+          <input class="field" id="reset-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" required>
           <label class="field-label" for="reset-new-password">Nueva contraseña</label>
-          <input class="field" id="reset-new-password" type="password" minlength="8" placeholder="Mínimo 8 caracteres" required>
+          <input class="field" id="reset-new-password" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo 8 caracteres" required>
           <button class="btn primary w-full mt-4" type="submit">Cambiar contraseña</button>
         </form>
         <div id="reset-message" class="message" role="status"></div>
@@ -816,6 +816,6 @@
 </div>
 
 <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
-<script type="module" src="/app.js?v=neuroeval-parent-observation-20261108-3"></script>
+<script type="module" src="/app.js?v=neuroeval-password-recovery-isolation-20261108-1"></script>
 </body>
 </html>
