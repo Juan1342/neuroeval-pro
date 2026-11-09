@@ -2455,7 +2455,7 @@ app.post(
           to: email,
           subject: "Código de recuperación · NeuroEval Pro",
           text:
-            `Tu código de recuperación es: ${code}\\n\\n` +
+            `Tu código de recuperación es: ${code}\n\n` +
             "Este código vence en 10 minutos. Si no solicitaste este cambio, ignora este mensaje.",
           html: `
             <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:28px;color:#202642">
@@ -2469,7 +2469,7 @@ app.post(
           `
         });
       } catch (mailError) {
-        smtpConnectionVerified = false;
+        if (EMAIL_PROVIDER === "smtp") smtpConnectionVerified = false;
         await db.collection("passwordResets").doc(userRecord.uid).delete().catch(() => {});
         throw mailError;
       }
