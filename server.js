@@ -265,9 +265,19 @@ const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASSWORD = process.env.SMTP_PASSWORD || "";
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const RESEND_FROM = process.env.RESEND_FROM || "";
+const EMAIL_PROVIDER = String(
+  process.env.EMAIL_PROVIDER || (RESEND_API_KEY ? "resend" : "smtp")
+).trim().toLowerCase();
+
 let smtpConnectionVerified = false;
+const resendConfigured = Boolean(
+  EMAIL_PROVIDER === "resend" && RESEND_API_KEY && RESEND_FROM
+);
 
 if (
+  EMAIL_PROVIDER === "smtp" &&
   SMTP_HOST &&
   SMTP_USER &&
   SMTP_PASSWORD &&
@@ -288,8 +298,6 @@ if (
     socketTimeout: 20000
   });
 
-  // La presencia de variables no garantiza que el proveedor SMTP acepte
-  // la conexión. Verificarla permite distinguir configuración de conectividad.
   mailer.verify()
     .then(() => {
       smtpConnectionVerified = true;
@@ -299,6 +307,43 @@ if (
       smtpConnectionVerified = false;
       console.error("No se pudo verificar la conexión SMTP:", error.message);
     });
+}
+
+const emailConfigured = EMAIL_PROVIDER === "resend"
+  ? resendConfigured
+  : EMAIL_PROVIDER === "smtp" && Boolean(mailer);
+
+async function sendTransactionalEmail({ to, subject, text, html }) {
+  if (EMAIL_PROVIDER === "resend") {
+    if (!resendConfigured) {
+      throw new Error("Resend no está configurado. Revisa RESEND_API_KEY y RESEND_FROM.");
+    }
+
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ from: RESEND_FROM, to: [to], subject, text, html }),
+      signal: AbortSignal.timeout(15000)
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const detail = cleanText(
+        result.message || result.name || result.error || `HTTP ${response.status}`,
+        300
+      );
+      throw new Error(`Resend rechazó el envío (${response.status}): ${detail}`);
+    }
+    return result;
+  }
+
+  if (EMAIL_PROVIDER !== "smtp" || !mailer) {
+    throw new Error("No hay un proveedor de correo configurado.");
+  }
+  return mailer.sendMail({ from: SMTP_FROM, to, subject, text, html });
 }
 
 /* =========================================================
@@ -718,6 +763,12 @@ app.get("/api/health", (req, res) => {
     firebaseProject: FIREBASE_PROJECT_ID || null,
     smtpConfigured: Boolean(mailer),
     smtpConnectionVerified: Boolean(mailer) && smtpConnectionVerified,
+    emailProvider: EMAIL_PROVIDER,
+    emailConfigured,
+    resendConfigured,
+    emailConnectionVerified: EMAIL_PROVIDER === "smtp"
+      ? (Boolean(mailer) && smtpConnectionVerified)
+      : null,
     wompiConfigured: Boolean(
       WOMPI_PUBLIC_KEY &&
       WOMPI_INTEGRITY_SECRET &&
@@ -2360,8 +2411,8 @@ app.post(
       const genericMessage =
         "Si la cuenta existe, recibirás un código de recuperación.";
 
-      if (!mailer) {
-        console.error("Solicitud de recuperación rechazada: SMTP no está configurado.");
+      if (!emailConfigured) {
+        console.error(`Solicitud de recuperación rechazada: proveedor de correo "${EMAIL_PROVIDER}" no configurado.`);
         return sendError(
           res,
           503,
@@ -2400,12 +2451,11 @@ app.post(
       });
 
       try {
-        await mailer.sendMail({
-          from: SMTP_FROM,
+        await sendTransactionalEmail({
           to: email,
           subject: "Código de recuperación · NeuroEval Pro",
           text:
-            `Tu código de recuperación es: ${code}\n\n` +
+            `Tu código de recuperación es: ${code}\\n\\n` +
             "Este código vence en 10 minutos. Si no solicitaste este cambio, ignora este mensaje.",
           html: `
             <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:28px;color:#202642">
@@ -2418,7 +2468,6 @@ app.post(
             </div>
           `
         });
-        smtpConnectionVerified = true;
       } catch (mailError) {
         smtpConnectionVerified = false;
         await db.collection("passwordResets").doc(userRecord.uid).delete().catch(() => {});
