@@ -9,7 +9,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
@@ -354,7 +355,27 @@ async function initializeFirebase() {
 
     const firebaseApp = initializeApp(config);
     auth = getAuth(firebaseApp);
-    console.info("[NeuroEval Pro] Google popup diagnostic build 20261109-1");
+
+    try {
+      const redirectResult = await getRedirectResult(auth);
+      console.info("[NeuroEval Pro][Google redirect result]", {
+        resultReceived: Boolean(redirectResult),
+        resultHasUser: Boolean(redirectResult?.user),
+        authCurrentUserPresent: Boolean(auth.currentUser),
+        providerId: redirectResult?.providerId || null
+      });
+    } catch (error) {
+      console.error("[NeuroEval Pro][Google redirect result]", {
+        code: error?.code || "sin-codigo",
+        message: error?.message || "Sin mensaje",
+        name: error?.name || "Error"
+      });
+      showMessage(
+        "auth-message",
+        `No se pudo completar el acceso con Google. Código: ${error?.code || "sin-codigo"}. Detalle: ${error?.message || "Firebase no proporcionó detalles adicionales."}`,
+        true
+      );
+    }
 
     registerEventListeners();
 
@@ -572,10 +593,10 @@ async function loginWithGoogle() {
     showMessage("auth-message", "Conectando con Google...");
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
-    showMessage("auth-message", "Abriendo Google para completar el acceso...");
-    await signInWithPopup(auth, provider);
+    showMessage("auth-message", "Redirigiendo a Google para completar el acceso...");
+    await signInWithRedirect(auth, provider);
   } catch (error) {
-    console.error("[NeuroEval Pro][Google popup sign-in]", {
+    console.error("[NeuroEval Pro][Google redirect sign-in]", {
       code: error?.code || "sin-codigo",
       message: error?.message || "Sin mensaje",
       name: error?.name || "Error"
