@@ -1161,11 +1161,22 @@ function navigateSection(section) {
    8. RECUPERACIÓN DE CONTRASEÑA
 ========================================================= */
 
-function openForgotPassword() {
-  show("forgot-view");
+function resetPasswordRecoveryForm(email = "") {
+  // Cada proceso comienza limpio: no reutilizar datos de otra cuenta
+  // que haya utilizado este navegador o dispositivo.
+  $("request-code-form").reset();
+  $("confirm-reset-form").reset();
+  $("reset-email").value = String(email || "").trim().toLowerCase();
+  $("reset-code").value = "";
+  $("reset-new-password").value = "";
   $("confirm-reset-form").classList.add("hidden");
   $("request-code-form").classList.remove("hidden");
   showMessage("reset-message", "");
+}
+
+function openForgotPassword(email = "") {
+  resetPasswordRecoveryForm(email);
+  show("forgot-view");
 }
 
 async function requestPasswordCode(event) {
@@ -1228,6 +1239,11 @@ async function confirmPasswordReset(event) {
     }
 
     showMessage("reset-message", data.message || "Contraseña actualizada.");
+    // Evitar que el código y la contraseña queden visibles o reutilizables
+    // al iniciar una recuperación posterior desde el mismo dispositivo.
+    $("reset-code").value = "";
+    $("reset-new-password").value = "";
+    $("confirm-reset-form").reset();
     $("confirm-reset-form").classList.add("hidden");
 
   } catch (error) {
@@ -2655,7 +2671,10 @@ function registerEventListeners() {
   $("google-login").addEventListener("click", loginWithGoogle);
 
   $("forgot-open").addEventListener("click", openForgotPassword);
-  $("back-login").addEventListener("click", () => show("auth-view"));
+  $("back-login").addEventListener("click", () => {
+    resetPasswordRecoveryForm();
+    show("auth-view");
+  });
 
   $("request-code-form").addEventListener("submit", requestPasswordCode);
   $("confirm-reset-form").addEventListener("submit", confirmPasswordReset);
@@ -2678,9 +2697,8 @@ function registerEventListeners() {
     else showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email);
   });
   $("settings-password").addEventListener("click", () => {
-    if (currentUser?.email) $("reset-email").value = currentUser.email;
     closeAccountMenu();
-    openForgotPassword();
+    openForgotPassword(currentUser?.email || "");
   });
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".account-menu-wrap")) closeAccountMenu();
