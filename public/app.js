@@ -1835,7 +1835,7 @@ async function loadAdminHealth() {
   try{
     const response=await fetch("/api/health",{cache:"no-store"});if(!response.ok)throw new Error("No se pudo consultar el estado del servidor.");
     const data=await response.json();target.replaceChildren();
-    [["Servidor",data.ok?"Operativo":"No disponible"],["Firebase",data.firebaseProject?"Configurado":"Sin configurar"],["Correo SMTP",data.smtpConnectionVerified?"Conexión verificada":data.smtpConfigured?"Configurado, sin verificación":"No configurado"],["Wompi",data.wompiConfigured?"Configurado":"No configurado"],["Ambiente de pagos",data.wompiEnvironment||"No disponible"],["Precio por evaluación",formatCop(data.evaluationPriceCop)],["Pagos de demostración",data.demoPaymentEnabled?"Activos":"Desactivados"]].forEach(([label,value])=>{const line=document.createElement("div");line.className="profile-row";const left=document.createElement("span");left.textContent=label;const right=document.createElement("strong");right.textContent=value;line.append(left,right);target.appendChild(line);});
+    [["Servidor",data.ok?"Operativo":"No disponible"],["Firebase",data.firebaseProject?"Configurado":"Sin configurar"],["Correo transaccional",!data.emailConfigured?"No configurado":data.emailProvider==="smtp"&&!data.emailConnectionVerified?"SMTP configurado, sin verificación":"Configurado ("+(data.emailProvider||"proveedor")+")"],["Wompi",data.wompiConfigured?"Configurado":"No configurado"],["Ambiente de pagos",data.wompiEnvironment||"No disponible"],["Precio por evaluación",formatCop(data.evaluationPriceCop)],["Pagos de demostración",data.demoPaymentEnabled?"Activos":"Desactivados"]].forEach(([label,value])=>{const line=document.createElement("div");line.className="profile-row";const left=document.createElement("span");left.textContent=label;const right=document.createElement("strong");right.textContent=value;line.append(left,right);target.appendChild(line);});
   }catch(error){target.textContent="No fue posible consultar los servicios: "+error.message;}
 }
 
@@ -2216,7 +2216,9 @@ async function loadAdminPricing() {
   try {
     const response = await api("/api/admin/pricing");
     const data = await response.json();
-    priceInput.value = Number(data.pricing?.priceCop || 4000);
+    priceInput.value = 4000;
+    priceInput.readOnly = true;
+    priceInput.setAttribute("aria-readonly", "true");
     renderAdminPromos(Array.isArray(data.promos) ? data.promos : []);
   } catch (error) {
     list.textContent = "No se pudo cargar la configuración comercial: " + error.message;
@@ -2267,14 +2269,8 @@ function renderAdminPromos(items) {
 
 async function saveAdminPrice(event) {
   event.preventDefault();
-  const priceCop = Number($("admin-service-price").value);
   const message = $("admin-price-message");
-  message.textContent = "Guardando nuevo precio…";
-  try {
-    await api("/api/admin/pricing", { method: "PUT", body: JSON.stringify({ priceCop }) });
-    message.textContent = "Precio actualizado. Las nuevas evaluaciones usarán este valor; las que ya fueron creadas conservan su precio.";
-    await loadAdminPricing();
-  } catch (error) { message.textContent = error.message; }
+  message.textContent = "El precio está fijado en $4.000 COP por evaluación. Puedes gestionar códigos promocionales, pero no modificar el precio base.";
 }
 
 async function createPromoCode(event) {
