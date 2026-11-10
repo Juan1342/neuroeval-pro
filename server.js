@@ -81,11 +81,15 @@ const EVALUATION_SERVICE_ID = "adhd_evaluation";
 const EVALUATION_SERVICE_LABEL = "Evaluación integral";
 const CURRENCY = "COP";
 async function getPricingConfig() {
-  const snapshot = await db.collection("platformSettings").doc("pricing").get();
-  const data = snapshot.exists ? snapshot.data() || {} : {};
-  const configured = Number(data.services?.[EVALUATION_SERVICE_ID]?.priceCop);
-  const priceCop = Number.isSafeInteger(configured) && configured >= 100 ? configured : DEFAULT_EVAL_PRICE_COP;
-  return { serviceId: EVALUATION_SERVICE_ID, label: EVALUATION_SERVICE_LABEL, priceCop, currency: CURRENCY };
+  // Precio comercial fijo de producción. Las promociones pueden aplicar
+  // descuentos sobre este importe, pero ninguna configuración de Firestore
+  // puede elevarlo o sustituirlo accidentalmente.
+  return {
+    serviceId: EVALUATION_SERVICE_ID,
+    label: EVALUATION_SERVICE_LABEL,
+    priceCop: DEFAULT_EVAL_PRICE_COP,
+    currency: CURRENCY
+  };
 }
 function calculatePromoDiscount(promo, basePrice) {
   const value = Number(promo.discountValue || 0);
@@ -806,8 +810,8 @@ app.get("/api/health", (req, res) => {
     ok: true,
     service: "NeuroEval Pro API",
     firebaseProject: FIREBASE_PROJECT_ID || null,
-    smtpConfigured: Boolean(mailer),
-    smtpConnectionVerified: Boolean(mailer) && smtpConnectionVerified,
+    smtpConfigured: EMAIL_PROVIDER === "smtp" && Boolean(mailer),
+    smtpConnectionVerified: EMAIL_PROVIDER === "smtp" && Boolean(mailer) && smtpConnectionVerified,
     emailProvider: EMAIL_PROVIDER,
     emailConfigured,
     brevoConfigured,
@@ -2017,15 +2021,15 @@ app.get("/api/admin/pricing", requireUser, requireStaffAdmin("pricing.manage"), 
 
 app.put("/api/admin/pricing", requireUser, requireStaffAdmin("pricing.manage"), async (req, res) => {
   try {
-    const priceCop = Number(req.body.priceCop);
-    if (!Number.isSafeInteger(priceCop) || priceCop < 100 || priceCop > 100000000) return sendError(res, 400, "El precio debe ser un valor entero entre $100 y $100.000.000 COP.");
-    await db.collection("platformSettings").doc("pricing").set({
-      services: { [EVALUATION_SERVICE_ID]: { label: EVALUATION_SERVICE_LABEL, priceCop, active: true } },
-      updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: req.user.uid
-    }, { merge: true });
-    await writeAdminAudit(req.user.uid, "pricing.updated", null, { serviceId: EVALUATION_SERVICE_ID, priceCop });
-    return res.json({ ok: true, pricing: { serviceId: EVALUATION_SERVICE_ID, label: EVALUATION_SERVICE_LABEL, priceCop, currency: CURRENCY } });
+    const requestedPrice = Number(req.body.priceCop);
+    if (requestedPrice !== DEFAULT_EVAL_PRICE_COP) {
+      return sendError(res, 409, "El precio de NeuroEval Pro está fijado en $4.000 COP por evaluación.");
+    }
+    return res.json({
+      ok: true,
+      fixed: true,
+      pricing: await getPricingConfig()
+    });
   } catch (error) {
     console.error("Actualizar precio:", error);
     return sendError(res, 500, "No se pudo actualizar el precio.");
@@ -2165,8 +2169,17 @@ app.get("/api/admin/health/details", requireUser, requireStaffAdmin("settings.vi
     console.error("Health check Firestore:", error.message);
     add("firestore", "Base de datos Firestore", "error", "No fue posible completar una consulta de lectura.");
   }
-  add("smtp", "Servicio de correo SMTP", !mailer ? "not_configured" : smtpConnectionVerified ? "operational" : "warning",
-    !mailer ? "No hay transporte SMTP configurado." : smtpConnectionVerified ? "Conexión SMTP verificada." : "Configurado, pero sin verificación de conexión.");
+  const emailStatus = !emailConfigured
+    ? "not_configured"
+    : EMAIL_PROVIDER === "smtp" && !smtpConnectionVerified
+      ? "warning"
+      : "configured";
+  const emailDetail = !emailConfigured
+    ? "No hay un proveedor de correo transaccional configurado."
+    : EMAIL_PROVIDER === "smtp"
+      ? (smtpConnectionVerified ? "Conexión SMTP verificada." : "SMTP configurado, pero sin verificación de conexión.")
+      : "Proveedor " + EMAIL_PROVIDER + " configurado.";
+  add("email", "Correo transaccional", emailStatus, emailDetail);
   const wompiConfigured = Boolean(WOMPI_PUBLIC_KEY && WOMPI_INTEGRITY_SECRET && WOMPI_EVENTS_SECRET);
   add("wompi", "Pasarela Wompi", wompiConfigured ? "configured" : "not_configured",
     !wompiConfigured ? "Faltan parámetros de configuración." : WOMPI_PUBLIC_KEY.startsWith("pub_test_") ? "Ambiente de pruebas (sandbox)." : WOMPI_PUBLIC_KEY.startsWith("pub_prod_") ? "Ambiente de producción." : "Ambiente no identificado.");
