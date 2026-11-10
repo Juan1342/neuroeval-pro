@@ -44,6 +44,15 @@ test("identifica un intento pendiente con referencia e importe histórico", () =
   }), true);
 });
 
+test("detecta el precio base histórico aunque exista un descuento aplicado", () => {
+  assert.equal(isLegacyPendingPayment({
+    paymentStatus: "pending",
+    paymentReference: "ref-anterior",
+    originalAmountCop: 19900,
+    amountCop: 4000
+  }), true);
+});
+
 test("no bloquea evaluaciones nuevas o intentos ya terminados", () => {
   assert.equal(isLegacyPendingPayment({
     paymentStatus: "pending",
