@@ -14,6 +14,11 @@ const { getFirestore, FieldValue, AggregateField } = require("firebase-admin/fir
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const https = require("https");
+const {
+  DEFAULT_EVALUATION_PRICE_COP,
+  calculateEvaluationPaymentAmounts,
+  isLegacyPendingPayment
+} = require("./lib/pricing");
 
 /* =========================================================
    1. CONFIGURACIÓN GENERAL
@@ -76,7 +81,7 @@ const APP_ORIGIN = String(
   process.env.APP_ORIGIN || `http://localhost:${PORT}`
 ).replace(/\/+$/, "");
 
-const DEFAULT_EVAL_PRICE_COP = 4000;
+const DEFAULT_EVAL_PRICE_COP = DEFAULT_EVALUATION_PRICE_COP;
 const EVALUATION_SERVICE_ID = "adhd_evaluation";
 const EVALUATION_SERVICE_LABEL = "Evaluación integral";
 const CURRENCY = "COP";
@@ -1166,8 +1171,9 @@ app.post(
         const evaluation = snapshot.data() || {};
         if (evaluation.paymentStatus === "paid") return { error: "already-paid" };
         if (String(evaluation.wompiTransactionStatus || "").toUpperCase() === "APPROVED") return { error: "reconciliation-required" };
-        // Toda nueva orden y todo reintento pendiente usa el precio base
-        // vigente de $4.000 COP, no el importe histórico almacenado.
+        // No reemplazar una referencia de Wompi pendiente creada con el precio
+        // anterior: su checkout podría seguir abierto y pagarse fuera de la app.
+        if (isLegacyPendingPayment(evaluation)) return { error: "legacy-pending-payment" };
         const basePrice = DEFAULT_EVAL_PRICE_COP;
         let promo = null, promoRef = null;
         if (requestedPromoCode) {
@@ -1184,14 +1190,16 @@ app.post(
           }
           if (evaluation.promoCode && evaluation.promoCode !== requestedPromoCode) return { error: "promo-locked" };
         }
-        let discountCop = evaluation.promoCode
-          ? Math.min(basePrice - 1, Math.max(0, Number(evaluation.discountCop || 0)))
-          : 0;
+        let amounts = calculateEvaluationPaymentAmounts(
+          evaluation.promoCode ? evaluation.discountCop : 0
+        );
+        let discountCop = amounts.discountCop;
         let appliedCode = evaluation.promoCode || null;
-        let amountCop = Math.max(1, basePrice - discountCop);
+        let amountCop = amounts.amountCop;
         if (requestedPromoCode && !evaluation.promoCode) {
-          discountCop = calculatePromoDiscount(promo, basePrice);
-          amountCop = Math.max(1, basePrice - discountCop);
+          amounts = calculateEvaluationPaymentAmounts(calculatePromoDiscount(promo, basePrice));
+          discountCop = amounts.discountCop;
+          amountCop = amounts.amountCop;
           appliedCode = requestedPromoCode;
           transactionWriter.set(promoRef, { uses: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
         }
@@ -1215,6 +1223,13 @@ app.post(
           res,
           409,
           "La transacción aparece aprobada y requiere reconciliación del pago."
+        );
+      }
+      if (payment.error === "legacy-pending-payment") {
+        return sendError(
+          res,
+          409,
+          "Esta evaluación conserva un intento de pago anterior con un importe distinto al vigente. No se generó otro enlace para evitar cobros duplicados. Contacta a soporte para revisar el intento."
         );
       }
       if (payment.error === "invalid-promo") return sendError(res, 400, "El código promocional no existe.");
