@@ -2184,21 +2184,43 @@ app.get("/api/admin/health/details", requireUser, requireStaffAdmin("settings.vi
 
 app.get(
   "/api/admin/overview",
+  (req, res, next) => {
+    req.adminOverviewStartedAt = Date.now();
+    next();
+  },
   requireUser,
   requireStaffAdmin("dashboard.view"),
   async (req, res) => {
+    const requestStartedAt = req.adminOverviewStartedAt || Date.now();
+    const queryTimings = {};
+    const timedQuery = async (name, queryPromise) => {
+      const queryStartedAt = Date.now();
+      try {
+        const result = await queryPromise();
+        queryTimings[name] = Date.now() - queryStartedAt;
+        return result;
+      } catch (error) {
+        queryTimings[name] = Date.now() - queryStartedAt;
+        console.error("[ADMIN_OVERVIEW_TIMING] consulta fallida:", name, queryTimings[name] + "ms", error?.message || error);
+        throw error;
+      }
+    };
+
     try {
       const evaluationsRef = db.collection("evaluations");
+      const firestoreStartedAt = Date.now();
       const [usersCountSnapshot,evaluationsCountSnapshot,paidCountSnapshot,pendingCountSnapshot,failedCountSnapshot,usersSnapshot,evaluationsSnapshot,paidRevenueSnapshot] = await Promise.all([
-        db.collection("users").count().get(),
-        evaluationsRef.count().get(),
-        evaluationsRef.where("paymentStatus","==","paid").count().get(),
-        evaluationsRef.where("paymentStatus","==","pending").count().get(),
-        evaluationsRef.where("paymentStatus","==","failed").count().get(),
-        db.collection("users").limit(100).get(),
-        evaluationsRef.orderBy("createdAt","desc").limit(100).get(),
-        evaluationsRef.where("paymentStatus","==","paid").get()
+        timedQuery("users_count", () => db.collection("users").count().get()),
+        timedQuery("evaluations_count", () => evaluationsRef.count().get()),
+        timedQuery("paid_count", () => evaluationsRef.where("paymentStatus","==","paid").count().get()),
+        timedQuery("pending_count", () => evaluationsRef.where("paymentStatus","==","pending").count().get()),
+        timedQuery("failed_count", () => evaluationsRef.where("paymentStatus","==","failed").count().get()),
+        timedQuery("users_list_limit_100", () => db.collection("users").limit(100).get()),
+        timedQuery("evaluations_list_limit_100", () => evaluationsRef.orderBy("createdAt","desc").limit(100).get()),
+        timedQuery("paid_revenue_all_docs", () => evaluationsRef.where("paymentStatus","==","paid").get())
       ]);
+      const firestoreMs = Date.now() - firestoreStartedAt;
+      const processingStartedAt = Date.now();
       const revenueCop=paidRevenueSnapshot.docs.reduce((sum,document)=>sum+Number(document.data()?.amountCop||0),0);
       const usersList=usersSnapshot.docs.map(document=>{
         const data=document.data()||{};
@@ -2229,6 +2251,15 @@ app.get(
         }
         return item;
       });
+      console.log("[ADMIN_OVERVIEW_TIMING]", JSON.stringify({
+        totalMs: Date.now() - requestStartedAt,
+        firestoreParallelMs: firestoreMs,
+        processingMs: Date.now() - processingStartedAt,
+        queryMs: queryTimings,
+        paidEvaluationDocuments: paidRevenueSnapshot.size,
+        returnedUsers: usersList.length,
+        returnedEvaluations: records.length
+      }));
       return res.json({
         users:can("clients.view") ? usersCountSnapshot.data().count : null,
         evaluations:can("evaluations.view") ? evaluationsCountSnapshot.data().count : null,
@@ -2241,6 +2272,7 @@ app.get(
       });
 
     } catch (error) {
+      console.error("[ADMIN_OVERVIEW_TIMING] error totalMs:", Date.now() - requestStartedAt);
       console.error("Panel administrativo:", error);
       return sendError(res, 500, "No se pudo cargar el panel administrativo.");
     }
