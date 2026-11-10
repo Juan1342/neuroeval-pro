@@ -1166,8 +1166,9 @@ app.post(
         const evaluation = snapshot.data() || {};
         if (evaluation.paymentStatus === "paid") return { error: "already-paid" };
         if (String(evaluation.wompiTransactionStatus || "").toUpperCase() === "APPROVED") return { error: "reconciliation-required" };
-        const basePrice = Number(evaluation.originalAmountCop || evaluation.amountCop || DEFAULT_EVAL_PRICE_COP);
-        if (!Number.isSafeInteger(basePrice) || basePrice < 100) return { error: "invalid-price" };
+        // Toda nueva orden y todo reintento pendiente usa el precio base
+        // vigente de $4.000 COP, no el importe histórico almacenado.
+        const basePrice = DEFAULT_EVAL_PRICE_COP;
         let promo = null, promoRef = null;
         if (requestedPromoCode) {
           promoRef = db.collection("promoCodes").doc(requestedPromoCode);
@@ -1183,9 +1184,9 @@ app.post(
           }
           if (evaluation.promoCode && evaluation.promoCode !== requestedPromoCode) return { error: "promo-locked" };
         }
-        let discountCop = Number(evaluation.discountCop || 0);
+        let discountCop = evaluation.promoCode ? Number(evaluation.discountCop || 0) : 0;
         let appliedCode = evaluation.promoCode || null;
-        let amountCop = Number(evaluation.amountCop || basePrice);
+        let amountCop = Math.max(1, basePrice - discountCop);
         if (requestedPromoCode && !evaluation.promoCode) {
           discountCop = calculatePromoDiscount(promo, basePrice);
           amountCop = Math.max(1, basePrice - discountCop);
