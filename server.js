@@ -10,7 +10,7 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const { getApps, initializeApp, cert, applicationDefault } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
-const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue, AggregateField } = require("firebase-admin/firestore");
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const https = require("https");
@@ -1184,7 +1184,9 @@ app.post(
           }
           if (evaluation.promoCode && evaluation.promoCode !== requestedPromoCode) return { error: "promo-locked" };
         }
-        let discountCop = evaluation.promoCode ? Number(evaluation.discountCop || 0) : 0;
+        let discountCop = evaluation.promoCode
+          ? Math.min(basePrice - 1, Math.max(0, Number(evaluation.discountCop || 0)))
+          : 0;
         let appliedCode = evaluation.promoCode || null;
         let amountCop = Math.max(1, basePrice - discountCop);
         if (requestedPromoCode && !evaluation.promoCode) {
@@ -2223,19 +2225,22 @@ app.get(
     try {
       const evaluationsRef = db.collection("evaluations");
       const firestoreStartedAt = Date.now();
-      const [usersCountSnapshot,evaluationsCountSnapshot,paidCountSnapshot,pendingCountSnapshot,failedCountSnapshot,usersSnapshot,evaluationsSnapshot,paidRevenueSnapshot] = await Promise.all([
+      const [usersCountSnapshot,evaluationsCountSnapshot,paidAggregateSnapshot,pendingCountSnapshot,failedCountSnapshot,usersSnapshot,evaluationsSnapshot] = await Promise.all([
         timedQuery("users_count", () => db.collection("users").count().get()),
         timedQuery("evaluations_count", () => evaluationsRef.count().get()),
-        timedQuery("paid_count", () => evaluationsRef.where("paymentStatus","==","paid").count().get()),
+        timedQuery("paid_aggregate", () => evaluationsRef.where("paymentStatus","==","paid").aggregate({
+          count: AggregateField.count(),
+          revenueCop: AggregateField.sum("amountCop")
+        }).get()),
         timedQuery("pending_count", () => evaluationsRef.where("paymentStatus","==","pending").count().get()),
         timedQuery("failed_count", () => evaluationsRef.where("paymentStatus","==","failed").count().get()),
         timedQuery("users_list_limit_100", () => db.collection("users").limit(100).get()),
-        timedQuery("evaluations_list_limit_100", () => evaluationsRef.orderBy("createdAt","desc").limit(100).get()),
-        timedQuery("paid_revenue_all_docs", () => evaluationsRef.where("paymentStatus","==","paid").get())
+        timedQuery("evaluations_list_limit_100", () => evaluationsRef.orderBy("createdAt","desc").limit(100).get())
       ]);
       const firestoreMs = Date.now() - firestoreStartedAt;
       const processingStartedAt = Date.now();
-      const revenueCop=paidRevenueSnapshot.docs.reduce((sum,document)=>sum+Number(document.data()?.amountCop||0),0);
+      const paidAggregate = paidAggregateSnapshot.data();
+      const revenueCop = Number(paidAggregate.revenueCop || 0);
       const usersList=usersSnapshot.docs.map(document=>{
         const data=document.data()||{};
         return {uid:document.id,name:data.name||"",email:data.email||"",age:data.age??null,goal:data.goal||"",createdAt:asDate(data.createdAt)?.toISOString()||null};
@@ -2270,14 +2275,14 @@ app.get(
         firestoreParallelMs: firestoreMs,
         processingMs: Date.now() - processingStartedAt,
         queryMs: queryTimings,
-        paidEvaluationDocuments: paidRevenueSnapshot.size,
+        paidEvaluationDocuments: paidAggregate.count,
         returnedUsers: usersList.length,
         returnedEvaluations: records.length
       }));
       return res.json({
         users:can("clients.view") ? usersCountSnapshot.data().count : null,
         evaluations:can("evaluations.view") ? evaluationsCountSnapshot.data().count : null,
-        paid:can("payments.view") ? paidCountSnapshot.data().count : null,
+        paid:can("payments.view") ? paidAggregate.count : null,
         pending:can("payments.view") ? pendingCountSnapshot.data().count : null,
         failed:can("payments.view") ? failedCountSnapshot.data().count : null,
         revenueCop:can("payments.view") ? revenueCop : null,
