@@ -40,3 +40,14 @@ test("uses detected country code only when voluntary country is absent", () => {
   assert.equal(result.countries[0].code, "GB");
   assert.equal(result.countries[0].label, "GB");
 });
+
+test("caps the number of returned city groups for bounded cache documents", () => {
+  const profiles = [];
+  for (let city = 0; city < 1001; city++) {
+    for (let user = 0; user < 10; user++) {
+      profiles.push({ country: "Colombia", city: "City " + city, age: 30, language: "es" });
+    }
+  }
+  const result = aggregateProfiles(profiles, 10);
+  assert.equal(result.cities.length, 1000);
+});
