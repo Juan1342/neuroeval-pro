@@ -65,3 +65,10 @@ test("PDF reports honor an explicit supported language and expose only a minor a
 test("individual evaluation lookup enforces record ownership", () => {
   assert.match(server, /if \(evaluation\.uid !== uid\) return null/);
 });
+
+
+test("legacy exact minor age is not exposed by administrative endpoints", () => {
+  assert.match(server, /childAgeBand:data\.parentContext\?\.childAgeBand\|\|data\.parentContext\?\.ageBand\|\|null/);
+  assert.match(server, /const \{ childAge, \.\.\.safeParentContext \} = parentContext/);
+  assert.match(server, /parentContext: safeParentContext/);
+});
