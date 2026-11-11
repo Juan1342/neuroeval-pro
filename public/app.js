@@ -810,6 +810,9 @@ function showProfile() {
   $("profile-email").textContent = currentUser.email || "No disponible";
   $("profile-age").textContent = profileData?.age == null ? "No registrada" : String(profileData.age) + " años";
   $("profile-goal").textContent = profileData?.goal || "Autoconocimiento";
+  $("profile-country-input").value = profileData?.country || "";
+  $("profile-city-input").value = profileData?.city || "";
+  $("profile-language-input").value = profileData?.language || "es";
   closeAccountMenu();
   show("profile-view");
 }
@@ -2038,7 +2041,7 @@ const ADMIN_PERMISSION_LABELS = {
 };
 
 async function loadAdminGlobalAnalytics() {
-  const ids={countries:"admin-global-countries",cities:"admin-global-cities",ages:"admin-global-ages",languages:"admin-global-languages",goals:"admin-global-goals"};
+  const ids={countries:"admin-global-countries",cities:"admin-global-cities",ages:"admin-global-ages",languages:"admin-global-languages"};
   const status=$("admin-global-status"); if(!status||!hasAdminPermission("dashboard.view"))return;
   status.textContent="Calculando estadísticas agregadas…";
   Object.values(ids).forEach(id=>{const node=$(id);if(node)node.textContent="Cargando…";});
@@ -2811,6 +2814,19 @@ function registerEventListeners() {
   $("menu-settings").addEventListener("click", showSettings);
   $("menu-logout").addEventListener("click", logout);
   $("menu-admin").addEventListener("click", () => { closeAccountMenu(); showAdmin(); });
+  $("profile-locale-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status=$("profile-locale-message");
+    status.textContent="Guardando preferencias…";
+    try {
+      const next={...(profileData||{}),country:$("profile-country-input").value.trim(),city:$("profile-city-input").value.trim(),language:$("profile-language-input").value};
+      const response=await api("/api/profile",{method:"POST",body:JSON.stringify(next)});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||"No se pudieron guardar las preferencias.");
+      profileData={...next,...(result.profile||{})};
+      status.textContent="Preferencias regionales guardadas.";
+    } catch(error) {status.textContent=error.message;}
+  });
   $("profile-back").addEventListener("click", () => {
     if (currentIsAdmin) showAdmin();
     else showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email);
