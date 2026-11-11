@@ -913,6 +913,30 @@ function applyLanguageToDom(root = document.body) {
   });
 }
 
+function populateCountryOptions() {
+  const list = $("country-options");
+  if (!list || typeof Intl.DisplayNames !== "function") return;
+  try {
+    const locale = currentLanguage === "en" ? "en" : "es";
+    const displayNames = new Intl.DisplayNames([locale], { type: "region" });
+    const names = new Map();
+    for (let first = 65; first <= 90; first++) {
+      for (let second = 65; second <= 90; second++) {
+        const code = String.fromCharCode(first, second);
+        const name = displayNames.of(code);
+        if (name && name !== code && !names.has(name)) names.set(name, code);
+      }
+    }
+    list.replaceChildren(...[...names.keys()].sort((a, b) => a.localeCompare(b, locale)).map(name => {
+      const option = document.createElement("option");
+      option.value = name;
+      return option;
+    }));
+  } catch (error) {
+    console.warn("No se pudo cargar la lista de países:", error);
+  }
+}
+
 function setLanguage(language, options = {}) {
   currentLanguage = language === "en" ? "en" : "es";
   try { localStorage.setItem("neuroeval-language", currentLanguage); } catch (_) {}
@@ -921,6 +945,7 @@ function setLanguage(language, options = {}) {
   const selector = $("global-language");
   if (selector) selector.value = currentLanguage;
   applyLanguageToDom();
+  populateCountryOptions();
   if (options.persist && currentUser && !currentIsAdmin) {
     profileData = { ...(profileData || {}), language: currentLanguage };
     api("/api/profile", {
