@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { ageBand, normalizeCountryName, resolveCountryCode, aggregateProfiles } = require("../lib/global-analytics");
+const { ageBand, normalizeCountryName, resolveCountryCode, canonicalCountryLabel, aggregateProfiles } = require("../lib/global-analytics");
 
 test("normalizes accented country names and resolves ISO alpha-2 codes", () => {
   assert.equal(normalizeCountryName("México"), "mexico");
@@ -50,4 +50,26 @@ test("caps the number of returned city groups for bounded cache documents", () =
   }
   const result = aggregateProfiles(profiles, 10);
   assert.equal(result.cities.length, 1000);
+});
+
+
+test("canonicalizes ISO country names across English, Spanish and alpha-2 input", () => {
+  assert.equal(resolveCountryCode("United States"), "US");
+  assert.equal(resolveCountryCode("Estados Unidos"), "US");
+  assert.equal(resolveCountryCode("US"), "US");
+  assert.equal(canonicalCountryLabel("United States"), "Estados Unidos");
+  assert.equal(canonicalCountryLabel("US"), "Estados Unidos");
+  assert.equal(canonicalCountryLabel("United Kingdom"), "Reino Unido");
+  assert.equal(canonicalCountryLabel("Atlantis"), "Atlantis");
+});
+
+test("combines country variants into one privacy-safe global group", () => {
+  const profiles = [
+    ...Array.from({ length: 10 }, () => ({ country: "United States", city: "Miami", age: 30, language: "en" })),
+    ...Array.from({ length: 10 }, () => ({ country: "Estados Unidos", city: "Miami", age: 31, language: "en" })),
+    ...Array.from({ length: 10 }, () => ({ country: "US", city: "Miami", age: 32, language: "en" }))
+  ];
+  const result = aggregateProfiles(profiles, 10);
+  assert.deepEqual(result.countries, [{ label: "Estados Unidos", count: 30, code: "US" }]);
+  assert.deepEqual(result.cities, [{ label: "Miami, Estados Unidos", count: 30 }]);
 });
