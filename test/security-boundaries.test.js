@@ -158,3 +158,19 @@ test("sensitive assessment data requires a separate versioned explicit consent",
   assert.match(privacyPolicy, /datos personales sensibles relacionados con salud, atención y bienestar cognitivo/);
   assert.match(privacyPolicy, /sensitive personal data related to health, attention and cognitive well-being/);
 });
+
+
+test("privacy export includes sensitive-data consent history and reports truncation accurately", () => {
+  assert.match(server, /sensitiveDataConsents: sensitiveConsentSnapshot\.docs\.map/);
+  assert.match(server, /evaluations\)\.where\("uid", "==", uid\)\.limit\(1001\)/);
+  assert.match(server, /truncated: evaluationsSnapshot\.size > 1000/);
+});
+
+test("withdrawing sensitive-data consent blocks future assessments immediately", () => {
+  assert.match(server, /"withdraw_consent"/);
+  assert.match(server, /sensitiveDataConsentVersion: FieldValue\.delete\(\)/);
+  assert.match(server, /accepted: false,[\s\S]{0,100}withdrawnAt: FieldValue\.serverTimestamp\(\)/);
+  assert.match(server, /sensitiveConsentSnapshot\.data\(\)\?\.accepted !== true/);
+  assert.match(app, /if \(type === "withdraw_consent"\)/);
+  assert.match(html, /value="withdraw_consent"/);
+});
