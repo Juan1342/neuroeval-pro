@@ -3309,8 +3309,8 @@ function renderAdminPrivacyRequests(requests) {
     return;
   }
   const typeLabels = currentLanguage === "en"
-    ? { access: "Access", rectification: "Correction", deletion: "Deletion review" }
-    : { access: "Acceso", rectification: "Rectificación", deletion: "Revisión de eliminación" };
+    ? { access: "Access", rectification: "Correction", deletion: "Deletion review", withdraw_consent: "Sensitive-data consent withdrawal" }
+    : { access: "Acceso", rectification: "Rectificación", deletion: "Revisión de eliminación", withdraw_consent: "Retiro de autorización de datos sensibles" };
   const statusLabels = currentLanguage === "en"
     ? { pending: "Pending", in_review: "In review", completed: "Completed", rejected: "Rejected" }
     : { pending: "Pendiente", in_review: "En revisión", completed: "Atendida", rejected: "Rechazada" };
