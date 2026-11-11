@@ -1,0 +1,42 @@
+"use strict";
+
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { ageBand, normalizeCountryName, resolveCountryCode, aggregateProfiles } = require("../lib/global-analytics");
+
+test("normalizes accented country names and resolves ISO alpha-2 codes", () => {
+  assert.equal(normalizeCountryName("México"), "mexico");
+  assert.equal(resolveCountryCode("México"), "MX");
+  assert.equal(resolveCountryCode("United States"), "US");
+  assert.equal(resolveCountryCode("co"), "CO");
+  assert.equal(resolveCountryCode("XX"), "");
+});
+
+test("classifies adult ages only", () => {
+  assert.equal(ageBand(18), "18–24");
+  assert.equal(ageBand(34), "25–34");
+  assert.equal(ageBand(55), "55+");
+  assert.equal(ageBand(17), "Sin dato");
+  assert.equal(ageBand(120), "Sin dato");
+  assert.equal(ageBand("unknown"), "Sin dato");
+});
+
+test("suppresses country, city, age and language groups below threshold", () => {
+  const profiles = [
+    ...Array.from({ length: 10 }, () => ({ country: "Colombia", city: "Medellín", age: 30, language: "es" })),
+    ...Array.from({ length: 9 }, () => ({ country: "Canada", city: "Toronto", age: 22, language: "en" }))
+  ];
+  const result = aggregateProfiles(profiles, 10);
+  assert.deepEqual(result.countries, [{ label: "Colombia", count: 10, code: "CO" }]);
+  assert.deepEqual(result.cities, [{ label: "Medellín, Colombia", count: 10 }]);
+  assert.deepEqual(result.ages, [{ label: "25–34", count: 10 }]);
+  assert.deepEqual(result.languages, [{ label: "Español", count: 10 }]);
+});
+
+test("uses detected country code only when voluntary country is absent", () => {
+  const result = aggregateProfiles(Array.from({ length: 10 }, () => ({
+    country: "", detectedCountryCode: "GB", age: 40, language: "en"
+  })));
+  assert.equal(result.countries[0].code, "GB");
+  assert.equal(result.countries[0].label, "GB");
+});
