@@ -14,7 +14,14 @@
 - La página carga recursos de Google Fonts y Tailwind CDN. Deben verificarse en navegador las solicitudes, almacenamiento local y cookies efectivamente generadas.
 - La política de privacidad existente contiene 24 marcadores pendientes y está identificada como borrador no apto para publicación.
 
-## Datos reales que debe aportar el responsable
+## Identificación confirmada del responsable
+
+- [x] Responsable: JUAN MANUEL ZAMORA ZAPATA, persona natural, Colombia (dato confirmado por el titular del proyecto el 11 de noviembre de 2026).
+- [ ] Dirección física/de notificación que legalmente corresponda y pueda publicarse.
+- [ ] Correo oficial de privacidad, soporte y reclamaciones.
+- [ ] Definir si se designará un canal separado para derechos de protección de datos.
+
+## Datos reales adicionales que debe aportar el responsable
 
 - [ ] Nombre legal o razón social del responsable.
 - [ ] País de constitución, domicilio y dirección de notificación.
@@ -44,11 +51,18 @@ No completar estos campos con datos inventados. Si el responsable es una persona
 - [ ] Revisar transferencias internacionales y contratos con encargados/subencargados.
 - [ ] Revisar si se requiere representante, delegado de protección de datos, registro o inscripción en cada mercado.
 
-## Documentos que deben cerrarse
+## Documentos preparados en la rama de trabajo
 
-- [ ] Política de privacidad y tratamiento de datos (actualmente borrador).
-- [ ] Términos de uso/servicio.
-- [ ] Aviso de cookies y tecnologías similares, si corresponde.
+- [x] `public/privacy.html`: política bilingüe con identidad del responsable incorporada; pendiente dirección, contacto, proveedores, retención y validación jurídica.
+- [x] `public/terms.html`: términos bilingües con precio base de $4.000 COP, naturaleza informativa, pago Wompi, derechos de consumidor y cláusulas no excluyentes; pendiente contacto, verificación de flujo de compra y revisión jurídica.
+- [x] `public/cookies.html`: aviso bilingüe basado en inspección de código; pendiente inventario real de cookies/almacenamiento/terceros en navegador y revisión jurídica.
+- [x] Enlaces a los tres documentos añadidos al pie de `public/index.html`.
+
+## Documentos y consentimientos que aún deben cerrarse
+
+- [ ] Validar y publicar la política de privacidad y tratamiento de datos.
+- [ ] Validar y publicar los términos de uso/servicio.
+- [ ] Validar y publicar el aviso de cookies y tecnologías similares, si corresponde.
 - [ ] Consentimiento explícito para datos sensibles, diferenciado del simple acceso/uso del servicio cuando sea necesario.
 - [ ] Texto específico de observación familiar y autorización del adulto responsable.
 - [ ] Información de precios, moneda COP, conversión del emisor de tarjeta, impuestos, cancelaciones y reembolsos.
@@ -96,3 +110,25 @@ No publicar los documentos hasta que los campos anteriores estén completos, los
 - [x] Incluir el historial de autorizaciones sensibles en la exportación de datos personales.
 
 Estos controles son medidas técnicas de preparación; no sustituyen la validación jurídica de que el texto, la finalidad, la base legal y el proceso de consentimiento sean adecuados en cada país.
+
+
+## Estado actualizado de documentos (11 de noviembre de 2026)
+
+La identidad del responsable fue confirmada por el titular del proyecto: **JUAN MANUEL ZAMORA ZAPATA, persona natural, Colombia**. No se ha inferido ni añadido una dirección, correo electrónico, identificación tributaria o domicilio específico.
+
+Los tres documentos se prepararon en español e inglés en la rama `feature/global-launch-prep`. Los avisos conservan una advertencia visible de validación pendiente y meta robots noindex. Los enlaces de navegación se añadieron al footer de la aplicación, pero no se ha realizado despliegue ni publicación en producción.
+
+### Pendientes bloqueantes antes de declarar vigencia
+
+- [ ] Recibir dirección de notificación y correo oficial de contacto/privacidad/soporte.
+- [ ] Confirmar la identidad legal/comercial con la que se ofrecerá y facturará el servicio, y si se cuenta con RUT u otra inscripción aplicable.
+- [ ] Confirmar el proveedor SMTP realmente activo y sus condiciones de tratamiento.
+- [ ] Documentar ubicación de datos, subencargados y contratos de Firebase/Google Cloud, Render, Wompi y correo.
+- [ ] Definir y configurar periodos de conservación y eliminación, incluyendo respaldos y logs.
+- [ ] Inspeccionar cookies, localStorage, sessionStorage, IndexedDB y solicitudes de terceros en los navegadores soportados.
+- [ ] Revisar y ajustar información precontractual, resumen de compra, ejecución del servicio digital, retracto, reversión del pago, garantías y reclamaciones conforme a la Ley 1480 y sus modificaciones.
+- [ ] Definir si la observación familiar de menores seguirá disponible en todos los países o se restringirá por jurisdicción; validar autoridad parental y requisitos locales.
+- [ ] Revisar el paquete completo con abogado con experiencia en privacidad, consumo digital y operación internacional.
+- [ ] Aprobar formalmente versión, fecha de entrada en vigor y procedimiento de notificación de cambios.
+
+**Importante:** la preparación del texto y su incorporación al repositorio no convierten por sí solas los documentos en instrumentos jurídicos validados ni demuestran cumplimiento legal en Colombia o en otros países.
