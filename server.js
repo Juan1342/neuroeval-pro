@@ -983,6 +983,50 @@ app.post("/api/privacy/requests", requireUser, supportCreateLimiter, async (req,
   }
 });
 
+/* Solicitudes de derechos de privacidad: solo el administrador principal puede revisarlas. */
+app.get("/api/admin/privacy-requests", requireUser, requireAdmin, async (req, res) => {
+  try {
+    const snapshot = await db.collection("privacyRequests").orderBy("createdAt", "desc").limit(100).get();
+    const requests = snapshot.docs.map(document => {
+      const data = document.data() || {};
+      return {
+        id: document.id,
+        uid: data.uid || "",
+        email: data.email || "",
+        type: data.type || "",
+        status: data.status || "pending",
+        createdAt: asDate(data.createdAt)?.toISOString() || null,
+        reviewedAt: asDate(data.reviewedAt)?.toISOString() || null
+      };
+    });
+    return res.json({ requests });
+  } catch (error) {
+    console.error("Bandeja de solicitudes de privacidad:", error);
+    return sendError(res, 500, "No se pudieron consultar las solicitudes de privacidad.");
+  }
+});
+
+app.patch("/api/admin/privacy-requests/:id", requireUser, requireAdmin, async (req, res) => {
+  try {
+    const status = String(req.body?.status || "").trim().toLowerCase();
+    if (!["in_review", "completed", "rejected"].includes(status)) {
+      return sendError(res, 400, "El estado de la solicitud no es válido.");
+    }
+    const ref = db.collection("privacyRequests").doc(String(req.params.id || ""));
+    const snapshot = await ref.get();
+    if (!snapshot.exists) return sendError(res, 404, "No encontramos la solicitud de privacidad.");
+    await ref.update({
+      status,
+      reviewedAt: FieldValue.serverTimestamp(),
+      reviewedBy: req.user.uid
+    });
+    return res.json({ ok: true, status });
+  } catch (error) {
+    console.error("Actualizar solicitud de privacidad:", error);
+    return sendError(res, 500, "No se pudo actualizar la solicitud de privacidad.");
+  }
+});
+
 /* =========================================================
    9. CREAR EVALUACIÓN
 ========================================================= */
