@@ -1947,7 +1947,7 @@ function formatProgressEvaluationDate(value) {
     if (Number.isFinite(seconds)) dateValue = seconds * 1000;
   }
   const date = new Date(dateValue);
-  return Number.isNaN(date.getTime()) ? "Fecha no disponible" : date.toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" });
+  return Number.isNaN(date.getTime()) ? "Fecha no disponible" : date.toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO"), { dateStyle: "medium", timeStyle: "short" });
 }
 
 async function loadEvaluationHistory() {
@@ -2470,7 +2470,7 @@ async function finishEvaluation() {
 
     lastEvaluationId = data.id;
     paymentReference = data.reference || null;
-    if ($("payment-price")) $("payment-price").textContent = "$" + Number(data.amountCop || 4000).toLocaleString("es-CO") + " COP";
+    if ($("payment-price")) $("payment-price").textContent = "$" + Number(data.amountCop || 4000).toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO")) + " COP";
 
     await showPaymentForExistingEvaluation();
 
@@ -2551,7 +2551,7 @@ async function createWompiCheckout(promoCode = "") {
     if (Number(data.amountInCents) !== Number(data.amountCop) * 100) {
       throw new Error("El valor de pago recibido no coincide con el precio configurado.");
     }
-    const money = amount => "$" + Number(amount || 0).toLocaleString("es-CO") + " COP";
+    const money = amount => "$" + Number(amount || 0).toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO")) + " COP";
     $("payment-price").textContent = money(data.amountCop);
     $("payment-discount").textContent = Number(data.discountCop) > 0
       ? "Precio original: " + money(data.originalAmountCop) + " · Descuento " + (data.promoCode || "") + ": −" + money(data.discountCop)
@@ -2802,8 +2802,8 @@ async function downloadOwnPdf() {
 ========================================================= */
 
 let adminOverviewCache = null;
-function formatAdminDate(value) { if (!value) return "—"; const d = new Date(value); return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString("es-CO"); }
-function formatCop(value) { return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(value||0)); }
+function formatAdminDate(value) { if (!value) return "—"; const d = new Date(value); return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO")); }
+function formatCop(value) { return new Intl.NumberFormat((currentLanguage === "en" ? "en-US" : "es-CO"),{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(value||0)); }
 function adminCell(row,value) { const cell=document.createElement("td"); cell.textContent=value===null||value===undefined||value===""?"—":String(value); row.appendChild(cell); return cell; }
 function adminEmptyRow(tbody,colspan,message) { tbody.replaceChildren(); const row=document.createElement("tr"),cell=document.createElement("td"); cell.colSpan=colspan; cell.className="muted-text"; cell.textContent=message; row.appendChild(cell); tbody.appendChild(row); }
 function renderAdminEvaluations(records,targetId="admin-rows") {
@@ -2901,7 +2901,7 @@ async function loadAdminHealthDetails() {
     [["Tiempo activo",Math.floor(data.uptimeSeconds/3600)+" h"],["Respuesta",data.responseMs+" ms"],["Memoria RAM",data.memory.rssMb+" MB"],["Motor Node.js",data.runtime]].forEach(([label,value])=>{
       const card=document.createElement("div");card.className="card";const title=document.createElement("p");title.className="muted-text text-xs";title.textContent=label;const amount=document.createElement("strong");amount.className="text-lg";amount.textContent=value;card.append(title,amount);runtime.appendChild(card);
     });
-    $("admin-health-checked-at").textContent="Última comprobación: "+new Date(data.checkedAt).toLocaleString("es-CO");
+    $("admin-health-checked-at").textContent="Última comprobación: "+new Date(data.checkedAt).toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO"));
   } catch(error) { summary.textContent="No fue posible ejecutar el diagnóstico: "+error.message; }
 }
 
@@ -2928,7 +2928,7 @@ function renderAdminDashboardCharts(records) {
     const now=new Date(), buckets=[];
   for(let offset=5;offset>=0;offset--){
     const date=new Date(now.getFullYear(),now.getMonth()-offset,1);
-    buckets.push({key:date.getFullYear()+"-"+date.getMonth(),label:date.toLocaleDateString("es-CO",{month:"short"}).replace(".",""),count:0});
+    buckets.push({key:date.getFullYear()+"-"+date.getMonth(),label:date.toLocaleDateString((currentLanguage === "en" ? "en-US" : "es-CO"),{month:"short"}).replace(".",""),count:0});
   }
   records.forEach(record=>{
     const date=new Date(record.createdAt);
@@ -3042,7 +3042,7 @@ function renderWorldMap(rows = []) {
     mapped.forEach(row=>{
       const [lat,lon]=WORLD_COUNTRY_CENTROIDS[row.code],pos=project(lat,lon);
       const circle=document.createElementNS(NS,"circle");circle.setAttribute("cx",pos.x);circle.setAttribute("cy",pos.y);circle.setAttribute("r",String(5+Math.sqrt(Number(row.count)/max)*13));circle.setAttribute("class","map-point");circle.setAttribute("tabindex","0");circle.setAttribute("role","button");
-      const countLabel=Number(row.count).toLocaleString(currentLanguage==="en"?"en-US":"es-CO");
+      const countLabel=Number(row.count).toLocaleString(currentLanguage==="en"?"en-US":(currentLanguage === "en" ? "en-US" : "es-CO"));
       circle.setAttribute("aria-label",row.label+": "+countLabel+(currentLanguage==="en"?" users":" usuarios"));
       const title=document.createElementNS(NS,"title");title.textContent=row.label+": "+countLabel+(currentLanguage==="en"?" users":" usuarios");circle.appendChild(title);
       const reveal=()=>{const status=$("admin-global-status");if(status)status.textContent=row.label+": "+countLabel+(currentLanguage==="en"?" users in this aggregated group.":" usuarios en este grupo agregado.");};
@@ -3071,13 +3071,13 @@ async function loadAdminGlobalAnalytics() {
         const item=document.createElement("div");item.className="space-y-1";
         const line=document.createElement("div");line.className="flex justify-between gap-3 text-sm";
         const label=document.createElement("span");label.textContent=row.label;
-        const count=document.createElement("strong");count.textContent=Number(row.count).toLocaleString("es-CO");line.append(label,count);
+        const count=document.createElement("strong");count.textContent=Number(row.count).toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO"));line.append(label,count);
         const track=document.createElement("div");track.className="h-2 rounded-full bg-slate-100 overflow-hidden";
         const bar=document.createElement("div");bar.className="h-full rounded-full";bar.style.width=(Number(row.count)/max*100)+"%";bar.style.background="linear-gradient(90deg,#7467f0,#6ce4dc)";
         track.appendChild(bar);item.append(line,track);host.appendChild(item);
       });
     });
-    status.textContent=(currentLanguage==="en"?"Updated: ":"Actualizado: ")+new Date(data.generatedAt).toLocaleString(currentLanguage==="en"?"en-US":"es-CO")+" · "+Number(data.users||0).toLocaleString(currentLanguage==="en"?"en-US":"es-CO")+(currentLanguage==="en"?" profiles analyzed":" perfiles analizados")+(data.truncated?(currentLanguage==="en"?" · limited to the first 50,000 profiles":" · limitado a los primeros 50.000 perfiles"):"")+(currentLanguage==="en"?". Groups under 10 are hidden.":". Se ocultan grupos menores de 10.");
+    status.textContent=(currentLanguage==="en"?"Updated: ":"Actualizado: ")+new Date(data.generatedAt).toLocaleString(currentLanguage==="en"?"en-US":(currentLanguage === "en" ? "en-US" : "es-CO"))+" · "+Number(data.users||0).toLocaleString(currentLanguage==="en"?"en-US":(currentLanguage === "en" ? "en-US" : "es-CO"))+(currentLanguage==="en"?" profiles analyzed":" perfiles analizados")+(data.truncated?(currentLanguage==="en"?" · limited to the first 50,000 profiles":" · limitado a los primeros 50.000 perfiles"):"")+(currentLanguage==="en"?". Groups under 10 are hidden.":". Se ocultan grupos menores de 10.");
   } catch(error) {status.textContent="No fue posible cargar las estadísticas: "+error.message;}
 }
 
@@ -3092,7 +3092,7 @@ async function loadAdminCommercialAnalytics() {
     if (!response.ok) throw new Error(data.error || "No se pudo consultar la analítica.");
     const totals = data.totals || {};
     summary.replaceChildren();
-    [["Ingresos confirmados",formatCop(totals.revenueCop)],["Conversión a pago",Number(totals.conversionPercent||0).toLocaleString("es-CO")+"%"],["Ticket promedio",formatCop(totals.averageTicketCop)],["Evaluaciones pagadas",totals.paid||0],["Pagos pendientes",totals.pending||0],["Descuentos aplicados",formatCop(totals.discountsCop)]].forEach(([label,value])=>{
+    [["Ingresos confirmados",formatCop(totals.revenueCop)],["Conversión a pago",Number(totals.conversionPercent||0).toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO"))+"%"],["Ticket promedio",formatCop(totals.averageTicketCop)],["Evaluaciones pagadas",totals.paid||0],["Pagos pendientes",totals.pending||0],["Descuentos aplicados",formatCop(totals.discountsCop)]].forEach(([label,value])=>{
       const card=document.createElement("div");card.className="card";const title=document.createElement("p");title.className="muted-text";title.textContent=label;
       const amount=document.createElement("p");amount.className="text-2xl font-extrabold mt-2";amount.textContent=value;card.append(title,amount);summary.appendChild(card);
     });
@@ -3127,7 +3127,7 @@ async function loadAdminCommercialAnalytics() {
       const detail=document.createElement("p");detail.className="muted-text text-sm";detail.textContent="Evaluaciones asociadas: "+item.evaluationsUsingCode+" · Límite: "+(item.maxUses>0?item.maxUses:"Sin límite");
       left.append(name,detail);const count=document.createElement("span");count.className="font-bold";count.textContent="Usos reservados: "+item.uses;row.append(left,count);promos.appendChild(row);
     });
-    $("admin-analytics-updated").textContent="Actualizado: "+new Date(data.generatedAt||Date.now()).toLocaleString("es-CO")+" · Fuente: registros almacenados.";
+    $("admin-analytics-updated").textContent="Actualizado: "+new Date(data.generatedAt||Date.now()).toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO"))+" · Fuente: registros almacenados.";
   }catch(error){summary.textContent="No se pudo cargar la analítica: "+error.message;revenue.textContent="—";conversion.textContent="—";promos.textContent="—";}
 }
 
@@ -3456,7 +3456,7 @@ function renderAdminPromos(items) {
     const detail = document.createElement("p");
     detail.className = "muted-text text-sm mt-1";
     detail.textContent = "Usos: " + item.uses + (Number(item.maxUses) > 0 ? " / " + item.maxUses : " · Sin límite") +
-      (item.expiresAt ? " · Vence: " + new Date(item.expiresAt).toLocaleDateString("es-CO") : " · Sin vencimiento") +
+      (item.expiresAt ? " · Vence: " + new Date(item.expiresAt).toLocaleDateString((currentLanguage === "en" ? "en-US" : "es-CO")) : " · Sin vencimiento") +
       (item.newCustomersOnly ? " · Solo nuevos clientes" : "");
     const status = document.createElement("span");
     status.className = "text-xs font-bold " + (item.active ? "text-emerald-500" : "text-amber-500");
@@ -3756,7 +3756,7 @@ async function viewAdminEvaluation(id) {
     appendAdminDetailLine(content, "Objetivo", evaluation.goal);
     appendAdminDetailLine(content, "Estado del pago", evaluation.paymentStatus);
     appendAdminDetailLine(content, "Fecha", evaluation.createdAt
-      ? new Date(evaluation.createdAt).toLocaleString("es-CO") : "—");
+      ? new Date(evaluation.createdAt).toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO")) : "—");
 
     const resultHeading = document.createElement("h3");
     resultHeading.className = "text-lg font-extrabold mt-6 mb-2";
