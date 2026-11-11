@@ -567,7 +567,10 @@ async function registerWithEmail(event) {
 
     showMessage("auth-message", "Creando tu cuenta...");
 
-    profileData = { name, age, goal };
+    const country = $("reg-country")?.value.trim() || "";
+    const city = $("reg-city")?.value.trim() || "";
+    const language = (navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es";
+    profileData = { name, age, goal, country, city, language };
 
     const credential = await createUserWithEmailAndPassword(
       auth,
@@ -579,7 +582,7 @@ async function registerWithEmail(event) {
 
     await api("/api/profile", {
       method: "POST",
-      body: JSON.stringify({ name, age, goal })
+      body: JSON.stringify({ name, age, goal, country, city, language })
     });
 
     // La pantalla de evaluación se inicia desde el observador de sesión.
@@ -680,13 +683,19 @@ async function handleAuthState(user) {
       profileData = {
         name: savedProfile.name || user.displayName || user.email,
         age: savedProfile.age ?? null,
-        goal: savedProfile.goal || "Autoconocimiento"
+        goal: savedProfile.goal || "Autoconocimiento",
+        country: savedProfile.country || "",
+        city: savedProfile.city || "",
+        language: savedProfile.language || "es"
       };
     } else {
       profileData = {
         name: user.displayName || user.email,
         age: null,
-        goal: "Autoconocimiento"
+        goal: "Autoconocimiento",
+        country: "",
+        city: "",
+        language: (navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es"
       };
 
       await api("/api/profile", {
@@ -765,6 +774,7 @@ function setAdminTab(tab) {
     evaluations: hasAdminPermission("evaluations.view"),
     payments: hasAdminPermission("payments.view"),
     analytics: hasAdminPermission("payments.view"),
+    global: hasAdminPermission("dashboard.view"),
     pricing: hasAdminPermission("pricing.manage"),
     settings: hasAdminPermission("settings.view"),
     health: hasAdminPermission("settings.view"),
@@ -785,6 +795,7 @@ function setAdminTab(tab) {
     button.setAttribute("aria-selected", String(active));
   });
   if (selected === "analytics") loadAdminCommercialAnalytics();
+  if (selected === "global") loadAdminGlobalAnalytics();
   if (selected === "pricing") loadAdminPricing();
   if (selected === "administrators") loadAdminAdministrators();
   if (selected === "audit") loadAdminAudit();
@@ -2026,6 +2037,33 @@ const ADMIN_PERMISSION_LABELS = {
   "support.manage": "Responder y gestionar soporte"
 };
 
+async function loadAdminGlobalAnalytics() {
+  const ids={countries:"admin-global-countries",cities:"admin-global-cities",ages:"admin-global-ages",languages:"admin-global-languages",goals:"admin-global-goals"};
+  const status=$("admin-global-status"); if(!status||!hasAdminPermission("dashboard.view"))return;
+  status.textContent="Calculando estadísticas agregadas…";
+  Object.values(ids).forEach(id=>{const node=$(id);if(node)node.textContent="Cargando…";});
+  try {
+    const response=await api("/api/admin/analytics/global"); const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"No se pudo consultar la analítica internacional.");
+    Object.entries(ids).forEach(([key,id])=>{
+      const host=$(id);if(!host)return;host.replaceChildren();
+      const rows=Array.isArray(data[key])?data[key]:[];
+      if(!rows.length){host.textContent="Todavía no hay grupos con suficientes usuarios para mostrarlos.";return;}
+      const max=Math.max(1,...rows.map(row=>Number(row.count||0)));
+      rows.forEach(row=>{
+        const item=document.createElement("div");item.className="space-y-1";
+        const line=document.createElement("div");line.className="flex justify-between gap-3 text-sm";
+        const label=document.createElement("span");label.textContent=row.label;
+        const count=document.createElement("strong");count.textContent=Number(row.count).toLocaleString("es-CO");line.append(label,count);
+        const track=document.createElement("div");track.className="h-2 rounded-full bg-slate-100 overflow-hidden";
+        const bar=document.createElement("div");bar.className="h-full rounded-full";bar.style.width=(Number(row.count)/max*100)+"%";bar.style.background="linear-gradient(90deg,#7467f0,#6ce4dc)";
+        track.appendChild(bar);item.append(line,track);host.appendChild(item);
+      });
+    });
+    status.textContent="Actualizado: "+new Date(data.generatedAt).toLocaleString()+" · "+Number(data.users||0).toLocaleString()+" perfiles analizados"+(data.truncated?" · muestra limitada a 10.000 perfiles":"")+". Se ocultan grupos menores de 10.";
+  } catch(error) {status.textContent="No fue posible cargar las estadísticas: "+error.message;}
+}
+
 async function loadAdminCommercialAnalytics() {
   const summary = $("admin-analytics-summary"), revenue = $("admin-analytics-revenue");
   const conversion = $("admin-analytics-conversion"), promos = $("admin-analytics-promos");
@@ -2839,6 +2877,7 @@ function registerEventListeners() {
   $("admin-evaluation-search").addEventListener("input", filterAdminTables);
   $("admin-health-refresh").addEventListener("click", loadAdminHealth);
   $("admin-analytics-refresh").addEventListener("click", loadAdminCommercialAnalytics);
+  $("admin-global-refresh").addEventListener("click", loadAdminGlobalAnalytics);
   $("admin-health-details-refresh").addEventListener("click", loadAdminHealthDetails);
   $("admin-backup-export").addEventListener("click", exportAdminBackup);
   $("admin-support-refresh").addEventListener("click", loadAdminSupportTickets);
