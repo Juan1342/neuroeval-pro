@@ -314,6 +314,12 @@
     input[type="checkbox"],input[type="radio"] { accent-color:#a16bff; }
     .admin-content .card { background:linear-gradient(145deg,#171d39,#11162d);border-color:#30395e; }
     .admin-content .card h2 { color:#f0efff; }
+    .world-map-shell { width:100%; overflow:hidden; border:1px solid rgba(148,163,184,.22); border-radius:16px; background:linear-gradient(180deg,#101a35,#172543); min-height:240px; }
+    .world-map-shell svg { display:block; width:100%; height:auto; }
+    .world-map-shell .land { fill:#344765; stroke:#607493; stroke-width:1.2; opacity:.82; }
+    .world-map-shell .map-point { fill:#7de4d5; stroke:#fff; stroke-width:2; cursor:help; }
+    .world-map-shell .map-point-label { fill:#f8fafc; font:12px sans-serif; }
+
 
   </style>
 </head>
@@ -797,6 +803,16 @@
       <div id="admin-panel-global" class="admin-panel hidden space-y-5">
         <div class="flex flex-wrap justify-between items-center gap-3"><div><h2 class="text-xl font-extrabold">Alcance internacional</h2><p class="muted-text">Distribución agregada por país, ciudad, edad, idioma y objetivo declarado.</p></div><button id="admin-global-refresh" class="btn outline" type="button">↻ Actualizar datos</button></div>
         <div id="admin-global-status" class="notice">Los grupos de menos de 10 usuarios se ocultan para proteger la privacidad.</div>
+        <div class="chart-card">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div><h3 class="chart-title">Mapa mundial de usuarios</h3><p class="chart-subtitle">Ubicaciones agregadas por país; cada punto representa un grupo, no una persona.</p></div>
+            <span class="pill">Vista global</span>
+          </div>
+          <div id="admin-world-map" class="world-map-shell" role="img" aria-label="Mapa mundial de usuarios agrupados por país">
+            <p class="muted-text">Cargando mapa mundial…</p>
+          </div>
+          <p class="muted-text text-xs mt-2">Solo se representan países con al menos 10 perfiles y código de país reconocible. No se muestran ubicaciones individuales.</p>
+        </div>
         <div class="grid lg:grid-cols-2 gap-4">
           <div class="chart-card"><h3 class="chart-title">Usuarios por país</h3><div id="admin-global-countries" class="space-y-3 mt-4"></div></div>
           <div class="chart-card"><h3 class="chart-title">Usuarios por ciudad</h3><div id="admin-global-cities" class="space-y-3 mt-4"></div></div>
