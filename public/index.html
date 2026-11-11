@@ -654,6 +654,21 @@
           <div class="md:col-span-2"><button class="btn outline" type="submit">Guardar preferencias regionales</button><p id="profile-locale-message" class="message" role="status"></p></div>
         </form>
         <p class="muted-text text-xs mt-3">La ciudad y el país son voluntarios. Se utilizan en estadísticas agregadas y no para localizarte individualmente.</p>
+        <div class="notice mt-5">
+          <h2 class="font-bold">Tus datos y privacidad</h2>
+          <p class="muted-text mt-1">Puedes descargar una copia de los datos asociados a tu cuenta o registrar una solicitud de acceso, rectificación o revisión de eliminación.</p>
+          <button id="privacy-export-button" class="btn outline mt-3" type="button">Descargar mis datos</button>
+          <div class="grid md:grid-cols-2 gap-2 mt-3">
+            <select id="privacy-request-type" class="field" aria-label="Tipo de solicitud de privacidad">
+              <option value="access">Acceso a mis datos</option>
+              <option value="rectification">Rectificar mis datos</option>
+              <option value="deletion">Solicitar revisión de eliminación</option>
+            </select>
+            <button id="privacy-request-button" class="btn outline" type="button">Enviar solicitud</button>
+          </div>
+          <p id="privacy-request-message" class="message" role="status" aria-live="polite"></p>
+          <p class="muted-text text-xs mt-2">La solicitud queda registrada para revisión; no elimina datos automáticamente. Algunos registros pueden estar sujetos a obligaciones legales o de pago.</p>
+        </div>
         <button id="profile-back" class="btn primary mt-6" type="button">Volver a mis pruebas</button>
       </div>
     </section>
