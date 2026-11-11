@@ -625,6 +625,13 @@
           <div class="profile-row"><span>Edad</span><strong id="profile-age">—</strong></div>
           <div class="profile-row"><span>Objetivo</span><strong id="profile-goal">—</strong></div>
         </div>
+        <form id="profile-locale-form" class="grid md:grid-cols-2 gap-3 mt-5">
+          <div><label class="field-label" for="profile-country-input">País (opcional)</label><input class="field" id="profile-country-input" maxlength="80" autocomplete="country-name" placeholder="Ej. Colombia"></div>
+          <div><label class="field-label" for="profile-city-input">Ciudad (opcional)</label><input class="field" id="profile-city-input" maxlength="100" autocomplete="address-level2" placeholder="Ej. Medellín"></div>
+          <div class="md:col-span-2"><label class="field-label" for="profile-language-input">Idioma preferido</label><select class="field" id="profile-language-input"><option value="es">Español</option><option value="en">English</option></select></div>
+          <div class="md:col-span-2"><button class="btn outline" type="submit">Guardar preferencias regionales</button><p id="profile-locale-message" class="message" role="status"></p></div>
+        </form>
+        <p class="muted-text text-xs mt-3">La ciudad y el país son voluntarios. Se utilizan en estadísticas agregadas y no para localizarte individualmente.</p>
         <button id="profile-back" class="btn primary mt-6" type="button">Volver a mis pruebas</button>
       </div>
     </section>
@@ -790,7 +797,6 @@
           <div class="chart-card"><h3 class="chart-title">Usuarios por ciudad</h3><div id="admin-global-cities" class="space-y-3 mt-4"></div></div>
           <div class="chart-card"><h3 class="chart-title">Distribución por edades</h3><div id="admin-global-ages" class="space-y-3 mt-4"></div></div>
           <div class="chart-card"><h3 class="chart-title">Idioma</h3><div id="admin-global-languages" class="space-y-3 mt-4"></div></div>
-          <div class="chart-card lg:col-span-2"><h3 class="chart-title">Objetivos declarados</h3><div id="admin-global-goals" class="space-y-3 mt-4"></div></div>
         </div>
         <p class="muted-text text-xs">No se muestran nombres, correos, identificadores, respuestas ni ubicaciones individuales. Los grupos inferiores a 10 se ocultan. La ciudad es voluntaria; no se usa GPS.</p>
       </div>
