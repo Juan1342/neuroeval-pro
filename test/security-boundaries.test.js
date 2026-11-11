@@ -49,3 +49,19 @@ test("personal data rights endpoints are owner-scoped and admin review is restri
   assert.match(app, /api\("\/api\/privacy\/export"/);
   assert.match(app, /api\("\/api\/privacy\/requests"/);
 });
+
+
+test("PDF reports honor an explicit supported language and expose only a minor age band", () => {
+  assert.match(server, /const requestedLanguage = String\(req\.query\.language \|\| ""\)\.trim\(\)\.toLowerCase\(\)/);
+  assert.match(server, /const reportLanguage = \["es", "en"\]\.includes\(requestedLanguage\) \? requestedLanguage : profileLanguage/);
+  const builderStart = server.indexOf("function buildEvaluationPdf");
+  const builderEnd = server.indexOf('app.get(\n  "/api/my-evaluations/:id/pdf"', builderStart);
+  assert.ok(builderStart >= 0 && builderEnd > builderStart, "PDF builder and personal PDF route must exist");
+  const pdfBuilder = server.slice(builderStart, builderEnd);
+  assert.match(pdfBuilder, /evaluation\.parentContext\?\.childAgeBand/);
+  assert.doesNotMatch(pdfBuilder, /evaluation\.parentContext\?\.childAge\b/);
+});
+
+test("individual evaluation lookup enforces record ownership", () => {
+  assert.match(server, /if \(evaluation\.uid !== uid\) return null/);
+});
