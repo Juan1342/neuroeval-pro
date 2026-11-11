@@ -755,7 +755,8 @@ const uiTranslations = {
   "Todavía no hay grupos con suficientes usuarios para mostrarlos.": "There are not yet enough users in any group to display them.",
   "Usuarios agrupados por país": "Users grouped by country",
   "Aún no hay grupos de países que puedan ubicarse": "There are no mappable country groups yet.",
-  " años": " years"
+  " años": " years",
+  "⚙️   Configuración": "⚙️   Settings"
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
