@@ -44,6 +44,219 @@ let currentEvaluationType = "self_report";
 let parentEvaluationContext = null;
 let activeChoices;
 
+/* =========================================================
+   INTERNACIONALIZACIÓN INICIAL ES / EN
+   La preferencia se guarda localmente y en el perfil autenticado.
+   Las traducciones son de interfaz; los informes/PDF y correos
+   requieren localización independiente del servidor.
+========================================================= */
+let currentLanguage = "es";
+const uiTranslations = {
+  "Plataforma segura": "Secure platform",
+  "Mi cuenta": "My account",
+  "Panel de administración": "Admin dashboard",
+  "Perfil": "Profile",
+  "Pruebas": "Assessments",
+  "Juegos": "Games",
+  "Actividades": "Activities",
+  "Recomendaciones": "Recommendations",
+  "Mi progreso": "My progress",
+  "Configuración": "Settings",
+  "Cerrar sesión": "Sign out",
+  "Conocimiento · Atención · Bienestar": "Awareness · Attention · Well-being",
+  "Conoce mejor cómo funciona tu mente.": "Understand how your mind works.",
+  "Explora tus hábitos de atención, organización y autorregulación mediante una experiencia interactiva diseñada para ayudarte a conocerte mejor.": "Explore your attention, organization and self-regulation habits through an interactive experience designed to help you understand yourself better.",
+  "Comienza tu experiencia": "Start your experience",
+  "Accede a tu cuenta o crea una nueva en pocos pasos.": "Sign in or create an account in just a few steps.",
+  "Bienvenido a NeuroEval": "Welcome to NeuroEval",
+  "Ingresa tus datos para continuar.": "Enter your details to continue.",
+  "Iniciar sesión": "Sign in",
+  "Crear cuenta": "Create account",
+  "Correo electrónico": "Email address",
+  "Contraseña": "Password",
+  "Ingresar a mi cuenta →": "Sign in →",
+  "¿Olvidaste tu contraseña?": "Forgot your password?",
+  "Nombre completo": "Full name",
+  "Crea una contraseña": "Create a password",
+  "Edad": "Age",
+  "Objetivo": "Goal",
+  "Seleccionar": "Select",
+  "Explorar atención": "Explore attention",
+  "Concentración": "Focus",
+  "Debes aceptar el aviso de privacidad.": "You must accept the privacy notice.",
+  "Tu cuenta": "Your account",
+  "Mi perfil": "My profile",
+  "Consulta la información asociada a tu cuenta.": "Review the information associated with your account.",
+  "Nombre": "Name",
+  "País (opcional)": "Country (optional)",
+  "Ciudad (opcional)": "City (optional)",
+  "Idioma preferido": "Preferred language",
+  "Guardar preferencias regionales": "Save regional preferences",
+  "La ciudad y el país son voluntarios. Se utilizan en estadísticas agregadas y no para localizarte individualmente.": "City and country are optional. They are used for aggregated statistics, not to locate you individually.",
+  "Volver a mis pruebas": "Back to my assessments",
+  "Guardando preferencias…": "Saving preferences…",
+  "Preferencias regionales guardadas.": "Regional preferences saved.",
+  "Nunca": "Never",
+  "Rara vez": "Rarely",
+  "A veces": "Sometimes",
+  "Con frecuencia": "Often",
+  "Casi siempre": "Almost always",
+  "Finalizar evaluación": "Finish assessment",
+  "Siguiente →": "Next →",
+  "Anterior": "Previous",
+  "Memoria inmediata": "Immediate memory",
+  "Atención sostenida": "Sustained attention",
+  "Búsqueda visual": "Visual search",
+  "Organización y planificación": "Organization and planning",
+  "Inquietud e impulsividad": "Restlessness and impulsivity",
+  "Regulación emocional": "Emotional regulation",
+  "Estrés y descanso": "Stress and rest",
+  "Impacto cotidiano": "Everyday impact",
+  "Historia y contexto": "History and context",
+  "Recuerdo de palabras": "Word recall",
+  "Memoria de secuencias": "Sequence memory",
+  "Recuerdo de números": "Number recall",
+  "Recuerdo de patrones": "Pattern recall",
+  "Recuerdo final de palabras": "Final word recall",
+  "Memoriza estas tres palabras. Más adelante te pediremos recordarlas.": "Memorize these three words. We will ask you to recall them later.",
+  "Cuando lees, estudias o trabajas, ¿pierdes el hilo aunque quieras prestar atención?": "When reading, studying or working, do you lose track even when you want to pay attention?",
+  "Cuenta cuántas estrellas aparecen entre los símbolos.": "Count how many stars appear among the symbols.",
+  "¿Te cuesta dividir una tarea grande en pasos y decidir por dónde empezar?": "Do you find it difficult to break a large task into steps and decide where to start?",
+  "Memoriza estos números en el mismo orden. Más adelante tendrás que seleccionarlos.": "Memorize these numbers in the same order. You will select them later.",
+  "¿Sientes inquietud física o necesidad de moverte cuando debes permanecer sentado?": "Do you feel physically restless or need to move when you have to remain seated?",
+  "¿Qué color aparece más veces en esta secuencia?": "Which color appears most often in this sequence?",
+  "¿Una frustración pequeña puede provocarte una reacción emocional intensa o difícil de regular?": "Can a small frustration trigger an intense or difficult-to-regulate emotional reaction?",
+  "¿Qué grupo contiene exactamente las tres palabras que memorizaste al comienzo?": "Which group contains exactly the three words you memorized at the beginning?",
+  "¿Notas que tu concentración empeora cuando duermes poco o descansas mal?": "Does your concentration get worse when you sleep too little or rest poorly?",
+  "¿Postergas tareas importantes aunque tengas claro que debes hacerlas?": "Do you put off important tasks even when you know you need to do them?",
+  "Memoriza el orden de estos símbolos. Más adelante tendrás que reconocer la secuencia exacta.": "Memorize the order of these symbols. You will need to recognize the exact sequence later.",
+  "¿Estas experiencias dificultan tus estudios, trabajo, tareas domésticas o relaciones?": "Do these experiences make studying, working, household tasks or relationships more difficult?",
+  "¿Cuál era la secuencia numérica que viste anteriormente?": "What was the number sequence you saw earlier?",
+  "¿Actúas o respondes rápidamente y luego piensas que habrías preferido hacer una pausa?": "Do you act or respond quickly and later wish you had paused first?",
+  "¿Recuerdas que algunas de estas dificultades ya estaban presentes antes de los 12 años?": "Do you remember some of these difficulties being present before age 12?",
+  "Cuenta cuántos círculos negros aparecen en la secuencia.": "Count how many black circles appear in the sequence.",
+  "Memoriza estas cuatro palabras. Después de varias actividades te preguntaremos por ellas.": "Memorize these four words. We will ask you about them after several activities.",
+  "¿Cuál era el orden exacto de los cuatro símbolos que memorizaste?": "What was the exact order of the four symbols you memorized?",
+  "¿La preocupación, tensión o ansiedad ocupa tu mente e interfiere con lo que estás haciendo?": "Do worry, tension or anxiety occupy your mind and interfere with what you are doing?",
+  "¿Te cuesta terminar una actividad cuando aparecen notificaciones, conversaciones o ruidos?": "Do you find it difficult to finish an activity when notifications, conversations or noise appear?",
+  "Cuenta cuántos triángulos aparecen en esta secuencia.": "Count how many triangles appear in this sequence.",
+  "¿Estas dificultades aparecen en más de un entorno, por ejemplo casa, estudio, trabajo o vida social?": "Do these difficulties occur in more than one setting, such as home, school, work or social life?",
+  "¿Te cuesta recuperar la calma cuando algo interrumpe tus planes?": "Do you find it difficult to regain your calm when something disrupts your plans?",
+  "¿Otras personas te han señalado dificultades de atención, organización, inquietud o impulsividad?": "Have other people pointed out difficulties with attention, organization, restlessness or impulsivity?",
+  "Al inicio de esta parte memorizaste cuatro palabras. ¿Cuál es el grupo exacto?": "At the beginning of this section, you memorized four words. Which group is exact?",
+  "Ya memoricé la secuencia": "I memorized the sequence",
+  "Ya memoricé los números": "I memorized the numbers",
+  "Ya memoricé las palabras": "I memorized the words",
+  "Por ejemplo: relees el mismo párrafo varias veces y al final no recuerdas qué decía.": "For example: you reread the same paragraph several times and still cannot remember what it said.",
+  "Por ejemplo: tienes varias cosas pendientes y no sabes cómo ordenarlas.": "For example: you have several pending tasks and do not know how to organize them.",
+  "Observa cuánto tarda en bajar la intensidad de la emoción.": "Notice how long it takes for the intensity of the emotion to decrease.",
+  "Compara tus días descansados con los días de poco sueño.": "Compare well-rested days with days when you sleep little.",
+  "No se trata de pereza: observa si te cuesta iniciar o sostener el primer paso.": "This is not about laziness: notice whether starting or maintaining the first step is difficult.",
+  "Responde pensando en consecuencias concretas y repetidas.": "Answer by thinking about specific, recurring consequences.",
+  "Selecciona los cuatro números en el mismo orden.": "Select the four numbers in the same order.",
+  "Piensa en recuerdos escolares, familiares o relatos de personas cercanas.": "Think about school or family memories, or accounts from people close to you.",
+  "Elige la secuencia que viste, en el mismo orden.": "Choose the sequence you saw, in the same order.",
+  "Por ejemplo: intentas trabajar, pero sigues pensando en un problema.": "For example: you try to work, but keep thinking about a problem.",
+  "Piensa en lo que ocurre cuando intentas concentrarte y algo interrumpe tu tarea.": "Think about what happens when you try to focus and something interrupts your task.",
+  "No tienen que presentarse igual en todos los lugares.": "They do not have to appear in the same way in every setting.",
+  "Piensa en cambios inesperados o tareas que no salen como esperabas.": "Think about unexpected changes or tasks that do not go as planned.",
+  "Considera comentarios respetuosos de personas que te conocen bien.": "Consider thoughtful feedback from people who know you well.",
+  "Elige la secuencia que recuerdes, sin volver atrás.": "Choose the sequence you remember without going back.",
+  "Observa y memoriza estos elementos. No los anotes: te preguntaremos por ellos más adelante.": "Observe and memorize these items. Do not write them down: we will ask you about them later.",
+  "Piensa en una situación habitual de tu vida cotidiana.": "Think of a typical situation in your everyday life.",
+  "¡Vas muy bien! Sigue a tu ritmo; cada respuesta ayuda a construir una imagen más completa.": "You are doing great! Keep your own pace; every answer helps build a more complete picture.",
+  "¡Ya superaste la mitad! Mantén la concentración: estás avanzando muy bien.": "You are past the halfway point! Stay focused; you are making great progress.",
+  "¡Último tramo! Ya falta poco. Respira y responde con tranquilidad.": "Final stretch! You are almost there. Breathe and answer calmly.",
+  "¡Casi terminamos! Una respuesta honesta es más útil que intentar elegir la respuesta perfecta.": "Almost done! An honest answer is more useful than trying to choose the perfect answer.",
+  "Tómate tu tiempo. Responde pensando en lo que suele ocurrirte, no en un día excepcional.": "Take your time. Think about what usually happens to you, not an unusual day."
+};
+const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
+
+function translateUiText(value) {
+  const source = String(value ?? "");
+  const trimmed = source.trim();
+  if (!trimmed) return source;
+  const translated = currentLanguage === "en"
+    ? (uiTranslations[trimmed] || trimmed)
+    : (reverseUiTranslations[trimmed] || trimmed);
+  if (translated === trimmed) return source;
+  const leading = source.match(/^\\s*/)?.[0] || "";
+  const trailing = source.match(/\\s*$/)?.[0] || "";
+  return leading + translated + trailing;
+}
+
+function applyLanguageToDom(root = document.body) {
+  if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || ["SCRIPT","STYLE","NOSCRIPT","TEXTAREA"].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const translated = translateUiText(node.nodeValue);
+    if (translated !== node.nodeValue) node.nodeValue = translated;
+  });
+  root.querySelectorAll?.("input[placeholder],textarea[placeholder]").forEach(element => {
+    const translated = translateUiText(element.getAttribute("placeholder"));
+    if (translated !== element.getAttribute("placeholder")) element.setAttribute("placeholder", translated);
+  });
+  root.querySelectorAll?.("option").forEach(element => {
+    const translated = translateUiText(element.textContent);
+    if (translated !== element.textContent) element.textContent = translated;
+  });
+}
+
+function setLanguage(language, options = {}) {
+  currentLanguage = language === "en" ? "en" : "es";
+  try { localStorage.setItem("neuroeval-language", currentLanguage); } catch (_) {}
+  document.documentElement.lang = currentLanguage;
+  const selector = $("global-language");
+  if (selector) selector.value = currentLanguage;
+  applyLanguageToDom();
+  if (options.persist && currentUser && !currentIsAdmin) {
+    profileData = { ...(profileData || {}), language: currentLanguage };
+    api("/api/profile", {
+      method: "POST",
+      body: JSON.stringify({ ...(profileData || {}), language: currentLanguage })
+    }).catch(error => console.warn("No se pudo sincronizar el idioma del perfil:", error));
+  }
+}
+
+function preferredLanguage(profileLanguage) {
+  if (profileLanguage === "en" || profileLanguage === "es") return profileLanguage;
+  try {
+    const saved = localStorage.getItem("neuroeval-language");
+    if (saved === "en" || saved === "es") return saved;
+  } catch (_) {}
+  return (navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es";
+}
+
+let languageDomObserver = null;
+function startLanguageObserver() {
+  if (languageDomObserver || !document.body) return;
+  languageDomObserver = new MutationObserver(records => {
+    records.forEach(record => {
+      if (record.type === "characterData") {
+        const translated = translateUiText(record.target.nodeValue);
+        if (translated !== record.target.nodeValue) record.target.nodeValue = translated;
+      }
+      record.addedNodes?.forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const translated = translateUiText(node.nodeValue);
+          if (translated !== node.nodeValue) node.nodeValue = translated;
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          applyLanguageToDom(node);
+        }
+      });
+    });
+  });
+  languageDomObserver.observe(document.body, { childList: true, characterData: true, subtree: true });
+}
+
 const choices = [
   "Nunca",
   "Rara vez",
@@ -703,6 +916,8 @@ async function handleAuthState(user) {
         body: JSON.stringify(profileData)
       });
     }
+
+    setLanguage(preferredLanguage(profileData.language));
 
     // Si la pasarela devolvió al usuario a la plataforma, consultar primero
     // si existe una evaluación pendiente de pago.
@@ -1381,6 +1596,18 @@ async function startQuiz(name, age, goal) {
 }
 
 function renderQuestion() {
+  if (currentLanguage === "en") {
+    const question = questions[currentIndex];
+    const localized = question.map(value => value);
+    localized[0] = translateUiText(localized[0]);
+    localized[1] = translateUiText(localized[1]);
+    localized[4] = translateUiText(localized[4]);
+    if (Array.isArray(localized[6])) localized[6] = localized[6].map(translateUiText);
+    questions[currentIndex] = localized;
+    activeChoices = choices.map(translateUiText);
+  } else {
+    activeChoices = choices;
+  }
   const question = questions[currentIndex];
   const percentage = Math.round(((currentIndex + 1) / questions.length) * 100);
   const progress = (currentIndex + 1) / questions.length;
@@ -2789,6 +3016,14 @@ async function logout() {
 ========================================================= */
 
 function registerEventListeners() {
+  const languageSelect = $("global-language");
+  if (languageSelect) {
+    languageSelect.value = preferredLanguage();
+    setLanguage(languageSelect.value);
+    languageSelect.addEventListener("change", () => setLanguage(languageSelect.value, { persist: true }));
+  }
+  startLanguageObserver();
+
   $("show-login").addEventListener("click", () => switchAuth("login"));
   $("show-register").addEventListener("click", () => switchAuth("register"));
 
