@@ -846,6 +846,8 @@ const uiTranslations = {
   "Esta orientación no es un diagnóstico ni sustituye la valoración de profesionales.": "This guidance is not a diagnosis and does not replace professional assessment.",
   "Autorización expresa para datos sensibles": "Explicit authorization for sensitive data",
   "Datos sensibles relacionados con salud, atención y bienestar cognitivo": "Sensitive data related to health, attention and cognitive well-being",
+  "Retirar autorización de datos sensibles": "Withdraw sensitive-data consent",
+  "Retirar autorización de datos sensibles.": "Withdraw sensitive-data consent.",
 
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
@@ -3956,9 +3958,16 @@ function registerEventListeners() {
     if (type === "deletion" && !window.confirm(currentLanguage === "en"
       ? "This records a deletion review request; it does not immediately delete your account or records. Continue?"
       : "Esto registra una solicitud de revisión de eliminación; no borra inmediatamente tu cuenta ni tus registros. ¿Continuar?")) return;
+    if (type === "withdraw_consent" && !window.confirm(currentLanguage === "en"
+      ? "This immediately blocks future assessments that require sensitive data consent. It does not automatically delete previously collected records; those will be reviewed separately. Continue?"
+      : "Esto bloquea de inmediato nuevas evaluaciones que requieran autorización de datos sensibles. No elimina automáticamente los registros anteriores; estos se revisarán por separado. ¿Continuar?")) return;
     status.textContent = currentLanguage === "en" ? "Submitting your request…" : "Enviando tu solicitud…";
     try {
       await api("/api/privacy/requests", { method: "POST", body: JSON.stringify({ type }) });
+      if (type === "withdraw_consent") {
+        profileData = { ...(profileData || {}), sensitiveDataConsentVersion: "" };
+        delete profileData.sensitiveDataConsent;
+      }
       status.textContent = currentLanguage === "en" ? "Your privacy request was recorded for review." : "Tu solicitud de privacidad quedó registrada para revisión.";
     } catch (error) { status.textContent = error.message; }
   });
