@@ -3,21 +3,42 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
-const { calculateEvaluationOnServer } = require("../lib/evaluation");
-const { calculateParentEvaluation } = require("../lib/parent-evaluation");
+const { calculateEvaluationOnServer, EVALUATION_BANK, EVALUATION_CHOICES } = require("../lib/evaluation");
+const { calculateParentEvaluation, PARENT_QUESTIONS } = require("../lib/parent-evaluation");
 const { decideWompiTransition } = require("../lib/payment-state");
 const { validateWompiSignature } = require("../lib/wompi-signature");
 
-test("self-assessment rejects missing or malformed answer sets", () => {
+function validSelfAnswers() {
+  return EVALUATION_BANK.map(([, question, , , , type, options, correctAnswer]) => ({
+    question,
+    answer: type === "task" ? correctAnswer : type === "study" ? options[0] : EVALUATION_CHOICES[0]
+  }));
+}
+
+function validFamilyAnswers() {
+  return PARENT_QUESTIONS.map(([, question]) => ({ question, answer: "Nunca" }));
+}
+
+test("self-assessment rejects missing answers and accepts canonical answer values", () => {
   assert.ok(calculateEvaluationOnServer([]).error);
   assert.ok(calculateEvaluationOnServer(null).error);
+  const result = calculateEvaluationOnServer(validSelfAnswers());
+  assert.equal(result.error, undefined);
+  assert.ok(result.scores);
+  assert.equal(result.answers.length, EVALUATION_BANK.length);
 });
 
-test("family observation rejects missing answers and unauthorized context", () => {
-  assert.ok(calculateParentEvaluation([], {}).error);
-  assert.ok(calculateParentEvaluation([], {
+test("family observation rejects unauthorized context and accepts an adult caregiver's authorization", () => {
+  const answers = validFamilyAnswers();
+  assert.ok(calculateParentEvaluation(answers, {
     childAge: 10, relationship: "Madre", settings: ["casa"], consent: false
   }).error);
+  const result = calculateParentEvaluation(answers, {
+    childAge: 10, relationship: "Madre", settings: ["casa", "colegio"], consent: true
+  });
+  assert.equal(result.error, undefined);
+  assert.equal(result.parentContext.ageBand, "8–12 años");
+  assert.equal(result.answers.length, PARENT_QUESTIONS.length);
 });
 
 test("Wompi approval changes a pending evaluation to paid", () => {
@@ -37,7 +58,6 @@ test("Wompi ignores a different transaction and duplicate paid notifications", (
     { status: "APPROVED", transactionId: "tx-other" }
   );
   assert.equal(mismatch.ignored, true);
-
   const duplicate = decideWompiTransition(
     { paymentStatus: "paid", wompiTransactionId: "tx-original" },
     { status: "APPROVED", transactionId: "tx-original" }
