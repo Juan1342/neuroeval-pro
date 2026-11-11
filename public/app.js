@@ -754,7 +754,8 @@ const uiTranslations = {
   "No se pudo consultar la analítica internacional.": "Could not retrieve international analytics.",
   "Todavía no hay grupos con suficientes usuarios para mostrarlos.": "There are not yet enough users in any group to display them.",
   "Usuarios agrupados por país": "Users grouped by country",
-  "Aún no hay grupos de países que puedan ubicarse": "There are no mappable country groups yet."
+  "Aún no hay grupos de países que puedan ubicarse": "There are no mappable country groups yet.",
+  " años": " years"
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
@@ -769,7 +770,7 @@ function translateUiText(value) {
   if (translated === trimmed) {
     const entries = currentLanguage === "en" ? UI_TRANSLATION_ENTRIES : UI_REVERSE_ENTRIES;
     entries.forEach(([from,to]) => {
-      if (from.length >= 12 && translated.includes(from)) translated = translated.split(from).join(to);
+      if (from.length >= 5 && translated.includes(from)) translated = translated.split(from).join(to);
     });
   }
   if (translated === trimmed) return source;
