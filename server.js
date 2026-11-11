@@ -10,7 +10,8 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const { getApps, initializeApp, cert, applicationDefault } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
-const { getFirestore, FieldValue, AggregateField } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue, FieldPath, AggregateField } = require("firebase-admin/firestore");
+const { aggregateProfiles } = require("./lib/global-analytics");
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const https = require("https");
@@ -3044,41 +3045,76 @@ app.get(
 /* Caché breve para evitar repetir lecturas de hasta 10.000 perfiles en cada apertura del panel. */
 let globalAnalyticsCache = null;
 const GLOBAL_ANALYTICS_CACHE_TTL_MS = 5 * 60 * 1000;
+const GLOBAL_ANALYTICS_PAGE_SIZE = 1000;
+const GLOBAL_ANALYTICS_MAX_USERS = 50000;
 
-/* Estadísticas geográficas y demográficas agregadas. Sin PII ni respuestas. */
+/*
+ * Lee únicamente los campos necesarios para analítica agregada.
+ * Paginación por document ID evita el límite silencioso de 10.000 perfiles.
+ * El límite de seguridad evita una lectura ilimitada en una sola petición.
+ */
 app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard.view"), async (req, res) => {
   try {
     if (globalAnalyticsCache && Date.now() - globalAnalyticsCache.cachedAt < GLOBAL_ANALYTICS_CACHE_TTL_MS) {
       return res.json({ ...globalAnalyticsCache.payload, cached: true });
     }
-    const snapshot = await db.collection("users").limit(10000).get();
-    const buckets = { countries:new Map(), cities:new Map(), ages:new Map(), languages:new Map() };
-    const add = (map, value) => { const label=String(value||"Sin dato").trim().slice(0,100)||"Sin dato"; map.set(label,(map.get(label)||0)+1); };
-    const ageLabel = age => { const n=Number(age); if(!Number.isInteger(n)||n<18||n>99)return "Sin dato"; if(n<=24)return "18–24"; if(n<=34)return "25–34"; if(n<=44)return "35–44"; if(n<=54)return "45–54"; return "55+"; };
-    snapshot.docs.forEach(doc => {
-      const u=doc.data()||{};
-      const country=cleanText(u.country,80)||(u.detectedCountryCode?String(u.detectedCountryCode):"Sin dato");
-      add(buckets.countries,country);
-      if(u.city&&country!=="Sin dato")add(buckets.cities,cleanText(u.city,100)+", "+country);
-      add(buckets.ages,ageLabel(u.age));
-      add(buckets.languages,u.language==="en"?"English":u.language==="es"?"Español":"Sin dato");
-    });
-    const countryCodes = {"colombia":"CO","united states":"US","united states of america":"US","estados unidos":"US","estados unidos de america":"US","usa":"US","canada":"CA","mexico":"MX","brazil":"BR","brasil":"BR","argentina":"AR","chile":"CL","peru":"PE","ecuador":"EC","venezuela":"VE","panama":"PA","costa rica":"CR","guatemala":"GT","dominican republic":"DO","republica dominicana":"DO","spain":"ES","espana":"ES","united kingdom":"GB","reino unido":"GB","france":"FR","francia":"FR","germany":"DE","alemania":"DE","italy":"IT","italia":"IT","portugal":"PT","netherlands":"NL","paises bajos":"NL","switzerland":"CH","suiza":"CH","ireland":"IE","irlanda":"IE","australia":"AU","new zealand":"NZ","nueva zelanda":"NZ","japan":"JP","japon":"JP","south korea":"KR","corea del sur":"KR","china":"CN","india":"IN","singapore":"SG","singapur":"SG","united arab emirates":"AE","emiratos arabes unidos":"AE","saudi arabia":"SA","arabia saudita":"SA","south africa":"ZA","sudafrica":"ZA","nigeria":"NG","kenya":"KE","kenia":"KE","egypt":"EG","egipto":"EG","sweden":"SE","suecia":"SE","norway":"NO","noruega":"NO","denmark":"DK","dinamarca":"DK","finland":"FI","finlandia":"FI","poland":"PL","polonia":"PL","ukraine":"UA","ucrania":"UA","turkey":"TR","turquia":"TR","israel":"IL","thailand":"TH","tailandia":"TH","indonesia":"ID","philippines":"PH","filipinas":"PH","pakistan":"PK"};
-    const normalizeCountry = value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
-    const countryRows = [...buckets.countries.entries()].filter(([,count])=>count>=10).map(([label,count])=>{
-      const raw=normalizeCountry(label);
-      const code=/^[a-z]{2}$/i.test(label) ? label.toUpperCase() : countryCodes[raw] || "";
-      return {label,count,code};
-    }).sort((a,b)=>b.count-a.count);
-    const safeRows=map=>[...map.entries()].filter(([,count])=>count>=10).map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count);
+
+    const profiles = [];
+    const usersCollection = db.collection("users");
+    let cursor = null;
+    let hasMore = false;
+
+    while (profiles.length < GLOBAL_ANALYTICS_MAX_USERS) {
+      let query = usersCollection
+        .orderBy(FieldPath.documentId())
+        .select("country", "city", "detectedCountryCode", "age", "language")
+        .limit(Math.min(GLOBAL_ANALYTICS_PAGE_SIZE, GLOBAL_ANALYTICS_MAX_USERS - profiles.length));
+      if (cursor) query = query.startAfter(cursor);
+      const page = await query.get();
+      if (page.empty) {
+        hasMore = false;
+        break;
+      }
+      profiles.push(...page.docs.map(document => document.data() || {}));
+      cursor = page.docs[page.docs.length - 1];
+      if (page.size < GLOBAL_ANALYTICS_PAGE_SIZE) {
+        hasMore = false;
+        break;
+      }
+      hasMore = profiles.length >= GLOBAL_ANALYTICS_MAX_USERS;
+    }
+
+    if (profiles.length >= GLOBAL_ANALYTICS_MAX_USERS && cursor) {
+      const next = await usersCollection
+        .orderBy(FieldPath.documentId())
+        .select("country")
+        .startAfter(cursor)
+        .limit(1)
+        .get();
+      hasMore = !next.empty;
+    }
+
+    const aggregates = aggregateProfiles(profiles, 10);
     const payload = {
-      ok:true,generatedAt:new Date().toISOString(),users:snapshot.size,truncated:snapshot.size>=10000,privacyThreshold:10,
-      countries:countryRows,cities:safeRows(buckets.cities),ages:safeRows(buckets.ages),
-      languages:safeRows(buckets.languages),cached:false
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      users: profiles.length,
+      scannedUsers: profiles.length,
+      truncated: hasMore,
+      aggregationMode: "paginated_profile_scan",
+      privacyThreshold: 10,
+      countries: aggregates.countries,
+      cities: aggregates.cities,
+      ages: aggregates.ages,
+      languages: aggregates.languages,
+      cached: false
     };
-    globalAnalyticsCache = { cachedAt:Date.now(), payload };
+    globalAnalyticsCache = { cachedAt: Date.now(), payload };
     return res.json(payload);
-  } catch(error) { console.error("Analítica global:",error); return sendError(res,500,"No se pudo calcular la analítica geográfica."); }
+  } catch (error) {
+    console.error("Analítica global:", error);
+    return sendError(res, 500, "No se pudo calcular la analítica geográfica.");
+  }
 });
 
 /* Analítica comercial consolidada: acceso exclusivo a personal con permiso de pagos. */
