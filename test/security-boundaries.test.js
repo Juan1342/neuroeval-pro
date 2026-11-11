@@ -186,6 +186,6 @@ test("global analytics is admin-only, minimized and suppresses small groups", ()
   assert.match(route, /aggregateProfiles\(profiles, 10\)/);
   assert.match(route, /privacyThreshold: 10/);
   assert.doesNotMatch(route, /customerEmail|answers|recommendations|profileDescription/);
-  assert.match(route, /GLOBAL_ANALYTICS_MAX_USERS = 50000/);
+  assert.match(server, /GLOBAL_ANALYTICS_MAX_USERS = 50000/);
   assert.match(route, /truncated: hasMore/);
 });
