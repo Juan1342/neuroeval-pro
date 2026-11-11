@@ -39,7 +39,8 @@ test("uses detected country code only when voluntary country is absent", () => {
     country: "", detectedCountryCode: "GB", age: 40, language: "en"
   })));
   assert.equal(result.countries[0].code, "GB");
-  assert.equal(result.countries[0].label, "GB");
+  assert.equal(result.countries[0].label, "Reino Unido");
+  assert.equal(result.countries[0].labelEn, "United Kingdom");
 });
 
 test("caps the number of returned city groups for bounded cache documents", () => {
