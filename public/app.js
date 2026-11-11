@@ -826,6 +826,7 @@ const uiTranslations = {
   "Este cliente todavía no tiene evaluaciones.": "This client does not have any assessments yet.",
   "Este expediente muestra datos de perfil y metadatos de evaluaciones. Las respuestas clínicas y los informes completos mantienen sus permisos independientes.": "This record shows profile data and assessment metadata. Assessment answers and full reports have separate access permissions.",
   "Cargando información protegida…": "Loading protected information…",
+  "Por ejemplo: mueves manos o pies, cambias de postura o te levantas.": "For example: you move your hands or feet, change posture, or stand up.",
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
