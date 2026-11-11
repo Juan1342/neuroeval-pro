@@ -1596,8 +1596,9 @@ async function startQuiz(name, age, goal) {
 }
 
 function renderQuestion() {
+  const sourceQuestion = questions[currentIndex];
   const question = currentLanguage === "en"
-    ? questions[currentIndex].map((value, index) => {
+    ? sourceQuestion.map((value, index) => {
         if (index === 6 && Array.isArray(value)) return value.map(translateUiText);
         return typeof value === "string" ? translateUiText(value) : value;
       })
@@ -1606,7 +1607,9 @@ function renderQuestion() {
   const percentage = Math.round(((currentIndex + 1) / questions.length) * 100);
   const progress = (currentIndex + 1) / questions.length;
 
-  $("progress-label").textContent = `Pregunta ${currentIndex + 1} de ${questions.length}`;
+  $("progress-label").textContent = currentLanguage === "en"
+    ? `Question ${currentIndex + 1} of ${questions.length}`
+    : `Pregunta ${currentIndex + 1} de ${questions.length}`;
   $("progress-pct").textContent = `${percentage}%`;
   $("progress-bar").style.width = `${percentage}%`;
   $("q-category").textContent = question[0];
@@ -1615,7 +1618,7 @@ function renderQuestion() {
   $("q-example").textContent = question[4] || "Piensa en una situación habitual de tu vida cotidiana.";
   $("prev-question").disabled = currentIndex === 0;
 
-  const encouragement = progress < 0.25
+  const encouragement = translateUiText(progress < 0.25
     ? "Tómate tu tiempo. Responde pensando en lo que suele ocurrirte, no en un día excepcional."
     : progress < 0.5
       ? "¡Vas muy bien! Sigue a tu ritmo; cada respuesta ayuda a construir una imagen más completa."
@@ -1623,20 +1626,21 @@ function renderQuestion() {
         ? "¡Ya superaste la mitad! Mantén la concentración: estás avanzando muy bien."
         : progress < 0.92
           ? "¡Último tramo! Ya falta poco. Respira y responde con tranquilidad."
-          : "¡Casi terminamos! Una respuesta honesta es más útil que intentar elegir la respuesta perfecta.";
+          : "¡Casi terminamos! Una respuesta honesta es más útil que intentar elegir la respuesta perfecta.");
   $("quiz-encouragement").textContent = encouragement;
 
   const answersContainer = $("answers");
   answersContainer.innerHTML = "";
   const isInteractive = question[5] === "task" || question[5] === "study";
   const options = isInteractive ? question[6] : activeChoices;
+  const answerValues = isInteractive ? sourceQuestion[6] : activeChoices;
   $("q-example").classList.toggle("memory-stimulus", question[5] === "study");
   if (question[5] === "study") {
-    $("q-text").textContent = "Observa y memoriza estos elementos. No los anotes: te preguntaremos por ellos más adelante.";
+    $("q-text").textContent = translateUiText("Observa y memoriza estos elementos. No los anotes: te preguntaremos por ellos más adelante.");
     $("q-example").textContent = question[4];
   }
   options.forEach((label, index) => {
-    const value = isInteractive ? label : index;
+    const value = isInteractive ? answerValues[index] : index;
     const selected = answers[currentIndex] === value;
     const button = document.createElement("button");
     button.type = "button";
