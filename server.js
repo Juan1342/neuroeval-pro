@@ -2559,10 +2559,19 @@ app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard
       add(buckets.ages,ageLabel(u.age));
       add(buckets.languages,u.language==="en"?"English":u.language==="es"?"Español":"Sin dato");
     });
+    const countryCodes = {
+      "colombia":"CO","united states":"US","estados unidos":"US","usa":"US","canada":"CA","canadá":"CA","mexico":"MX","méxico":"MX","brazil":"BR","brasil":"BR","argentina":"AR","chile":"CL","peru":"PE","perú":"PE","ecuador":"EC","venezuela":"VE","panama":"PA","panamá":"PA","costa rica":"CR","guatemala":"GT","dominican republic":"DO","república dominicana":"DO","spain":"ES","españa":"ES","united kingdom":"GB","reino unido":"GB","france":"FR","francia":"FR","germany":"DE","alemania":"DE","italy":"IT","italia":"IT","portugal":"PT","netherlands":"NL","países bajos":"NL","switzerland":"CH","suiza":"CH","ireland":"IE","irlanda":"IE","australia":"AU","new zealand":"NZ","nueva zelanda":"NZ","japan":"JP","japón":"JP","south korea":"KR","corea del sur":"KR","china":"CN","india":"IN","singapore":"SG","singapur":"SG","united arab emirates":"AE","emiratos árabes unidos":"AE","saudi arabia":"SA","arabia saudita":"SA","south africa":"ZA","sudáfrica":"ZA","nigeria":"NG","kenya":"KE","kenia":"KE","egypt":"EG","egipto":"EG","sweden":"SE","suecia":"SE","norway":"NO","noruega":"NO","denmark":"DK","dinamarca":"DK","finland":"FI","finlandia":"FI","poland":"PL","polonia":"PL","ukraine":"UA","ucrania":"UA","turkey":"TR","turquía":"TR","israel":"IL","thailand":"TH","tailandia":"TH","indonesia":"ID","philippines":"PH","filipinas":"PH","pakistan":"PK","pakistán":"PK"
+    };
+    const normalizeCountry = value => String(value || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().trim();
+    const countryRows = [...buckets.countries.entries()].filter(([,count])=>count>=10).map(([label,count])=>{
+      const raw=normalizeCountry(label);
+      const code=/^[a-z]{2}$/i.test(label) ? label.toUpperCase() : countryCodes[raw] || "";
+      return {label,count,code};
+    }).sort((a,b)=>b.count-a.count);
     const safeRows=map=>[...map.entries()].filter(([,count])=>count>=10).map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count);
     const payload = {
       ok:true,generatedAt:new Date().toISOString(),users:snapshot.size,truncated:snapshot.size>=10000,privacyThreshold:10,
-      countries:safeRows(buckets.countries),cities:safeRows(buckets.cities),ages:safeRows(buckets.ages),
+      countries:countryRows,cities:safeRows(buckets.cities),ages:safeRows(buckets.ages),
       languages:safeRows(buckets.languages),cached:false
     };
     globalAnalyticsCache = { cachedAt:Date.now(), payload };
