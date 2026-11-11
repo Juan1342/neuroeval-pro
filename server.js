@@ -12,7 +12,7 @@ const { getApps, initializeApp, cert, applicationDefault } = require("firebase-a
 const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue, FieldPath, AggregateField } = require("firebase-admin/firestore");
 const { aggregateProfiles } = require("./lib/global-analytics");
-const { PRIVACY_NOTICE_VERSION, validatePrivacyConsent, buildParentConsentRecord } = require("./lib/privacy");
+const { PRIVACY_NOTICE_VERSION, validatePrivacyConsent, validateSensitiveDataConsent, buildParentConsentRecord } = require("./lib/privacy");
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const https = require("https");
@@ -889,8 +889,12 @@ app.post("/api/profile", requireUser, async (req, res) => {
     const requestedLanguage = String(req.body.language || "").toLowerCase();
     const language = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : "es";
     const requestedConsent = req.body.privacyConsent;
+    const requestedSensitiveConsent = req.body.sensitiveDataConsent;
     if (requestedConsent !== undefined && !validatePrivacyConsent(requestedConsent)) {
       return sendError(res, 400, "El consentimiento de privacidad no es válido o está desactualizado.");
+    }
+    if (requestedSensitiveConsent !== undefined && !validateSensitiveDataConsent(requestedSensitiveConsent)) {
+      return sendError(res, 400, "La autorización expresa para datos sensibles no es válida o está desactualizada.");
     }
     if (!name) return sendError(res, 400, "El nombre es obligatorio.");
     if (age !== null && (!Number.isInteger(age) || age < 18 || age > 99)) return sendError(res, 400, "La edad no es válida.");
@@ -914,6 +918,11 @@ app.post("/api/profile", requireUser, async (req, res) => {
       profile.privacyConsentLanguage = requestedConsent.language;
       profile.privacyConsentAt = FieldValue.serverTimestamp();
     }
+    if (requestedSensitiveConsent) {
+      profile.sensitiveDataConsentVersion = PRIVACY_NOTICE_VERSION_ACTIVE;
+      profile.sensitiveDataConsentLanguage = requestedSensitiveConsent.language;
+      profile.sensitiveDataConsentAt = FieldValue.serverTimestamp();
+    }
     await userRef.set(profile, { merge: true });
     if (requestedConsent) {
       await userRef.collection("privacyConsents").doc(PRIVACY_NOTICE_VERSION_ACTIVE).set({
@@ -921,6 +930,15 @@ app.post("/api/profile", requireUser, async (req, res) => {
         accepted: true,
         language: requestedConsent.language,
         scope: "account_and_self_assessment",
+        acceptedAt: FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+    if (requestedSensitiveConsent) {
+      await userRef.collection("sensitiveDataConsents").doc(PRIVACY_NOTICE_VERSION_ACTIVE).set({
+        version: PRIVACY_NOTICE_VERSION_ACTIVE,
+        accepted: true,
+        language: requestedSensitiveConsent.language,
+        scope: "sensitive_health_related_assessment_data",
         acceptedAt: FieldValue.serverTimestamp()
       }, { merge: true });
     }
@@ -1049,10 +1067,16 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
     const evaluationType = body.evaluationType === "parent_observation" ? "parent_observation" : "self_report";
     const userProfileSnapshot = await db.collection("users").doc(req.user.uid).get();
     const userProfile = userProfileSnapshot.exists ? userProfileSnapshot.data() || {} : {};
-    const consentSnapshot = await db.collection("users").doc(req.user.uid)
-      .collection("privacyConsents").doc(PRIVACY_NOTICE_VERSION_ACTIVE).get();
+    const userRef = db.collection("users").doc(req.user.uid);
+    const [consentSnapshot, sensitiveConsentSnapshot] = await Promise.all([
+      userRef.collection("privacyConsents").doc(PRIVACY_NOTICE_VERSION_ACTIVE).get(),
+      userRef.collection("sensitiveDataConsents").doc(PRIVACY_NOTICE_VERSION_ACTIVE).get()
+    ]);
     if (!consentSnapshot.exists || consentSnapshot.data()?.accepted !== true) {
       return sendError(res, 428, "Antes de evaluar debes aceptar la versión vigente del aviso de privacidad.");
+    }
+    if (!sensitiveConsentSnapshot.exists || sensitiveConsentSnapshot.data()?.accepted !== true) {
+      return sendError(res, 428, "Antes de evaluar debes autorizar expresamente el tratamiento de datos sensibles.");
     }
 
     const calculated = evaluationType === "parent_observation"
