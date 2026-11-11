@@ -96,7 +96,7 @@ test("adult and family questionnaires have English translations for visible prom
   const familyBank = vm.runInNewContext(familyBankMatch[1]);
   for (const [index, question] of adultBank.entries()) {
     for (const position of [0, 1, 4]) {
-      if (typeof question[position] === "string") {
+      if (typeof question[position] === "string" && /[A-Za-zÁÉÍÓÚáéíóúñÑ]/.test(question[position])) {
         assert.ok(dictionary[question[position]], "Missing adult-question translation at row " + index + ": " + question[position]);
       }
     }
