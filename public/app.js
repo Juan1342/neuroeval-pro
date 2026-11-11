@@ -771,7 +771,9 @@ const uiTranslations = {
   "Acceso a mis datos": "Access my data",
   "Rectificar mis datos": "Correct my data",
   "Solicitar revisión de eliminación": "Request deletion review",
-  "La solicitud queda registrada para revisión; no elimina datos automáticamente. Algunos registros pueden estar sujetos a obligaciones legales o de pago.": "The request is recorded for review; it does not automatically delete data. Some records may be subject to legal or payment obligations."
+  "La solicitud queda registrada para revisión; no elimina datos automáticamente. Algunos registros pueden estar sujetos a obligaciones legales o de pago.": "The request is recorded for review; it does not automatically delete data. Some records may be subject to legal or payment obligations.",
+  "Solicitudes de privacidad": "Privacy requests",
+  "Bandeja restringida al administrador principal. Revisar no implica borrar automáticamente datos.": "Inbox restricted to the primary administrator. Reviewing a request does not automatically delete data."
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
@@ -1646,6 +1648,7 @@ function setAdminTab(tab) {
     settings: hasAdminPermission("settings.view"),
     health: hasAdminPermission("settings.view"),
     administrators: currentIsPrimaryAdmin,
+    privacy: currentIsPrimaryAdmin,
     audit: hasAdminPermission("audit.view"),
     support: hasAdminPermission("support.view")
   };
@@ -1669,6 +1672,7 @@ function setAdminTab(tab) {
   if (selected === "settings") loadAdminHealth();
   if (selected === "health") loadAdminHealthDetails();
   if (selected === "support") loadAdminSupportTickets();
+  if (selected === "privacy") loadAdminPrivacyRequests();
 }
 
 function showProfile() {
@@ -3181,6 +3185,75 @@ async function createCustomerSupportTicket(event) {
   }
 }
 
+async function loadAdminPrivacyRequests() {
+  const target = $("admin-privacy-list");
+  if (!target || !currentIsPrimaryAdmin) return;
+  target.textContent = currentLanguage === "en" ? "Loading privacy requests…" : "Cargando solicitudes de privacidad…";
+  try {
+    const response = await api("/api/admin/privacy-requests");
+    const data = await response.json();
+    renderAdminPrivacyRequests(Array.isArray(data.requests) ? data.requests : []);
+  } catch (error) {
+    target.textContent = (currentLanguage === "en" ? "Could not load privacy requests: " : "No se pudieron cargar las solicitudes: ") + error.message;
+  }
+}
+
+function renderAdminPrivacyRequests(requests) {
+  const target = $("admin-privacy-list");
+  if (!target) return;
+  target.replaceChildren();
+  if (!requests.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted-text";
+    empty.textContent = currentLanguage === "en" ? "There are no privacy requests." : "No hay solicitudes de privacidad.";
+    target.appendChild(empty);
+    return;
+  }
+  const typeLabels = currentLanguage === "en"
+    ? { access: "Access", rectification: "Correction", deletion: "Deletion review" }
+    : { access: "Acceso", rectification: "Rectificación", deletion: "Revisión de eliminación" };
+  const statusLabels = currentLanguage === "en"
+    ? { pending: "Pending", in_review: "In review", completed: "Completed", rejected: "Rejected" }
+    : { pending: "Pendiente", in_review: "En revisión", completed: "Atendida", rejected: "Rechazada" };
+  requests.forEach(request => {
+    const card = document.createElement("article");
+    card.className = "card space-y-3";
+    const title = document.createElement("strong");
+    title.textContent = (typeLabels[request.type] || request.type) + " · " + (statusLabels[request.status] || request.status);
+    const detail = document.createElement("p");
+    detail.className = "muted-text text-sm";
+    detail.textContent = (request.email || request.uid || "—") + " · " + formatAdminDate(request.createdAt);
+    const actions = document.createElement("div");
+    actions.className = "flex flex-wrap gap-2";
+    [
+      ["in_review", currentLanguage === "en" ? "Mark in review" : "Marcar en revisión"],
+      ["completed", currentLanguage === "en" ? "Mark completed" : "Marcar atendida"],
+      ["rejected", currentLanguage === "en" ? "Reject" : "Rechazar"]
+    ].forEach(([status, label]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn outline";
+      button.textContent = label;
+      button.disabled = request.status === status;
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          await api("/api/admin/privacy-requests/" + encodeURIComponent(request.id), {
+            method: "PATCH", body: JSON.stringify({ status })
+          });
+          await loadAdminPrivacyRequests();
+        } catch (error) {
+          button.disabled = false;
+          window.alert(error.message);
+        }
+      });
+      actions.appendChild(button);
+    });
+    card.append(title, detail, actions);
+    target.appendChild(card);
+  });
+}
+
 async function loadAdminSupportTickets() {
   const target = $("admin-support-list");
   if (!target || !hasAdminPermission("support.view")) return;
@@ -3862,6 +3935,7 @@ function registerEventListeners() {
   $("admin-health-details-refresh").addEventListener("click", loadAdminHealthDetails);
   $("admin-backup-export").addEventListener("click", exportAdminBackup);
   $("admin-support-refresh").addEventListener("click", loadAdminSupportTickets);
+  $("admin-privacy-refresh").addEventListener("click", loadAdminPrivacyRequests);
   $("admin-profile-open").addEventListener("click", showProfile);
 
   // Limpia el parámetro de retorno después de procesar la sesión.
