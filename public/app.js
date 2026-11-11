@@ -849,6 +849,7 @@ const uiTranslations = {
   "Retirar autorización de datos sensibles": "Withdraw sensitive-data consent",
   "Retirar autorización de datos sensibles.": "Withdraw sensitive-data consent.",
 
+  "El cobro se realiza en COP. Si tu tarjeta está en otra moneda, tu banco o emisor puede aplicar conversión y cargos adicionales.": "The charge is made in COP. If your card is in another currency, your bank or card issuer may apply conversion and additional fees.",
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
