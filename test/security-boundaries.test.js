@@ -189,3 +189,15 @@ test("global analytics is admin-only, minimized and suppresses small groups", ()
   assert.match(server, /GLOBAL_ANALYTICS_MAX_USERS = 50000/);
   assert.match(route, /truncated: hasMore/);
 });
+
+
+test("every static DOM ID referenced by the application exists exactly once", () => {
+  const htmlIds = [...html.matchAll(/\bid=["']([^"']+)["']/g)].map(match => match[1]);
+  const idCounts = new Map();
+  for (const id of htmlIds) idCounts.set(id, (idCounts.get(id) || 0) + 1);
+  const duplicates = [...idCounts.entries()].filter(([, count]) => count > 1).map(([id]) => id);
+  const references = [...new Set([...app.matchAll(/\$\(["']([^"']+)["']\)/g)].map(match => match[1]))];
+  const missing = references.filter(id => !idCounts.has(id));
+  assert.deepEqual(duplicates, []);
+  assert.deepEqual(missing, []);
+});
