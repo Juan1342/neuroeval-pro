@@ -122,3 +122,12 @@ test("password recovery email follows the account language", () => {
   assert.match(server, /Your verification code is:/);
   assert.match(server, /Tu código de verificación es:/);
 });
+
+
+test("native browser dialogs are translated using the active interface language", () => {
+  assert.match(app, /window\.alert = message => nativeAlert\(translateUiText\(message\)\)/);
+  assert.match(app, /window\.confirm = message => nativeConfirm\(translateUiText\(message\)\)/);
+  assert.match(app, /window\.prompt = \(message, defaultValue\) => nativePrompt\(translateUiText\(message\), defaultValue\)/);
+  assert.match(app, /"No se pudo guardar tu evaluación:": "Could not save your assessment:"/);
+  assert.match(app, /"No tienes permisos para consultar esta sección\.": "You do not have permission to view this section\."/);
+});
