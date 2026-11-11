@@ -2167,7 +2167,8 @@ const REPORT_TRANSLATIONS = {
   "No se pudo consultar la analítica internacional.": "Could not retrieve international analytics.",
   "Todavía no hay grupos con suficientes usuarios para mostrarlos.": "There are not yet enough users in any group to display them.",
   "Usuarios agrupados por país": "Users grouped by country",
-  "Aún no hay grupos de países que puedan ubicarse": "There are no mappable country groups yet."
+  "Aún no hay grupos de países que puedan ubicarse": "There are no mappable country groups yet.",
+  " años": " years"
 };
 const REPORT_TRANSLATION_ENTRIES = Object.entries(REPORT_TRANSLATIONS).sort((a,b)=>b[0].length-a[0].length);
 function translateReportText(value, language = "es") {
@@ -2176,7 +2177,7 @@ function translateReportText(value, language = "es") {
   if (REPORT_TRANSLATIONS[source]) return REPORT_TRANSLATIONS[source];
   let translated = source;
   REPORT_TRANSLATION_ENTRIES.forEach(([es,en]) => {
-    if (es.length >= 18 && translated.includes(es)) translated = translated.split(es).join(en);
+    if (es.length >= 5 && translated.includes(es)) translated = translated.split(es).join(en);
   });
   return translated;
 }
