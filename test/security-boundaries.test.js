@@ -21,6 +21,8 @@ test("global analytics is authenticated, paginated and privacy-thresholded", () 
   assert.match(server, /GLOBAL_ANALYTICS_MAX_USERS = 50000/);
   assert.match(server, /\.startAfter\(cursor\)/);
   assert.match(server, /aggregateProfiles\(profiles, 10\)/);
+  assert.match(server, /systemCache"\)\.doc\("globalAnalytics"\)/);
+  assert.match(server, /GLOBAL_ANALYTICS_CACHE_TTL_MS = 5 \* 60 \* 1000/);
   assert.match(server, /\.select\("country", "city", "detectedCountryCode", "age", "language"\)/);
 });
 
