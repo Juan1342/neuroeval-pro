@@ -999,6 +999,14 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
     }
 
     const evaluationType = body.evaluationType === "parent_observation" ? "parent_observation" : "self_report";
+    const userProfileSnapshot = await db.collection("users").doc(req.user.uid).get();
+    const userProfile = userProfileSnapshot.exists ? userProfileSnapshot.data() || {} : {};
+    const consentSnapshot = await db.collection("users").doc(req.user.uid)
+      .collection("privacyConsents").doc(PRIVACY_NOTICE_VERSION_ACTIVE).get();
+    if (!consentSnapshot.exists || consentSnapshot.data()?.accepted !== true) {
+      return sendError(res, 428, "Antes de evaluar debes aceptar la versión vigente del aviso de privacidad.");
+    }
+
     const calculated = evaluationType === "parent_observation"
       ? calculateParentEvaluation(body.answers, body.parentContext || {})
       : calculateEvaluationOnServer(body.answers);
@@ -1007,11 +1015,26 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
     }
 
     const age = body.age === null || body.age === undefined
-      ? null
+      ? Number(userProfile.age)
       : Number(body.age);
+    if (!Number.isInteger(age) || age < 18 || age > 99) {
+      return sendError(res, 400, "La cuenta debe corresponder a una persona adulta de 18 años o más.");
+    }
 
-    if (age !== null && (!Number.isInteger(age) || age < 18 || age > 99)) {
-      return sendError(res, 400, "La edad recibida no es válida.");
+    const consentLanguage = consentSnapshot.data()?.language === "en" ? "en" : "es";
+    let parentContextRecord = null;
+    if (evaluationType === "parent_observation") {
+      parentContextRecord = buildParentConsentRecord(
+        body.parentContext || {},
+        body.parentContext?.consentLanguage || consentLanguage,
+        new Date().toISOString()
+      );
+      if (!parentContextRecord) {
+        return sendError(res, 400, "Se requiere autorización válida del padre, madre, tutor o cuidador.");
+      }
+      parentContextRecord = { ...calculated.parentContext, ...parentContextRecord };
+      // Se conserva solo una franja de edad; no el dato exacto del menor.
+      delete parentContextRecord.childAge;
     }
 
     const pricing = await getPricingConfig();
@@ -1023,7 +1046,7 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       age,
       goal,
       evaluationType,
-      parentContext: evaluationType === "parent_observation" ? { ...calculated.parentContext, consentAt: new Date().toISOString() } : null,
+      parentContext: parentContextRecord,
       answers: calculated.answers,
       scores: calculated.scores,
       profile: calculated.profile,
