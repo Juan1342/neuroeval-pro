@@ -9,6 +9,7 @@ const server = fs.readFileSync("server.js", "utf8");
 const app = fs.readFileSync("public/app.js", "utf8");
 const html = fs.readFileSync("public/index.html", "utf8");
 const privacyPolicy = fs.readFileSync("public/privacy.html", "utf8");
+const envExample = fs.readFileSync(".env.example", "utf8");
 
 test("server and browser application source parse successfully", () => {
   assert.doesNotThrow(() => new vm.Script(server, { filename: "server.js" }));
@@ -130,4 +131,16 @@ test("native browser dialogs are translated using the active interface language"
   assert.match(app, /window\.prompt = \(message, defaultValue\) => nativePrompt\(translateUiText\(message\), defaultValue\)/);
   assert.match(app, /"No se pudo guardar tu evaluación:": "Could not save your assessment:"/);
   assert.match(app, /"No tienes permisos para consultar esta sección\.": "You do not have permission to view this section\."/);
+});
+
+
+test("Wompi webhook verifies transaction identity and amount through the authenticated API", () => {
+  assert.match(server, /const WOMPI_PRIVATE_KEY = process\.env\.WOMPI_PRIVATE_KEY \|\| ""/);
+  assert.match(server, /if \(!WOMPI_PRIVATE_KEY\)/);
+  assert.match(server, /fetchWompiTransaction\(\{\s*transactionId,\s*publicKey: WOMPI_PUBLIC_KEY,\s*privateKey: WOMPI_PRIVATE_KEY/);
+  assert.match(server, /const reference = String\(verifiedTransaction\.reference \|\| ""\)/);
+  assert.match(server, /const amountInCents = Number\(verifiedTransaction\.amount_in_cents\)/);
+  assert.match(server, /const currency = String\(verifiedTransaction\.currency \|\| ""\)\.toUpperCase\(\)/);
+  assert.match(server, /const status = String\(verifiedTransaction\.status \|\| ""\)\.toUpperCase\(\)/);
+  assert.match(envExample, /WOMPI_PRIVATE_KEY=/);
 });
