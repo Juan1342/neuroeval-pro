@@ -1574,13 +1574,10 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
 
     const eventReference = String(transaction.reference || "").trim();
     if (eventReference && eventReference !== reference) {
-      console.error("La referencia del evento no coincide con la transacción verificada en Wompi.", {
+      // La referencia del payload no decide qué evaluación se desbloquea;
+      // se registra la discrepancia y se usa la referencia consultada a Wompi.
+      console.warn("La referencia del evento difiere de la referencia autenticada de Wompi; se usará la referencia verificada.", {
         transactionId
-      });
-      return res.status(200).json({
-        ok: true,
-        ignored: true,
-        reason: "La referencia del evento no coincide con la transacción verificada."
       });
     }
 
