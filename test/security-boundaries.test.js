@@ -82,3 +82,35 @@ test("admin evaluation views redact client identity without clients.view", () =>
   assert.match(server, /reportData\.email = ""/);
   assert.match(server, /delete reportData\.age/);
 });
+
+
+test("adult and family questionnaires have English translations for visible prompts", () => {
+  const dictionaryMatch = app.match(/const uiTranslations = (\{[\s\S]*?\n\});/);
+  const adultBankMatch = app.match(/const bank = (\[[\s\S]*?\n\]);/);
+  const familyBankMatch = app.match(/const parentQuestionBank = (\[[\s\S]*?\n\]);/);
+  assert.ok(dictionaryMatch, "UI translation dictionary must exist");
+  assert.ok(adultBankMatch, "adult questionnaire bank must exist");
+  assert.ok(familyBankMatch, "family questionnaire bank must exist");
+  const dictionary = vm.runInNewContext("(" + dictionaryMatch[1] + ")");
+  const adultBank = vm.runInNewContext(adultBankMatch[1]);
+  const familyBank = vm.runInNewContext(familyBankMatch[1]);
+  for (const [index, question] of adultBank.entries()) {
+    for (const position of [0, 1, 4]) {
+      if (typeof question[position] === "string") {
+        assert.ok(dictionary[question[position]], "Missing adult-question translation at row " + index + ": " + question[position]);
+      }
+    }
+    if (Array.isArray(question[6])) {
+      for (const option of question[6]) {
+        if (typeof option === "string" && /[A-Za-zÁÉÍÓÚáéíóúñÑ]/.test(option)) {
+          assert.ok(dictionary[option], "Missing adult answer translation: " + option);
+        }
+      }
+    }
+  }
+  for (const [index, question] of familyBank.entries()) {
+    for (const position of [0, 1, 4]) {
+      assert.ok(dictionary[question[position]], "Missing family-question translation at row " + index + ": " + question[position]);
+    }
+  }
+});
