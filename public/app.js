@@ -54,6 +54,11 @@ let currentLanguage = "es";
 const uiTranslations = {
   "Plataforma segura": "Secure platform",
   "🌐 Español": "🌐 Spanish",
+  "Azul": "Blue",
+  "Amarillo": "Yellow",
+  "Morado": "Purple",
+  "Verde": "Green",
+  "← Anterior": "← Previous",
   "Mi cuenta": "My account",
   "Panel de administración": "Admin dashboard",
   "Perfil": "Profile",
