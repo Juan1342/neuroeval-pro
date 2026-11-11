@@ -773,7 +773,11 @@ const uiTranslations = {
   "Solicitar revisión de eliminación": "Request deletion review",
   "La solicitud queda registrada para revisión; no elimina datos automáticamente. Algunos registros pueden estar sujetos a obligaciones legales o de pago.": "The request is recorded for review; it does not automatically delete data. Some records may be subject to legal or payment obligations.",
   "Solicitudes de privacidad": "Privacy requests",
-  "Bandeja restringida al administrador principal. Revisar no implica borrar automáticamente datos.": "Inbox restricted to the primary administrator. Reviewing a request does not automatically delete data."
+  "Bandeja restringida al administrador principal. Revisar no implica borrar automáticamente datos.": "Inbox restricted to the primary administrator. Reviewing a request does not automatically delete data.",
+  "Leer el aviso completo (ES)": "Read the full notice (Spanish)",
+  "Read full notice (EN)": "Read full notice (English)",
+  "Aviso completo (ES)": "Full notice (Spanish)",
+  "Full notice (EN)": "Full notice (English)"
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
