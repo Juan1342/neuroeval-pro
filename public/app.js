@@ -3064,12 +3064,13 @@ function renderWorldMap(rows = []) {
   } else {
     const max=Math.max(1,...mapped.map(row=>Number(row.count)||0));
     mapped.forEach(row=>{
+      const countryLabel=currentLanguage==="en"?(row.labelEn||row.label):row.label;
       const [lat,lon]=WORLD_COUNTRY_CENTROIDS[row.code],pos=project(lat,lon);
       const circle=document.createElementNS(NS,"circle");circle.setAttribute("cx",pos.x);circle.setAttribute("cy",pos.y);circle.setAttribute("r",String(5+Math.sqrt(Number(row.count)/max)*13));circle.setAttribute("class","map-point");circle.setAttribute("tabindex","0");circle.setAttribute("role","button");
       const countLabel=Number(row.count).toLocaleString(currentLanguage==="en"?"en-US":(currentLanguage === "en" ? "en-US" : "es-CO"));
-      circle.setAttribute("aria-label",row.label+": "+countLabel+(currentLanguage==="en"?" users":" usuarios"));
-      const title=document.createElementNS(NS,"title");title.textContent=row.label+": "+countLabel+(currentLanguage==="en"?" users":" usuarios");circle.appendChild(title);
-      const reveal=()=>{const status=$("admin-global-status");if(status)status.textContent=row.label+": "+countLabel+(currentLanguage==="en"?" users in this aggregated group.":" usuarios en este grupo agregado.");};
+      circle.setAttribute("aria-label",countryLabel+": "+countLabel+(currentLanguage==="en"?" users":" usuarios"));
+      const title=document.createElementNS(NS,"title");title.textContent=countryLabel+": "+countLabel+(currentLanguage==="en"?" users":" usuarios");circle.appendChild(title);
+      const reveal=()=>{const status=$("admin-global-status");if(status)status.textContent=countryLabel+": "+countLabel+(currentLanguage==="en"?" users in this aggregated group.":" usuarios en este grupo agregado.");};
       circle.addEventListener("click",reveal);circle.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();reveal();}});
       svg.appendChild(circle);
     });
@@ -3094,7 +3095,7 @@ async function loadAdminGlobalAnalytics() {
       rows.forEach(row=>{
         const item=document.createElement("div");item.className="space-y-1";
         const line=document.createElement("div");line.className="flex justify-between gap-3 text-sm";
-        const label=document.createElement("span");label.textContent=row.label;
+        const label=document.createElement("span");label.textContent=currentLanguage==="en"?(row.labelEn||row.label):row.label;
         const count=document.createElement("strong");count.textContent=Number(row.count).toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO"));line.append(label,count);
         const track=document.createElement("div");track.className="h-2 rounded-full bg-slate-100 overflow-hidden";
         const bar=document.createElement("div");bar.className="h-full rounded-full";bar.style.width=(Number(row.count)/max*100)+"%";bar.style.background="linear-gradient(90deg,#7467f0,#6ce4dc)";
