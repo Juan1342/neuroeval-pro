@@ -922,6 +922,9 @@ app.post("/api/profile", requireUser, async (req, res) => {
       }, { merge: true });
     }
     globalAnalyticsCache = null;
+    await db.collection("systemCache").doc("globalAnalytics").delete().catch(error => {
+      console.warn("No se pudo invalidar la caché global compartida:", error.message);
+    });
     return res.json({ ok: true, profile });
   } catch (error) {
     console.error("POST perfil:", error);
@@ -3216,6 +3219,17 @@ app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard
       return res.json({ ...globalAnalyticsCache.payload, cached: true });
     }
 
+    const sharedCacheRef = db.collection("systemCache").doc("globalAnalytics");
+    const sharedCacheSnapshot = await sharedCacheRef.get();
+    if (sharedCacheSnapshot.exists) {
+      const shared = sharedCacheSnapshot.data() || {};
+      const expiresAt = shared.expiresAt?.toDate?.() || new Date(shared.expiresAt || 0);
+      if (shared.payload && Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() > Date.now()) {
+        globalAnalyticsCache = { cachedAt: Date.now(), payload: shared.payload };
+        return res.json({ ...shared.payload, cached: true });
+      }
+    }
+
     const profiles = [];
     const usersCollection = db.collection("users");
     let cursor = null;
@@ -3267,6 +3281,13 @@ app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard
       cached: false
     };
     globalAnalyticsCache = { cachedAt: Date.now(), payload };
+    await sharedCacheRef.set({
+      payload,
+      expiresAt: new Date(Date.now() + GLOBAL_ANALYTICS_CACHE_TTL_MS),
+      updatedAt: FieldValue.serverTimestamp()
+    }).catch(error => {
+      console.warn("No se pudo guardar la caché global compartida:", error.message);
+    });
     return res.json(payload);
   } catch (error) {
     console.error("Analítica global:", error);
