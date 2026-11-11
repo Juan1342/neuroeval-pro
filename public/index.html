@@ -411,7 +411,8 @@
               <div><label class="field-label" for="reg-goal">Objetivo</label><select class="field" id="reg-goal" required><option value="">Seleccionar</option><option value="TDAH">Explorar atención</option><option value="concentración y organización">Concentración</option><option value="fatiga o ansiedad laboral">Estrés y fatiga</option><option value="autoconocimiento">Autoconocimiento</option></select></div>
             </div>
             <div class="grid grid-cols-2 gap-3 mt-3">
-              <div><label class="field-label" for="reg-country">País (opcional)</label><input class="field" id="reg-country" type="text" maxlength="80" autocomplete="country-name" placeholder="Ej. Colombia"></div>
+              <div><label class="field-label" for="reg-country">País (opcional)</label><input class="field" id="reg-country" type="text" maxlength="80" autocomplete="country-name" list="country-options" placeholder="Ej. Colombia">
+                <datalist id="country-options"></datalist></div>
               <div><label class="field-label" for="reg-city">Ciudad (opcional)</label><input class="field" id="reg-city" type="text" maxlength="100" autocomplete="address-level2" placeholder="Ej. Medellín"></div>
             </div>
             <p class="muted-text text-xs mt-2">País y ciudad son voluntarios y se usan para estadísticas generales. No se almacena tu ubicación GPS.</p>
