@@ -2274,7 +2274,14 @@ const REPORT_TRANSLATIONS = {
   "País y ciudad son opcionales. No se solicita GPS. Los datos geográficos y demográficos se muestran al equipo autorizado únicamente de forma agregada y con un mínimo de 10 personas por grupo.": "Country and city are optional. GPS is not requested. Geographic and demographic data are shown to authorized staff only in aggregate, with at least 10 people per group.",
   "La observación de menores debe realizarla un adulto autorizado. No escribas nombres, colegios ni otros datos que identifiquen al menor; el sistema conserva una franja de edad, no su edad exacta.": "Observation of minors must be completed by an authorized adult. Do not enter names, schools, or other identifying details; the system stores an age band, not the child's exact age.",
   "Puedes solicitar acceso, rectificación o revisión de eliminación desde los canales de privacidad. Algunos registros pueden conservarse cuando existan obligaciones legales, contables o relacionadas con pagos. Consulta la política de privacidad completa antes del lanzamiento internacional.": "You may request access, correction, or review of deletion through the privacy channels. Some records may be retained where legal, accounting, or payment obligations apply. Consult the full privacy policy before the international launch.",
-  "Versión del aviso: 2026-11-11.": "Notice version: 2026-11-11."
+  "Versión del aviso: 2026-11-11.": "Notice version: 2026-11-11.",
+  "Tus datos y privacidad": "Your data and privacy",
+  "Puedes descargar una copia de los datos asociados a tu cuenta o registrar una solicitud de acceso, rectificación o revisión de eliminación.": "You can download a copy of the data associated with your account or submit a request for access, correction, or deletion review.",
+  "Descargar mis datos": "Download my data",
+  "Acceso a mis datos": "Access my data",
+  "Rectificar mis datos": "Correct my data",
+  "Solicitar revisión de eliminación": "Request deletion review",
+  "La solicitud queda registrada para revisión; no elimina datos automáticamente. Algunos registros pueden estar sujetos a obligaciones legales o de pago.": "The request is recorded for review; it does not automatically delete data. Some records may be subject to legal or payment obligations."
 };
 const REPORT_TRANSLATION_ENTRIES = Object.entries(REPORT_TRANSLATIONS).sort((a,b)=>b[0].length-a[0].length);
 function translateReportText(value, language = "es") {
