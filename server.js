@@ -12,6 +12,7 @@ const { getApps, initializeApp, cert, applicationDefault } = require("firebase-a
 const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue, FieldPath, AggregateField } = require("firebase-admin/firestore");
 const { aggregateProfiles } = require("./lib/global-analytics");
+const { PRIVACY_NOTICE_VERSION, validatePrivacyConsent, buildParentConsentRecord } = require("./lib/privacy");
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const https = require("https");
@@ -86,6 +87,7 @@ const DEFAULT_EVAL_PRICE_COP = DEFAULT_EVALUATION_PRICE_COP;
 const EVALUATION_SERVICE_ID = "adhd_evaluation";
 const EVALUATION_SERVICE_LABEL = "Evaluación integral";
 const CURRENCY = "COP";
+const PRIVACY_NOTICE_VERSION_ACTIVE = PRIVACY_NOTICE_VERSION;
 async function getPricingConfig() {
   // Precio comercial fijo de producción. Las promociones pueden aplicar
   // descuentos sobre este importe, pero ninguna configuración de Firestore
@@ -883,6 +885,10 @@ app.post("/api/profile", requireUser, async (req, res) => {
     const city = cleanText(req.body.city, 100);
     const requestedLanguage = String(req.body.language || "").toLowerCase();
     const language = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : "es";
+    const requestedConsent = req.body.privacyConsent;
+    if (requestedConsent !== undefined && !validatePrivacyConsent(requestedConsent)) {
+      return sendError(res, 400, "El consentimiento de privacidad no es válido o está desactualizado.");
+    }
     if (!name) return sendError(res, 400, "El nombre es obligatorio.");
     if (age !== null && (!Number.isInteger(age) || age < 18 || age > 99)) return sendError(res, 400, "La edad no es válida.");
     const proxyCountry = String(req.headers["cf-ipcountry"] || req.headers["x-vercel-ip-country"] || "").trim().toUpperCase();
@@ -900,12 +906,80 @@ app.post("/api/profile", requireUser, async (req, res) => {
       language, updatedAt: FieldValue.serverTimestamp()
     };
     if (!existing.exists) profile.createdAt = FieldValue.serverTimestamp();
+    if (requestedConsent) {
+      profile.privacyConsentVersion = PRIVACY_NOTICE_VERSION_ACTIVE;
+      profile.privacyConsentLanguage = requestedConsent.language;
+      profile.privacyConsentAt = FieldValue.serverTimestamp();
+    }
     await userRef.set(profile, { merge: true });
+    if (requestedConsent) {
+      await userRef.collection("privacyConsents").doc(PRIVACY_NOTICE_VERSION_ACTIVE).set({
+        version: PRIVACY_NOTICE_VERSION_ACTIVE,
+        accepted: true,
+        language: requestedConsent.language,
+        scope: "account_and_self_assessment",
+        acceptedAt: FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
     globalAnalyticsCache = null;
     return res.json({ ok: true, profile });
   } catch (error) {
     console.error("POST perfil:", error);
     return sendError(res, 500, "No se pudo guardar el perfil.");
+  }
+});
+
+/* =========================================================
+   8A. PORTABILIDAD Y SOLICITUDES DE PRIVACIDAD
+========================================================= */
+
+app.get("/api/privacy/export", requireUser, backupExportLimiter, async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const [profileSnapshot, evaluationsSnapshot] = await Promise.all([
+      db.collection("users").doc(uid).get(),
+      db.collection("evaluations").where("uid", "==", uid).limit(1000).get()
+    ]);
+    const consentSnapshot = await db.collection("users").doc(uid).collection("privacyConsents").get();
+    const evaluations = evaluationsSnapshot.docs.map(document => ({
+      id: document.id,
+      ...document.data()
+    }));
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="neuroeval-pro-datos-personales.json"');
+    return res.json({
+      exportedAt: new Date().toISOString(),
+      account: profileSnapshot.exists ? profileSnapshot.data() : null,
+      consents: consentSnapshot.docs.map(document => document.data()),
+      evaluations,
+      truncated: evaluationsSnapshot.size >= 1000
+    });
+  } catch (error) {
+    console.error("Exportación de datos personales:", error);
+    return sendError(res, 500, "No se pudieron exportar tus datos personales.");
+  }
+});
+
+app.post("/api/privacy/requests", requireUser, supportCreateLimiter, async (req, res) => {
+  try {
+    const requestType = String(req.body?.type || "").trim().toLowerCase();
+    const allowedTypes = ["access", "rectification", "deletion"];
+    if (!allowedTypes.includes(requestType)) {
+      return sendError(res, 400, "El tipo de solicitud de privacidad no es válido.");
+    }
+    const requestRef = await db.collection("privacyRequests").add({
+      uid: req.user.uid,
+      email: String(req.user.email || "").toLowerCase(),
+      type: requestType,
+      status: "pending",
+      noticeVersion: PRIVACY_NOTICE_VERSION_ACTIVE,
+      createdAt: FieldValue.serverTimestamp()
+    });
+    return res.status(202).json({ ok: true, requestId: requestRef.id, status: "pending" });
+  } catch (error) {
+    console.error("Solicitud de privacidad:", error);
+    return sendError(res, 500, "No se pudo registrar tu solicitud de privacidad.");
   }
 });
 
