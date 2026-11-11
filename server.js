@@ -2360,7 +2360,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
         info: {
           Title: language === "en" ? "NeuroEval Pro Report" : "Informe NeuroEval Pro",
           Author: "NeuroEval Pro",
-          Subject: "Informe de autorregistro cognitivo"
+          Subject: language === "en" ? "Cognitive self-report" : "Informe de autorregistro cognitivo"
         }
       });
 
@@ -2453,7 +2453,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
         ["Nombre", evaluation.name || "No registrado"],
         ["Correo", evaluation.email || "No registrado"],
         ...(evaluation.evaluationType === "parent_observation"
-          ? [["Edad del menor", evaluation.parentContext?.childAge ?? "No registrada"], ["Etapa de edad", evaluation.parentContext?.ageBand || "No especificada"], ["Parentesco de quien responde", evaluation.parentContext?.relationship || "No especificado"], ["Entornos observados", (evaluation.parentContext?.settings || []).join(", ") || "No especificados"]]
+          ? [["Franja de edad del menor", evaluation.parentContext?.childAgeBand || evaluation.parentContext?.ageBand || "No especificada"], ["Parentesco de quien responde", evaluation.parentContext?.relationship || "No especificado"], ["Entornos observados", (evaluation.parentContext?.settings || []).join(", ") || "No especificados"]]
           : [["Edad", evaluation.age ?? "No registrada"]]),
         ["Objetivo", evaluation.goal || "No especificado"],
         [
@@ -2755,7 +2755,9 @@ app.get(
       }
 
       const profileSnapshot = await db.collection("users").doc(req.user.uid).get();
-      const reportLanguage = profileSnapshot.exists && profileSnapshot.data()?.language === "en" ? "en" : "es";
+      const requestedLanguage = String(req.query.language || "").trim().toLowerCase();
+      const profileLanguage = profileSnapshot.exists && profileSnapshot.data()?.language === "en" ? "en" : "es";
+      const reportLanguage = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : profileLanguage;
       const pdf = await buildEvaluationPdf(result.data, { language: reportLanguage });
 
       res.setHeader("Content-Type", "application/pdf");
@@ -3472,7 +3474,9 @@ app.get(
       const ownerProfile = evaluationData.uid
         ? await db.collection("users").doc(evaluationData.uid).get()
         : null;
-      const reportLanguage = ownerProfile?.exists && ownerProfile.data()?.language === "en" ? "en" : "es";
+      const requestedLanguage = String(req.query.language || "").trim().toLowerCase();
+      const profileLanguage = ownerProfile?.exists && ownerProfile.data()?.language === "en" ? "en" : "es";
+      const reportLanguage = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : profileLanguage;
       const pdf = await buildEvaluationPdf(evaluationData, {
         includeAnswers: true,
         language: reportLanguage
