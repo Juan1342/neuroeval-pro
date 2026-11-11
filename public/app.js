@@ -674,17 +674,104 @@ const uiTranslations = {
   "Explora si las experiencias descritas generan dificultades funcionales y si son observadas por otras personas.": "Explores whether the described experiences cause functional difficulties and are noticed by other people.",
   "Explora si las experiencias parecen remontarse a la infancia y si ocurren en más de un contexto.": "Explores whether the experiences may date back to childhood and occur in more than one setting.",
   "Frecuencia descriptiva de las conductas observadas por el familiar; no equivale a una probabilidad clínica.": "Descriptive frequency of behaviors observed by the family member; it is not a clinical probability.",
-  "Señala circunstancias que también podrían influir en la conducta; no son síntomas de TDAH ni aumentan una puntuación de síntomas.": "Indicates circumstances that may also affect behavior; they are not ADHD symptoms and do not increase a symptom score."
+  "Señala circunstancias que también podrían influir en la conducta; no son síntomas de TDAH ni aumentan una puntuación de síntomas.": "Indicates circumstances that may also affect behavior; they are not ADHD symptoms and do not increase a symptom score.",
+  "LUNA   ·   LLAVE   ·   RÍO": "MOON   ·   KEY   ·   RIVER",
+  "Selecciona las cuatro palabras que aparecieron juntas.": "Select the four words that appeared together.",
+  "Firebase no proporcionó detalles adicionales.": "Firebase did not provide additional details.",
+  "Ese correo ya tiene una cuenta.": "An account already exists with this email.",
+  "El correo electrónico no es válido.": "The email address is invalid.",
+  "La contraseña debe tener al menos 8 caracteres.": "The password must contain at least 8 characters.",
+  "Correo o contraseña incorrectos.": "Incorrect email or password.",
+  "No encontramos una cuenta con ese correo.": "We could not find an account with that email.",
+  "La contraseña es incorrecta.": "The password is incorrect.",
+  "No se pudo conectar. Verifica tu internet.": "Could not connect. Check your internet connection.",
+  "No se pudo completar la operación.": "The operation could not be completed.",
+  "Creando tu cuenta...": "Creating your account...",
+  "Esta sección requiere permisos administrativos.": "This section requires administrative permissions.",
+  "¿Comete errores por descuido en tareas, deberes o actividades que sabe realizar?": "Does the child make careless mistakes in tasks, homework, or activities they know how to do?",
+  "Por ejemplo, omite partes de una instrucción o no revisa lo que hizo.": "For example, they miss parts of an instruction or do not review their work.",
+  "¿Le cuesta mantener la atención durante juegos, lecturas, conversaciones o tareas apropiadas para su edad?": "Does the child find it difficult to maintain attention during age-appropriate games, reading, conversations, or tasks?",
+  "Piensa en actividades que normalmente disfruta y que requieren continuidad.": "Think about activities the child usually enjoys and that require sustained attention.",
+  "¿Parece no escuchar cuando un adulto le habla directamente, aunque no haya una distracción evidente?": "Does the child seem not to listen when an adult speaks directly to them, even when there is no obvious distraction?",
+  "Por ejemplo, hay que repetirle varias veces una indicación sencilla.": "For example, a simple instruction may need to be repeated several times.",
+  "¿Empieza instrucciones o tareas, pero deja pasos sin completar aunque haya entendido qué debe hacer?": "Does the child start instructions or tasks but leave steps unfinished even when they understand what to do?",
+  "Considera rutinas, deberes y pequeñas responsabilidades.": "Consider routines, homework, and small responsibilities.",
+  "¿Tiene dificultad para organizar sus tareas, materiales o actividades diarias?": "Does the child have difficulty organizing tasks, materials, or daily activities?",
+  "Por ejemplo, no sabe por dónde empezar o pierde el orden de los pasos.": "For example, they do not know where to start or lose track of the steps.",
+  "¿Evita o demora actividades que requieren concentración sostenida?": "Does the child avoid or delay activities that require sustained concentration?",
+  "Por ejemplo, deberes, lectura o tareas que exigen esfuerzo mental continuo.": "For example, homework, reading, or tasks requiring continuous mental effort.",
+  "¿Pierde con frecuencia objetos necesarios para sus actividades?": "Does the child frequently lose items needed for activities?",
+  "Por ejemplo, útiles escolares, juguetes, libros, prendas o materiales.": "For example, school supplies, toys, books, clothing, or materials.",
+  "¿Se distrae fácilmente con ruidos, movimientos, conversaciones u otros estímulos del entorno?": "Is the child easily distracted by noises, movement, conversations, or other environmental stimuli?",
+  "Observa si le cuesta retomar lo que estaba haciendo.": "Notice whether the child finds it difficult to return to what they were doing.",
+  "¿Olvida con frecuencia actividades o responsabilidades habituales para su edad?": "Does the child frequently forget activities or responsibilities that are usual for their age?",
+  "Por ejemplo, llevar materiales, terminar una rutina o recordar una indicación.": "For example, bringing materials, finishing a routine, or remembering an instruction.",
+  "¿Mueve constantemente manos o pies, se retuerce en la silla o cambia de postura cuando se espera que permanezca sentado?": "Does the child constantly move their hands or feet, squirm in their chair, or change position when expected to remain seated?",
+  "Ten en cuenta lo esperable para su edad y la situación.": "Consider what is typical for the child's age and the situation.",
+  "¿Se levanta de su asiento en momentos en los que normalmente se espera que permanezca sentado?": "Does the child get up from their seat when they are usually expected to remain seated?",
+  "Por ejemplo, durante comidas, clase o actividades tranquilas.": "For example, during meals, class, or quiet activities.",
+  "¿Corre, trepa o se mueve en situaciones en las que no resulta apropiado?": "Does the child run, climb, or move around in situations where it is not appropriate?",
+  "En adolescentes, puede manifestarse como inquietud interna o dificultad para estar quieto.": "In adolescents, this may appear as inner restlessness or difficulty staying still.",
+  "¿Le cuesta jugar o realizar actividades tranquilas sin hacer mucho ruido o movimiento?": "Does the child find it difficult to play or do quiet activities without making a lot of noise or moving around?",
+  "Compara con otros niños de edad y contexto similares.": "Compare with other children of a similar age and context.",
+  "¿Parece estar constantemente en movimiento, como si le costara bajar el ritmo?": "Does the child seem to be constantly on the move, as if it were difficult to slow down?",
+  "Observa si ocurre incluso cuando la actividad requiere calma.": "Notice whether this happens even when the activity requires calm.",
+  "¿Habla mucho más de lo esperado para la situación y le cuesta detenerse?": "Does the child talk much more than expected for the situation and find it difficult to stop?",
+  "Considera conversaciones, clase y reuniones familiares.": "Consider conversations, class, and family gatherings.",
+  "¿Responde antes de que terminen de hacerle una pregunta o interrumpe para contestar?": "Does the child answer before a question is finished or interrupt to respond?",
+  "Observa si puede esperar a escuchar la pregunta completa.": "Notice whether the child can wait to hear the whole question.",
+  "¿Le cuesta esperar su turno en juegos, filas o conversaciones?": "Does the child find it difficult to wait their turn in games, lines, or conversations?",
+  "Piensa en situaciones cotidianas repetidas.": "Think about recurring everyday situations.",
+  "¿Interrumpe conversaciones, juegos o actividades de otras personas sin advertirlo?": "Does the child interrupt other people's conversations, games, or activities without noticing?",
+  "Por ejemplo, se incorpora a una actividad o toma la palabra de forma repentina.": "For example, they join an activity or suddenly start speaking.",
+  "¿Las conductas que has señalado se presentan desde hace aproximadamente seis meses o más?": "Have the behaviors you identified been present for approximately six months or longer?",
+  "Si comenzaron hace poco, anota cuándo aparecieron.": "If they began recently, note when they appeared.",
+  "¿Recuerdas que algunas de estas conductas ya estaban presentes en etapas anteriores de su desarrollo?": "Do you remember some of these behaviors being present at earlier stages of the child's development?",
+  "Piensa en informes escolares, recuerdos familiares o comentarios de docentes.": "Think about school reports, family memories, or teachers' comments.",
+  "¿Has observado estas conductas en al menos dos entornos, como casa y colegio?": "Have you observed these behaviors in at least two settings, such as home and school?",
+  "También pueden ser actividades extracurriculares u otros espacios.": "These may also include extracurricular activities or other settings.",
+  "¿Estas conductas afectan de forma clara su aprendizaje, convivencia, amistades o rutinas?": "Do these behaviors clearly affect the child's learning, relationships, friendships, or routines?",
+  "Describe consecuencias concretas, no solo que el comportamiento resulte molesto.": "Describe concrete consequences, not only that the behavior is bothersome.",
+  "¿Un docente u otro cuidador ha expresado preocupaciones similares?": "Has a teacher or another caregiver expressed similar concerns?",
+  "Si es posible, contrasta lo observado con alguien que lo conozca en otro entorno.": "If possible, compare your observations with someone who knows the child in another setting.",
+  "¿Hay factores recientes que podrían influir, como cambios familiares, sueño insuficiente, estrés, dificultades de aprendizaje o problemas de salud?": "Are there recent factors that could have an influence, such as family changes, insufficient sleep, stress, learning difficulties, or health problems?",
+  "No atribuyas automáticamente estas conductas al TDAH.": "Do not automatically attribute these behaviors to ADHD.",
+  "Esta orientación está diseñada para edades de 4 a 17 años.": "This guidance is designed for ages 4–17.",
+  "Indica tu parentesco y al menos un entorno de observación.": "Enter your relationship to the child and at least one observation setting.",
+  "Confirma que tienes autorización para proporcionar esta información.": "Confirm that you are authorized to provide this information.",
+  "Considera responsabilidades, actividades académicas y relaciones propias de la adolescencia.": "Consider responsibilities, academic activities, and relationships typical of adolescence.",
+  "Observación familiar · 24 preguntas": "Family observation · 24 questions",
+  "Inicia sesión para comenzar una evaluación.": "Sign in to begin an assessment.",
+  "Consultando el estado de tu evaluación...": "Checking your assessment status...",
+  "No se encontró una evaluación pendiente.": "No pending assessment was found.",
+  "¡Pago confirmado! Cargando informe.": "Payment confirmed! Loading report.",
+  "Aún no recibimos la confirmación del pago. Si acabas de pagar, espera unos segundos.": "We have not received payment confirmation yet. If you just paid, please wait a few seconds.",
+  "Esta acción está reservada al administrador principal.": "This action is reserved for the primary administrator.",
+  "Preparando exportación segura…": "Preparing secure export…",
+  "No se pudo consultar el diagnóstico.": "Could not retrieve diagnostics.",
+  "Diagnóstico completado. No se detectaron errores en las comprobaciones ejecutadas.": "Diagnostics completed. No errors were detected in the checks performed.",
+  "Calculando estadísticas agregadas…": "Calculating aggregate statistics…",
+  "No se pudo consultar la analítica internacional.": "Could not retrieve international analytics.",
+  "Todavía no hay grupos con suficientes usuarios para mostrarlos.": "There are not yet enough users in any group to display them.",
+  "Usuarios agrupados por país": "Users grouped by country",
+  "Aún no hay grupos de países que puedan ubicarse": "There are no mappable country groups yet."
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
+const UI_TRANSLATION_ENTRIES = Object.entries(uiTranslations).sort((a,b)=>b[0].length-a[0].length);
+const UI_REVERSE_ENTRIES = Object.entries(reverseUiTranslations).sort((a,b)=>b[0].length-a[0].length);
 function translateUiText(value) {
   const source = String(value ?? "");
   const trimmed = source.trim();
   if (!trimmed) return source;
-  const translated = currentLanguage === "en"
-    ? (uiTranslations[trimmed] || trimmed)
-    : (reverseUiTranslations[trimmed] || trimmed);
+  const map = currentLanguage === "en" ? uiTranslations : reverseUiTranslations;
+  let translated = map[trimmed] || trimmed;
+  if (translated === trimmed) {
+    const entries = currentLanguage === "en" ? UI_TRANSLATION_ENTRIES : UI_REVERSE_ENTRIES;
+    entries.forEach(([from,to]) => {
+      if (from.length >= 12 && translated.includes(from)) translated = translated.split(from).join(to);
+    });
+  }
   if (translated === trimmed) return source;
   const leading = source.match(/^\\s*/)?.[0] || "";
   const trailing = source.match(/\\s*$/)?.[0] || "";
