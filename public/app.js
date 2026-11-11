@@ -512,7 +512,15 @@ const uiTranslations = {
   "Consulta los usos y activa o desactiva campañas.": "Review usage and activate or deactivate campaigns.",
   "Salud del sistema": "System health",
   "Colaboradores": "Team members",
-  "Actividad": "Activity"
+  "Actividad": "Activity",
+  "Algunas veces": "Sometimes",
+  "A menudo": "Often",
+  "Muy a menudo": "Very often",
+  "Atención": "Attention",
+  "Actividad e inquietud": "Activity and restlessness",
+  "Impulsividad": "Impulsivity",
+  "Contexto": "Context",
+  "Factores adicionales": "Additional factors"
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
@@ -1955,7 +1963,7 @@ function renderQuestion() {
         return typeof value === "string" ? translateUiText(value) : value;
       })
     : questions[currentIndex];
-  activeChoices = currentLanguage === "en" ? choices.map(translateUiText) : choices;
+  activeChoices = currentEvaluationType === "parent_observation" ? parentFrequencyChoices : choices;
   const percentage = Math.round(((currentIndex + 1) / questions.length) * 100);
   const progress = (currentIndex + 1) / questions.length;
 
@@ -1992,13 +2000,14 @@ function renderQuestion() {
     $("q-example").textContent = question[4];
   }
   options.forEach((label, index) => {
-    const value = isInteractive ? answerValues[index] : index;
+    const value = isInteractive ? answerValues[index] : answerValues[index];
+    const displayLabel = currentLanguage === "en" ? translateUiText(label) : label;
     const selected = answers[currentIndex] === value;
     const button = document.createElement("button");
     button.type = "button";
     button.className = "answer-option";
     if (selected) button.classList.add("selected");
-    button.textContent = `${selected ? "✓  " : ""}${label}`;
+    button.textContent = `${selected ? "✓  " : ""}${displayLabel}`;
     button.setAttribute("aria-pressed", String(selected));
     button.addEventListener("click", () => {
       answers[currentIndex] = value;
