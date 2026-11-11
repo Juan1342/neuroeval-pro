@@ -840,6 +840,12 @@ const uiTranslations = {
   "NUBE · PAN · RELOJ · LUNA": "CLOUD · BREAD · CLOCK · MOON",
   "NUBE · LIBRO · RELOJ · FLOR": "CLOUD · BOOK · CLOCK · FLOWER",
   "PAN · RELOJ · FLOR · ROSA": "BREAD · CLOCK · FLOWER · ROSE",
+  "Autorizo expresamente el tratamiento de mis respuestas, que pueden revelar datos sensibles relacionados con salud, atención y bienestar cognitivo, para generar mi autorregistro e informe. Entiendo que puedo no aceptar y no iniciar la evaluación.": "I explicitly authorize the processing of my answers, which may reveal sensitive data about health, attention and cognitive well-being, to generate my self-report and report. I understand that I may decline and not start the assessment.",
+  "Autorizo expresamente el tratamiento de esta información del menor, que puede revelar datos sensibles relacionados con su salud y bienestar, únicamente para generar esta orientación. Entiendo que puedo no autorizarlo y no continuar.": "I explicitly authorize the processing of this minor's information, which may reveal sensitive data about health and well-being, solely to generate this guidance. I understand that I may decline and not continue.",
+  "Debes autorizar expresamente el tratamiento de los datos sensibles del menor para continuar.": "You must explicitly authorize the processing of the minor's sensitive data to continue.",
+  "Esta orientación no es un diagnóstico ni sustituye la valoración de profesionales.": "This guidance is not a diagnosis and does not replace professional assessment.",
+  "Autorización expresa para datos sensibles": "Explicit authorization for sensitive data",
+  "Datos sensibles relacionados con salud, atención y bienestar cognitivo": "Sensitive data related to health, attention and cognitive well-being",
 
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
