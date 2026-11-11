@@ -117,6 +117,7 @@ const { calculateEvaluationOnServer } = require("./lib/evaluation");
 const { calculateParentEvaluation } = require("./lib/parent-evaluation");
 const { decideWompiTransition } = require("./lib/payment-state");
 const { validateWompiSignature } = require("./lib/wompi-signature");
+const { fetchWompiTransaction } = require("./lib/wompi-transaction-api");
 
 const ALLOW_DEMO_PAY =
   String(process.env.ALLOW_DEMO_PAY || "false").toLowerCase() === "true";
@@ -124,6 +125,7 @@ const ALLOW_DEMO_PAY =
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "";
 
 const WOMPI_PUBLIC_KEY = process.env.WOMPI_PUBLIC_KEY || "";
+const WOMPI_PRIVATE_KEY = process.env.WOMPI_PRIVATE_KEY || "";
 
 const WOMPI_INTEGRITY_SECRET =
   process.env.WOMPI_INTEGRITY_SECRET ||
@@ -829,6 +831,7 @@ app.get("/api/health", (req, res) => {
       : null,
     wompiConfigured: Boolean(
       WOMPI_PUBLIC_KEY &&
+      WOMPI_PRIVATE_KEY &&
       WOMPI_INTEGRITY_SECRET &&
       WOMPI_EVENTS_SECRET
     ),
@@ -1446,19 +1449,15 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
       return sendError(res, 400, "El evento no contiene la transacción.");
     }
 
-    const reference = String(transaction.reference || "");
-    const transactionId = String(transaction.id || "");
-    const status = String(transaction.status || "").toUpperCase();
-    const amountInCents = Number(transaction.amount_in_cents);
-    const currency = String(transaction.currency || "").toUpperCase();
+    const transactionId = String(transaction.id || "").trim();
     const expectedEnvironment = WOMPI_PUBLIC_KEY.startsWith("pub_test_")
       ? "test"
       : WOMPI_PUBLIC_KEY.startsWith("pub_prod_")
         ? "prod"
         : "";
 
-    if (!reference || !transactionId || !status) {
-      return sendError(res, 400, "La transacción no contiene los datos obligatorios.");
+    if (!transactionId) {
+      return sendError(res, 400, "La transacción no contiene un identificador válido.");
     }
 
     if (
@@ -1473,6 +1472,62 @@ app.post("/api/payments/wompi-webhook", async (req, res) => {
         ok: true,
         ignored: true,
         reason: "El ambiente de la transacción no coincide."
+      });
+    }
+
+    if (!WOMPI_PRIVATE_KEY) {
+      console.error("Webhook Wompi pendiente: falta configurar WOMPI_PRIVATE_KEY para verificar la transacción.");
+      return res.status(503).json({
+        error: "La verificación segura de pagos no está configurada."
+      });
+    }
+
+    let verifiedTransaction;
+    try {
+      verifiedTransaction = await fetchWompiTransaction({
+        transactionId,
+        publicKey: WOMPI_PUBLIC_KEY,
+        privateKey: WOMPI_PRIVATE_KEY
+      });
+    } catch (verificationError) {
+      console.error("No se pudo verificar la transacción directamente en Wompi:", verificationError.message);
+      return res.status(503).json({
+        error: "No fue posible verificar el pago con Wompi. Se reintentará la notificación."
+      });
+    }
+
+    // La API autenticada de Wompi es la fuente de verdad para referencia,
+    // importe, moneda y estado. No confiar en esos campos del webhook sin
+    // comprobarlos contra el registro original de Wompi.
+    const reference = String(verifiedTransaction.reference || "").trim();
+    const status = String(verifiedTransaction.status || "").toUpperCase();
+    const amountInCents = Number(verifiedTransaction.amount_in_cents);
+    const currency = String(verifiedTransaction.currency || "").toUpperCase();
+
+    if (
+      String(verifiedTransaction.id || "") !== transactionId ||
+      !reference ||
+      !status ||
+      !Number.isSafeInteger(amountInCents) ||
+      amountInCents < 1
+    ) {
+      console.error("La consulta autenticada de Wompi devolvió datos incompletos o inconsistentes.", {
+        transactionId
+      });
+      return res.status(503).json({
+        error: "Wompi no devolvió datos verificables para esta transacción."
+      });
+    }
+
+    const eventReference = String(transaction.reference || "").trim();
+    if (eventReference && eventReference !== reference) {
+      console.error("La referencia del evento no coincide con la transacción verificada en Wompi.", {
+        transactionId
+      });
+      return res.status(200).json({
+        ok: true,
+        ignored: true,
+        reason: "La referencia del evento no coincide con la transacción verificada."
       });
     }
 
@@ -3156,7 +3211,7 @@ app.get("/api/admin/health/details", requireUser, requireStaffAdmin("settings.vi
       ? (smtpConnectionVerified ? "Conexión SMTP verificada." : "SMTP configurado, pero sin verificación de conexión.")
       : "Proveedor " + EMAIL_PROVIDER + " configurado.";
   add("email", "Correo transaccional", emailStatus, emailDetail);
-  const wompiConfigured = Boolean(WOMPI_PUBLIC_KEY && WOMPI_INTEGRITY_SECRET && WOMPI_EVENTS_SECRET);
+  const wompiConfigured = Boolean(WOMPI_PUBLIC_KEY && WOMPI_PRIVATE_KEY && WOMPI_INTEGRITY_SECRET && WOMPI_EVENTS_SECRET);
   add("wompi", "Pasarela Wompi", wompiConfigured ? "configured" : "not_configured",
     !wompiConfigured ? "Faltan parámetros de configuración." : WOMPI_PUBLIC_KEY.startsWith("pub_test_") ? "Ambiente de pruebas (sandbox)." : WOMPI_PUBLIC_KEY.startsWith("pub_prod_") ? "Ambiente de producción." : "Ambiente no identificado.");
   const memory = process.memoryUsage();
