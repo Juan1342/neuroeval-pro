@@ -201,3 +201,11 @@ test("every static DOM ID referenced by the application exists exactly once", ()
   assert.deepEqual(duplicates, []);
   assert.deepEqual(missing, []);
 });
+
+
+test("registration offers localized country suggestions without requesting GPS", () => {
+  assert.match(html, /id="reg-country"[^>]*list="country-options"/);
+  assert.match(html, /<datalist id="country-options"><\/datalist>/);
+  assert.match(app, /new Intl\.DisplayNames\(\[locale\], \{ type: "region" \}\)/);
+  assert.doesNotMatch(app, /navigator\.geolocation|Geolocation\.getCurrentPosition/);
+});
