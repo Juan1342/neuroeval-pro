@@ -952,21 +952,79 @@ function renderProgress() {
   const activities = data.activities || [];
   $("progress-games").textContent = games.length;
   $("progress-activities").textContent = activities.length;
-  $("progress-best").textContent = `${games.length ? Math.max(...games.map(item => Number(item.score) || 0)) : 0}%`;
+  $("progress-best").textContent = (games.length ? Math.max(...games.map(item => Number(item.score) || 0)) : 0) + "%";
   const levels = Object.values(data.gameLevels || {}).reduce((sum,value) => sum + Number(value || 0), 0);
   const levelSummary = $("games-level-summary");
   if (levelSummary) levelSummary.textContent = levels + " niveles";
   const history = $("progress-history");
   history.innerHTML = "";
-  if (!(data.history || []).length) { history.textContent = "Aún no hay actividades registradas. ¡Prueba tu primer juego!"; return; }
-  data.history.forEach(item => {
+  if (!(data.history || []).length) { history.textContent = "Aún no hay actividades registradas. ¡Prueba tu primer juego!"; }
+  else data.history.forEach(item => {
     const row = document.createElement("div"); row.className = "profile-row";
-    const label = document.createElement("span"); label.textContent = `${item.type}: ${item.name}`;
+    const label = document.createElement("span"); label.textContent = item.type + ": " + item.name;
     const detail = document.createElement("strong"); detail.textContent = item.detail;
     row.append(label, detail); history.appendChild(row);
   });
+  loadEvaluationHistory();
 }
 
+function formatProgressEvaluationDate(value) {
+  if (!value) return "Fecha no disponible";
+  let dateValue = value;
+  if (typeof value === "object") {
+    const seconds = Number(value._seconds ?? value.seconds);
+    if (Number.isFinite(seconds)) dateValue = seconds * 1000;
+  }
+  const date = new Date(dateValue);
+  return Number.isNaN(date.getTime()) ? "Fecha no disponible" : date.toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" });
+}
+
+async function loadEvaluationHistory() {
+  const container = $("progress-evaluations");
+  const count = $("progress-evaluation-count");
+  if (!container || !count) return;
+  if (!currentUser) { count.textContent = "0"; container.textContent = "Inicia sesión para consultar tus evaluaciones."; return; }
+  container.textContent = "Consultando tus evaluaciones...";
+  try {
+    const response = await api("/api/my-evaluations");
+    const payload = await response.json();
+    const evaluations = Array.isArray(payload.evaluations) ? payload.evaluations : [];
+    const getTime = value => {
+      if (value && typeof value === "object") return Number(value._seconds ?? value.seconds ?? 0) * 1000;
+      return new Date(value || 0).getTime() || 0;
+    };
+    evaluations.sort((a,b) => getTime(b.createdAt) - getTime(a.createdAt));
+    const paid = evaluations.filter(item => item.paymentStatus === "paid");
+    count.textContent = String(paid.length);
+    container.replaceChildren();
+    if (!evaluations.length) { container.textContent = "Todavía no tienes evaluaciones registradas."; return; }
+    evaluations.forEach(evaluation => {
+      const card = document.createElement("article");
+      card.className = "profile-row";
+      card.style.alignItems = "center"; card.style.gap = "1rem"; card.style.flexWrap = "wrap";
+      const info = document.createElement("div"); info.style.flex = "1"; info.style.minWidth = "220px";
+      const title = document.createElement("strong"); title.textContent = evaluation.name || "Evaluación NeuroEval Pro";
+      const meta = document.createElement("p"); meta.className = "muted-text text-sm";
+      meta.textContent = formatProgressEvaluationDate(evaluation.createdAt) + " · " + (evaluation.goal || "Evaluación integral");
+      const status = document.createElement("p"); status.className = "text-sm font-bold";
+      status.textContent = evaluation.paymentStatus === "paid" ? "Pago confirmado · PDF disponible" : "Pago pendiente";
+      status.style.color = evaluation.paymentStatus === "paid" ? "#047857" : "#b45309";
+      info.append(title, meta, status); card.appendChild(info);
+      if (evaluation.paymentStatus === "paid") {
+        const button = document.createElement("button"); button.type = "button"; button.className = "btn outline";
+        button.textContent = "Descargar PDF";
+        button.addEventListener("click", () => downloadEvaluationPdf(evaluation.id));
+        card.appendChild(button);
+      } else {
+        const pending = document.createElement("span"); pending.className = "muted-text text-sm";
+        pending.textContent = "El informe estará disponible al confirmarse el pago."; card.appendChild(pending);
+      }
+      container.appendChild(card);
+    });
+  } catch (error) {
+    count.textContent = "—"; container.textContent = error.message || "No se pudo cargar tu historial de evaluaciones.";
+  }
+}
 function gameLevel(game) {
   const data = readProgress();
   return Math.max(1, Number(data.gameLevels?.[game] || 0) + 1);
@@ -1704,24 +1762,17 @@ async function loadOwnResult(evaluationId) {
   }
 }
 
-async function downloadOwnPdf() {
-  if (!lastEvaluationId) {
-    alert("No se encontró el identificador de tu evaluación.");
-    return;
-  }
-
+async function downloadEvaluationPdf(evaluationId) {
+  if (!evaluationId) { alert("No se encontró el identificador de la evaluación."); return; }
   try {
-    const response = await api(
-      `/api/my-evaluations/${encodeURIComponent(lastEvaluationId)}/pdf`
-    );
-
+    const response = await api("/api/my-evaluations/" + encodeURIComponent(evaluationId) + "/pdf");
     downloadBlob(await response.blob(), "NeuroEval-Pro-informe.pdf");
-
-  } catch (error) {
-    alert(error.message);
-  }
+  } catch (error) { alert(error.message); }
 }
 
+async function downloadOwnPdf() {
+  return downloadEvaluationPdf(lastEvaluationId);
+}
 /* =========================================================
    13. PANEL ADMINISTRATIVO
 ========================================================= */
