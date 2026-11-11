@@ -2047,7 +2047,7 @@ async function loadOwnResult(evaluationId) {
 async function downloadEvaluationPdf(evaluationId) {
   if (!evaluationId) { alert("No se encontró el identificador de la evaluación."); return; }
   try {
-    const response = await api("/api/my-evaluations/" + encodeURIComponent(evaluationId) + "/pdf");
+    const response = await api("/api/my-evaluations/" + encodeURIComponent(evaluationId) + "/pdf?language=" + encodeURIComponent(currentLanguage));
     downloadBlob(await response.blob(), "NeuroEval-Pro-informe.pdf");
   } catch (error) { alert(error.message); }
 }
@@ -2982,7 +2982,7 @@ function closeAdminDetail() {
 async function downloadAdminPdf(id) {
   try {
     const response = await api(
-      `/api/admin/evaluations/${encodeURIComponent(id)}/pdf`
+      `/api/admin/evaluations/${encodeURIComponent(id)}/pdf?language=${encodeURIComponent(currentLanguage)}`
     );
 
     downloadBlob(await response.blob(), `NeuroEval-Pro-${id}.pdf`);
