@@ -989,19 +989,45 @@ app.get("/api/privacy/export", requireUser, backupExportLimiter, async (req, res
 app.post("/api/privacy/requests", requireUser, supportCreateLimiter, async (req, res) => {
   try {
     const requestType = String(req.body?.type || "").trim().toLowerCase();
-    const allowedTypes = ["access", "rectification", "deletion"];
+    const allowedTypes = ["access", "rectification", "deletion", "withdraw_consent"];
     if (!allowedTypes.includes(requestType)) {
       return sendError(res, 400, "El tipo de solicitud de privacidad no es válido.");
     }
-    const requestRef = await db.collection("privacyRequests").add({
+    const requestRef = db.collection("privacyRequests").doc();
+    const requestData = {
       uid: req.user.uid,
       email: String(req.user.email || "").toLowerCase(),
       type: requestType,
       status: "pending",
       noticeVersion: PRIVACY_NOTICE_VERSION_ACTIVE,
       createdAt: FieldValue.serverTimestamp()
+    };
+    if (requestType === "withdraw_consent") {
+      const userRef = db.collection("users").doc(req.user.uid);
+      const sensitiveConsentRef = userRef.collection("sensitiveDataConsents").doc(PRIVACY_NOTICE_VERSION_ACTIVE);
+      await db.runTransaction(async transactionWriter => {
+        const consentSnapshot = await transactionWriter.get(sensitiveConsentRef);
+        transactionWriter.set(userRef, {
+          sensitiveDataConsentVersion: FieldValue.delete(),
+          sensitiveDataConsentWithdrawnAt: FieldValue.serverTimestamp()
+        }, { merge: true });
+        if (consentSnapshot.exists) {
+          transactionWriter.set(sensitiveConsentRef, {
+            accepted: false,
+            withdrawnAt: FieldValue.serverTimestamp()
+          }, { merge: true });
+        }
+        transactionWriter.set(requestRef, requestData);
+      });
+    } else {
+      await requestRef.set(requestData);
+    }
+    return res.status(202).json({
+      ok: true,
+      requestId: requestRef.id,
+      status: "pending",
+      consentWithdrawn: requestType === "withdraw_consent"
     });
-    return res.status(202).json({ ok: true, requestId: requestRef.id, status: "pending" });
   } catch (error) {
     console.error("Solicitud de privacidad:", error);
     return sendError(res, 500, "No se pudo registrar tu solicitud de privacidad.");
