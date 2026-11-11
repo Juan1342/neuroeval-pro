@@ -84,3 +84,15 @@ No publicar los documentos hasta que los campos anteriores estén completos, los
 - SIC Colombia — tratamiento de datos sensibles relativos a la salud: https://sedeelectronica.sic.gov.co/publicaciones/boletin-juridico/concepto/tratamiento-de-datos-sensibles-relativos-la-salud
 - RGPD, artículo 9 y artículo 8: https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng
 - ICO — special category data: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/a-guide-to-lawful-basis/special-category-data/
+
+
+## Controles técnicos añadidos en la rama de preparación
+
+- [x] Separar la aceptación del aviso general de la autorización expresa para datos sensibles relacionados con salud/atención.
+- [x] Versionar y registrar la autorización expresa por usuario, idioma y fecha.
+- [x] Bloquear en el servidor la creación de nuevas evaluaciones si falta la autorización vigente.
+- [x] Solicitar una autorización separada del adulto para observación familiar de información sensible de un menor.
+- [x] Permitir retirar la autorización de datos sensibles; el retiro bloquea inmediatamente nuevas evaluaciones y registra una solicitud de revisión para los datos históricos.
+- [x] Incluir el historial de autorizaciones sensibles en la exportación de datos personales.
+
+Estos controles son medidas técnicas de preparación; no sustituyen la validación jurídica de que el texto, la finalidad, la base legal y el proceso de consentimiento sean adecuados en cada país.
