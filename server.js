@@ -877,51 +877,33 @@ app.post("/api/profile", requireUser, async (req, res) => {
   try {
     const name = cleanText(req.body.name, 120);
     const goal = cleanText(req.body.goal, 120);
-
-    const age =
-      req.body.age === null || req.body.age === undefined
-        ? null
-        : Number(req.body.age);
-
-    if (!name) {
-      return sendError(res, 400, "El nombre es obligatorio.");
-    }
-
-    if (
-      age !== null &&
-      (!Number.isInteger(age) || age < 18 || age > 99)
-    ) {
-      return sendError(res, 400, "La edad no es válida.");
-    }
-
+    const age = req.body.age === null || req.body.age === undefined ? null : Number(req.body.age);
+    const country = cleanText(req.body.country, 80);
+    const city = cleanText(req.body.city, 100);
+    const requestedLanguage = String(req.body.language || "").toLowerCase();
+    const language = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : "es";
+    if (!name) return sendError(res, 400, "El nombre es obligatorio.");
+    if (age !== null && (!Number.isInteger(age) || age < 18 || age > 99)) return sendError(res, 400, "La edad no es válida.");
+    const proxyCountry = String(req.headers["cf-ipcountry"] || req.headers["x-vercel-ip-country"] || req.headers["x-country-code"] || "").trim().toUpperCase();
+    const validProxyCountry = /^[A-Z]{2}$/.test(proxyCountry) && proxyCountry !== "XX" ? proxyCountry : "";
     const userRef = db.collection("users").doc(req.user.uid);
     const existing = await userRef.get();
-
+    const previous = existing.exists ? existing.data() || {} : {};
     const profile = {
-      uid: req.user.uid,
-      name,
-      email: String(req.user.email || "").toLowerCase(),
-      age,
+      uid: req.user.uid, name, email: String(req.user.email || "").toLowerCase(), age,
       goal: goal || "Autoconocimiento",
-      updatedAt: FieldValue.serverTimestamp()
+      country: country || previous.country || "",
+      city: city || previous.city || "",
+      countrySource: country ? "user" : (previous.country ? previous.countrySource || "user" : (validProxyCountry ? "proxy_country" : "unknown")),
+      detectedCountryCode: validProxyCountry || previous.detectedCountryCode || "",
+      language, updatedAt: FieldValue.serverTimestamp()
     };
-
-    if (!existing.exists) {
-      profile.createdAt =
-        FieldValue.serverTimestamp();
-    }
-
+    if (!existing.exists) profile.createdAt = FieldValue.serverTimestamp();
     await userRef.set(profile, { merge: true });
-
     return res.json({ ok: true, profile });
-
   } catch (error) {
     console.error("POST perfil:", error);
-    return sendError(
-      res,
-      500,
-      "No se pudo guardar el perfil."
-    );
+    return sendError(res, 500, "No se pudo guardar el perfil.");
   }
 });
 
@@ -2331,6 +2313,31 @@ app.get(
     }
   }
 );
+
+/* Estadísticas geográficas y demográficas agregadas. Sin PII ni respuestas. */
+app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard.view"), async (req, res) => {
+  try {
+    const snapshot = await db.collection("users").limit(10000).get();
+    const buckets = { countries:new Map(), cities:new Map(), ages:new Map(), languages:new Map(), goals:new Map() };
+    const add = (map, value) => { const label=String(value||"Sin dato").trim().slice(0,100)||"Sin dato"; map.set(label,(map.get(label)||0)+1); };
+    const ageLabel = age => { const n=Number(age); if(!Number.isInteger(n)||n<18||n>99)return "Sin dato"; if(n<=24)return "18–24"; if(n<=34)return "25–34"; if(n<=44)return "35–44"; if(n<=54)return "45–54"; return "55+"; };
+    snapshot.docs.forEach(doc => {
+      const u=doc.data()||{};
+      const country=cleanText(u.country,80)||(u.detectedCountryCode?String(u.detectedCountryCode):"Sin dato");
+      add(buckets.countries,country);
+      if(u.city&&country!=="Sin dato")add(buckets.cities,cleanText(u.city,100)+", "+country);
+      add(buckets.ages,ageLabel(u.age));
+      add(buckets.languages,u.language==="en"?"English":u.language==="es"?"Español":"Sin dato");
+      add(buckets.goals,cleanText(u.goal,100)||"Sin dato");
+    });
+    const safeRows=map=>[...map.entries()].filter(([,count])=>count>=10).map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count);
+    return res.json({
+      ok:true,generatedAt:new Date().toISOString(),users:snapshot.size,truncated:snapshot.size>=10000,privacyThreshold:10,
+      countries:safeRows(buckets.countries),cities:safeRows(buckets.cities),ages:safeRows(buckets.ages),
+      languages:safeRows(buckets.languages),goals:safeRows(buckets.goals)
+    });
+  } catch(error) { console.error("Analítica global:",error); return sendError(res,500,"No se pudo calcular la analítica geográfica."); }
+});
 
 /* Analítica comercial consolidada: acceso exclusivo a personal con permiso de pagos. */
 app.get("/api/admin/analytics/commercial", requireUser, requireStaffAdmin("payments.view"), async (req, res) => {
