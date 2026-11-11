@@ -3002,7 +3002,7 @@ async function loadAdminGlobalAnalytics() {
         track.appendChild(bar);item.append(line,track);host.appendChild(item);
       });
     });
-    status.textContent=(currentLanguage==="en"?"Updated: ":"Actualizado: ")+new Date(data.generatedAt).toLocaleString(currentLanguage==="en"?"en-US":"es-CO")+" · "+Number(data.users||0).toLocaleString(currentLanguage==="en"?"en-US":"es-CO")+(currentLanguage==="en"?" profiles analyzed":" perfiles analizados")+(data.truncated?(currentLanguage==="en"?" · sample limited to 10,000 profiles":" · muestra limitada a 10.000 perfiles"):"")+(currentLanguage==="en"?". Groups under 10 are hidden.":". Se ocultan grupos menores de 10.");
+    status.textContent=(currentLanguage==="en"?"Updated: ":"Actualizado: ")+new Date(data.generatedAt).toLocaleString(currentLanguage==="en"?"en-US":"es-CO")+" · "+Number(data.users||0).toLocaleString(currentLanguage==="en"?"en-US":"es-CO")+(currentLanguage==="en"?" profiles analyzed":" perfiles analizados")+(data.truncated?(currentLanguage==="en"?" · limited to the first 50,000 profiles":" · limitado a los primeros 50.000 perfiles"):"")+(currentLanguage==="en"?". Groups under 10 are hidden.":". Se ocultan grupos menores de 10.");
   } catch(error) {status.textContent="No fue posible cargar las estadísticas: "+error.message;}
 }
 
