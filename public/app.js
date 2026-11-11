@@ -997,13 +997,16 @@ async function loadEvaluationHistory() {
     };
     evaluations.sort((a,b) => getTime(b.createdAt) - getTime(a.createdAt));
     const paid = evaluations.filter(item => item.paymentStatus === "paid");
-    const pending = evaluations.filter(item => item.paymentStatus !== "paid");
+    const pendingEvaluations = evaluations.filter(item => item.paymentStatus === "pending");
     count.textContent = String(paid.length);
-    if (pendingCount) pendingCount.textContent = String(pending.length);
+    if (pendingCount) pendingCount.textContent = String(pendingEvaluations.length);
     if (totalCount) totalCount.textContent = String(evaluations.length);
     container.replaceChildren();
     if (!evaluations.length) { container.textContent = "Todavía no tienes evaluaciones registradas."; return; }
     evaluations.forEach(evaluation => {
+      const paymentStatus = String(evaluation.paymentStatus || "pending").toLowerCase();
+      const isPaid = paymentStatus === "paid";
+      const isPending = paymentStatus === "pending";
       const card = document.createElement("article");
       card.className = "profile-row";
       card.style.alignItems = "center"; card.style.gap = "1rem"; card.style.flexWrap = "wrap";
@@ -1012,29 +1015,43 @@ async function loadEvaluationHistory() {
       const meta = document.createElement("p"); meta.className = "muted-text text-sm";
       meta.textContent = formatProgressEvaluationDate(evaluation.createdAt) + " · " + (evaluation.goal || "Evaluación integral");
       const status = document.createElement("p"); status.className = "text-sm font-bold";
-      status.textContent = evaluation.paymentStatus === "paid" ? "Pago confirmado · PDF disponible" : "Pago pendiente";
-      status.style.color = evaluation.paymentStatus === "paid" ? "#047857" : "#b45309";
+      if (isPaid) {
+        status.textContent = "Pago confirmado · PDF disponible";
+        status.style.color = "#047857";
+      } else if (isPending) {
+        status.textContent = "Pago pendiente";
+        status.style.color = "#b45309";
+      } else {
+        const labels = {
+          failed: "Pago no completado",
+          declined: "Pago rechazado",
+          error: "Error al procesar el pago",
+          cancelled: "Pago cancelado"
+        };
+        status.textContent = labels[paymentStatus] || "Pago no confirmado";
+        status.style.color = "#b91c1c";
+      }
       info.append(title, meta, status); card.appendChild(info);
-      if (evaluation.paymentStatus === "paid") {
+      if (isPaid) {
         const button = document.createElement("button"); button.type = "button"; button.className = "btn outline";
         button.textContent = "Descargar PDF";
         button.addEventListener("click", () => downloadEvaluationPdf(evaluation.id));
         card.appendChild(button);
-      } else {
+      } else if (isPending) {
         const actions = document.createElement("div");
         actions.style.display = "flex"; actions.style.alignItems = "center"; actions.style.gap = ".75rem"; actions.style.flexWrap = "wrap";
-        const pending = document.createElement("span"); pending.className = "muted-text text-sm";
-        pending.textContent = "Evaluación pendiente de pago."; 
+        const pendingLabel = document.createElement("span"); pendingLabel.className = "muted-text text-sm";
+        pendingLabel.textContent = "Puedes retomar esta evaluación.";
         const resume = document.createElement("button"); resume.type = "button"; resume.className = "btn primary";
         resume.textContent = "Continuar al pago";
         resume.addEventListener("click", async () => {
           stopPaymentPolling();
           lastEvaluationId = evaluation.id;
-          paymentReference = evaluation.reference || null;
+          paymentReference = null;
           show("payment-view");
           await showPaymentForExistingEvaluation();
         });
-        actions.append(pending, resume); card.appendChild(actions);
+        actions.append(pendingLabel, resume); card.appendChild(actions);
       }
       container.appendChild(card);
     });
