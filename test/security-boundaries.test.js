@@ -144,3 +144,17 @@ test("Wompi webhook verifies transaction identity and amount through the authent
   assert.match(server, /const status = String\(verifiedTransaction\.status \|\| ""\)\.toUpperCase\(\)/);
   assert.match(envExample, /WOMPI_PRIVATE_KEY=/);
 });
+
+
+test("sensitive assessment data requires a separate versioned explicit consent", () => {
+  assert.match(server, /validateSensitiveDataConsent/);
+  assert.match(server, /sensitiveDataConsents/);
+  assert.match(server, /sensitiveDataConsentVersion/);
+  assert.match(server, /sensitiveConsentSnapshot\.data\(\)\?\.accepted !== true/);
+  assert.match(app, /sensitiveDataConsent: \{ accepted: true, version: PRIVACY_NOTICE_VERSION, language: currentLanguage \}/);
+  assert.match(app, /sensitiveDataConsentVersion === PRIVACY_NOTICE_VERSION/);
+  assert.match(html, /id="sensitive-data-consent"/);
+  assert.match(html, /id="parent-sensitive-data-consent"/);
+  assert.match(privacyPolicy, /datos personales sensibles relacionados con salud, atención y bienestar cognitivo/);
+  assert.match(privacyPolicy, /sensitive personal data related to health, attention and cognitive well-being/);
+});
