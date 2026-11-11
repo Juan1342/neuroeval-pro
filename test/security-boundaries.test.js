@@ -162,7 +162,7 @@ test("sensitive assessment data requires a separate versioned explicit consent",
 
 test("privacy export includes sensitive-data consent history and reports truncation accurately", () => {
   assert.match(server, /sensitiveDataConsents: sensitiveConsentSnapshot\.docs\.map/);
-  assert.match(server, /evaluations\)\.where\("uid", "==", uid\)\.limit\(1001\)/);
+  assert.match(server, /db\.collection\("evaluations"\)\.where\("uid", "==", uid\)\.limit\(1001\)/);
   assert.match(server, /truncated: evaluationsSnapshot\.size > 1000/);
 });
 
