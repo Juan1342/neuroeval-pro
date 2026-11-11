@@ -49,6 +49,7 @@ Si falta la llave privada, o Wompi no puede confirmar la transacción mediante s
 ## Referencias oficiales
 
 - Eventos y firma del webhook: https://docs.wompi.co/docs/colombia/eventos/
+- Ambientes, prefijos de llaves y URLs base: https://docs.wompi.co/docs/colombia/ambientes-y-llaves/
 - Consulta autenticada de transacciones: https://docs.wompi.co/docs/colombia/transacciones/
 - Métodos de pago: https://docs.wompi.co/docs/colombia/metodos-de-pago/
 - Pagos con tarjetas internacionales: https://soporte.wompi.co/hc/es-419/articles/360042975693--Puedo-recibir-pagos-internacionales-y-como-realizo-la-conversi%C3%B3n-a-la-moneda-de-mi-cliente
