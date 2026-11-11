@@ -1596,18 +1596,13 @@ async function startQuiz(name, age, goal) {
 }
 
 function renderQuestion() {
-  if (currentLanguage === "en") {
-    const question = questions[currentIndex];
-    const localized = question.map(value => value);
-    localized[0] = translateUiText(localized[0]);
-    localized[1] = translateUiText(localized[1]);
-    localized[4] = translateUiText(localized[4]);
-    if (Array.isArray(localized[6])) localized[6] = localized[6].map(translateUiText);
-    questions[currentIndex] = localized;
-    activeChoices = choices.map(translateUiText);
-  } else {
-    activeChoices = choices;
-  }
+  const question = currentLanguage === "en"
+    ? questions[currentIndex].map((value, index) => {
+        if (index === 6 && Array.isArray(value)) return value.map(translateUiText);
+        return typeof value === "string" ? translateUiText(value) : value;
+      })
+    : questions[currentIndex];
+  activeChoices = currentLanguage === "en" ? choices.map(translateUiText) : choices;
   const question = questions[currentIndex];
   const percentage = Math.round(((currentIndex + 1) / questions.length) * 100);
   const progress = (currentIndex + 1) / questions.length;
