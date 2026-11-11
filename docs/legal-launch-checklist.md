@@ -17,8 +17,8 @@
 ## Identificación confirmada del responsable
 
 - [x] Responsable: JUAN MANUEL ZAMORA ZAPATA, persona natural, Colombia (dato confirmado por el titular del proyecto el 11 de noviembre de 2026).
-- [x] Dirección de notificación facilitada: Carrera 60 # 71-10, Bello, Antioquia, Colombia (pendiente confirmar que es la dirección legal adecuada y autorizada para publicación).
-- [ ] Correo oficial de privacidad, soporte y reclamaciones.
+- [x] Dirección oficial para notificaciones judiciales: Carrera 60 # 71-10, Bello, Antioquia, Colombia (confirmada por el responsable y autorizada expresamente para publicación el 11 de noviembre de 2026; la revisión jurídica de su suficiencia continúa pendiente).
+- [x] Correo oficial de privacidad, soporte y reclamaciones: soporte.neuroevalpro@gmail.com (facilitado por el responsable; falta probar operatividad y tiempos de respuesta).
 - [ ] Definir si se designará un canal separado para derechos de protección de datos.
 
 ## Datos reales adicionales que debe aportar el responsable
@@ -26,7 +26,7 @@
 - [ ] Nombre legal o razón social del responsable.
 - [x] País y domicilio informados: Colombia; dirección facilitada en Bello, Antioquia (pendiente validación legal).
 - [ ] Identificación tributaria o registral, cuando corresponda.
-- [ ] Correo y canal oficial para privacidad, consultas y reclamaciones.
+- [x] Correo oficial para privacidad, consultas y reclamaciones: soporte.neuroevalpro@gmail.com (validar operatividad y procedimiento interno).
 - [ ] Responsable interno que atenderá solicitudes y plazos operativos.
 - [ ] Confirmación del proveedor de correo realmente configurado.
 - [ ] Regiones de almacenamiento, subencargados, contratos y condiciones de transferencia de Firebase/Google Cloud, Render, Wompi y correo.
@@ -114,13 +114,14 @@ Estos controles son medidas técnicas de preparación; no sustituyen la validaci
 
 ## Estado actualizado de documentos (11 de noviembre de 2026)
 
-La identidad del responsable fue confirmada por el titular del proyecto: **JUAN MANUEL ZAMORA ZAPATA, persona natural, Colombia**. No se ha inferido ni añadido una dirección, correo electrónico, identificación tributaria o domicilio específico.
+La identidad del responsable fue confirmada por el titular del proyecto: **JUAN MANUEL ZAMORA ZAPATA, persona natural, Colombia**. La dirección **Carrera 60 # 71-10, Bello, Antioquia, Colombia** fue confirmada expresamente como dirección oficial para notificaciones judiciales y autorizada para publicación. El correo **soporte.neuroevalpro@gmail.com** fue facilitado como canal oficial. No se ha inferido ni añadido identificación tributaria.
 
 Los tres documentos se prepararon en español e inglés en la rama `feature/global-launch-prep`. Los avisos conservan una advertencia visible de validación pendiente y meta robots noindex. Los enlaces de navegación se añadieron al footer de la aplicación, pero no se ha realizado despliegue ni publicación en producción.
 
 ### Pendientes bloqueantes antes de declarar vigencia
 
-- [x] Recibidos correo oficial soporte.neuroevalpro@gmail.com y dirección facilitada en Bello, Antioquia.
+- [x] Correo oficial soporte.neuroevalpro@gmail.com recibido.
+- [x] Dirección oficial de notificación judicial confirmada y publicación autorizada: Carrera 60 # 71-10, Bello, Antioquia, Colombia.
 - [ ] Confirmar la identidad legal/comercial con la que se ofrecerá y facturará el servicio, y si se cuenta con RUT u otra inscripción aplicable.
 - [ ] Confirmar el proveedor SMTP realmente activo y sus condiciones de tratamiento.
 - [ ] Documentar ubicación de datos, subencargados y contratos de Firebase/Google Cloud, Render, Wompi y correo.
