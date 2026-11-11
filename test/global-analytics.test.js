@@ -70,6 +70,6 @@ test("combines country variants into one privacy-safe global group", () => {
     ...Array.from({ length: 10 }, () => ({ country: "US", city: "Miami", age: 32, language: "en" }))
   ];
   const result = aggregateProfiles(profiles, 10);
-  assert.deepEqual(result.countries, [{ label: "Estados Unidos", count: 30, code: "US" }]);
-  assert.deepEqual(result.cities, [{ label: "Miami, Estados Unidos", count: 30 }]);
+  assert.deepEqual(result.countries, [{ label: "Estados Unidos", count: 30, code: "US", labelEn: "United States" }]);
+  assert.deepEqual(result.cities, [{ label: "Miami, Estados Unidos", count: 30, labelEn: "Miami, United States" }]);
 });
