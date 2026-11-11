@@ -777,7 +777,7 @@ const uiTranslations = {
   "Leer el aviso completo (ES)": "Read the full notice (Spanish)",
   "Read full notice (EN)": "Read full notice (English)",
   "Aviso completo (ES)": "Full notice (Spanish)",
-  "Full notice (EN)": "Full notice (English)"
+  "Full notice (EN)": "Full notice (English)",
   "No se pudo guardar tu evaluación:": "Could not save your assessment:",
   "Este enlace de evaluación no pertenece a esta cuenta o ya no está disponible. Puedes iniciar una evaluación nueva desde tu panel.": "This assessment link does not belong to this account or is no longer available. You can start a new assessment from your dashboard.",
   "No se encontró el identificador de la evaluación.": "The assessment identifier could not be found.",
