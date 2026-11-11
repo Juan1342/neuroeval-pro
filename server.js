@@ -3157,7 +3157,7 @@ app.get(
       const records=evaluationsSnapshot.docs.map(document=>{
         const data=document.data()||{};
         return {
-          id:document.id,uid:data.uid||"",name:data.name||"",email:data.email||"",age:data.age??null,goal:data.goal||"",evaluationType:data.evaluationType||"self_report",childAge:data.parentContext?.childAge??null,
+          id:document.id,uid:data.uid||"",name:data.name||"",email:data.email||"",age:data.age??null,goal:data.goal||"",evaluationType:data.evaluationType||"self_report",childAgeBand:data.parentContext?.childAgeBand||data.parentContext?.ageBand||null,
           profile:data.profile||"",paymentStatus:data.paymentStatus||"pending",paymentProvider:data.paymentProvider||"",
           paymentReference:data.paymentReference||"",wompiTransactionId:data.wompiTransactionId||"",
           wompiTransactionStatus:data.wompiTransactionStatus||"",amountCop:Number(data.amountCop||0),currency:data.currency||"COP",
