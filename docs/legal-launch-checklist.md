@@ -25,7 +25,7 @@
 
 - [ ] Nombre legal o razón social del responsable.
 - [x] País y domicilio informados: Colombia; dirección facilitada en Bello, Antioquia (pendiente validación legal).
-- [ ] Identificación tributaria o registral, cuando corresponda.
+- [x] NIT informado por el responsable: 1007114237-5 (dato recibido el 11 de noviembre de 2026; pendiente cotejo con el RUT y validación del dígito de verificación antes de publicarlo).
 - [x] Correo oficial para privacidad, consultas y reclamaciones: soporte.neuroevalpro@gmail.com (validar operatividad y procedimiento interno).
 - [ ] Responsable interno que atenderá solicitudes y plazos operativos.
 - [ ] Confirmación del proveedor de correo realmente configurado.
@@ -114,7 +114,7 @@ Estos controles son medidas técnicas de preparación; no sustituyen la validaci
 
 ## Estado actualizado de documentos (11 de noviembre de 2026)
 
-La identidad del responsable fue confirmada por el titular del proyecto: **JUAN MANUEL ZAMORA ZAPATA, persona natural, Colombia**. La dirección **Carrera 60 # 71-10, Bello, Antioquia, Colombia** fue confirmada expresamente como dirección oficial para notificaciones judiciales y autorizada para publicación. El correo **soporte.neuroevalpro@gmail.com** fue facilitado como canal oficial. No se ha inferido ni añadido identificación tributaria.
+La identidad del responsable fue confirmada por el titular del proyecto: **JUAN MANUEL ZAMORA ZAPATA, persona natural, Colombia**. La dirección **Carrera 60 # 71-10, Bello, Antioquia, Colombia** fue confirmada expresamente como dirección oficial para notificaciones judiciales y autorizada para publicación. El correo **soporte.neuroevalpro@gmail.com** fue facilitado como canal oficial. El responsable informó el NIT 1007114237-5; permanece pendiente de cotejo con el RUT antes de incorporarlo a las páginas públicas.
 
 Los tres documentos se prepararon en español e inglés en la rama `feature/global-launch-prep`. Los avisos conservan una advertencia visible de validación pendiente y meta robots noindex. Los enlaces de navegación se añadieron al footer de la aplicación, pero no se ha realizado despliegue ni publicación en producción.
 
@@ -122,7 +122,7 @@ Los tres documentos se prepararon en español e inglés en la rama `feature/glob
 
 - [x] Correo oficial soporte.neuroevalpro@gmail.com recibido.
 - [x] Dirección oficial de notificación judicial confirmada y publicación autorizada: Carrera 60 # 71-10, Bello, Antioquia, Colombia.
-- [ ] Confirmar la identidad legal/comercial con la que se ofrecerá y facturará el servicio, y si se cuenta con RUT u otra inscripción aplicable.
+- [ ] Cotejar el NIT informado (1007114237-5) con el RUT vigente y confirmar la identidad legal/comercial con la que se ofrecerá y facturará el servicio.
 - [ ] Confirmar el proveedor SMTP realmente activo y sus condiciones de tratamiento.
 - [ ] Documentar ubicación de datos, subencargados y contratos de Firebase/Google Cloud, Render, Wompi y correo.
 - [ ] Definir y configurar periodos de conservación y eliminación, incluyendo respaldos y logs.
