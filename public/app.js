@@ -53,6 +53,7 @@ let activeChoices;
 let currentLanguage = "es";
 const uiTranslations = {
   "Plataforma segura": "Secure platform",
+  "🌐 Español": "🌐 Spanish",
   "Mi cuenta": "My account",
   "Panel de administración": "Admin dashboard",
   "Perfil": "Profile",
@@ -3057,7 +3058,8 @@ function registerEventListeners() {
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||"No se pudieron guardar las preferencias.");
       profileData={...next,...(result.profile||{})};
-      status.textContent="Preferencias regionales guardadas.";
+      setLanguage(next.language);
+      status.textContent=translateUiText("Preferencias regionales guardadas.");
     } catch(error) {status.textContent=error.message;}
   });
   $("profile-back").addEventListener("click", () => {
