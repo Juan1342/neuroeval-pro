@@ -2325,7 +2325,9 @@ const REPORT_TRANSLATIONS = {
   "Acceso a mis datos": "Access my data",
   "Rectificar mis datos": "Correct my data",
   "Solicitar revisión de eliminación": "Request deletion review",
-  "La solicitud queda registrada para revisión; no elimina datos automáticamente. Algunos registros pueden estar sujetos a obligaciones legales o de pago.": "The request is recorded for review; it does not automatically delete data. Some records may be subject to legal or payment obligations."
+  "La solicitud queda registrada para revisión; no elimina datos automáticamente. Algunos registros pueden estar sujetos a obligaciones legales o de pago.": "The request is recorded for review; it does not automatically delete data. Some records may be subject to legal or payment obligations.",
+  "Solicitudes de privacidad": "Privacy requests",
+  "Bandeja restringida al administrador principal. Revisar no implica borrar automáticamente datos.": "Inbox restricted to the primary administrator. Reviewing a request does not automatically delete data."
 };
 const REPORT_TRANSLATION_ENTRIES = Object.entries(REPORT_TRANSLATIONS).sort((a,b)=>b[0].length-a[0].length);
 function translateReportText(value, language = "es") {
