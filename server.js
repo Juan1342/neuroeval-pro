@@ -3170,6 +3170,10 @@ app.get(
       const visibleRecords = records.map(record => {
         const item = { ...record };
         if (!can("evaluations.responses")) delete item.profile;
+        // La consulta de evaluaciones no concede por sí sola acceso a identidad del cliente.
+        if (!can("clients.view")) {
+          ["uid", "name", "email", "age"].forEach(key => delete item[key]);
+        }
         if (!can("payments.view")) {
           [
             "paymentStatus", "paymentProvider", "paymentReference",
@@ -3446,15 +3450,19 @@ app.get(
       const parentContext = evaluationData.parentContext || {};
       // No devolver la edad exacta de menores en registros históricos.
       const { childAge, ...safeParentContext } = parentContext;
-      return res.json({
-        evaluation: {
-          id: snapshot.id,
-          ...evaluationData,
-          ...(evaluationData.evaluationType === "parent_observation"
-            ? { parentContext: safeParentContext }
-            : {})
-        }
-      });
+      const evaluation = {
+        id: snapshot.id,
+        ...evaluationData,
+        ...(evaluationData.evaluationType === "parent_observation"
+          ? { parentContext: safeParentContext }
+          : {})
+      };
+      const canViewClientIdentity = req.adminAccess?.isPrimaryAdmin === true ||
+        (req.adminAccess?.permissions || []).includes("clients.view");
+      if (!canViewClientIdentity) {
+        ["uid", "name", "email", "age"].forEach(key => delete evaluation[key]);
+      }
+      return res.json({ evaluation });
 
     } catch (error) {
       console.error("Detalle administrativo:", error);
@@ -3482,10 +3490,18 @@ app.get(
       const ownerProfile = evaluationData.uid
         ? await db.collection("users").doc(evaluationData.uid).get()
         : null;
+      const canViewClientIdentity = req.adminAccess?.isPrimaryAdmin === true ||
+        (req.adminAccess?.permissions || []).includes("clients.view");
+      const reportData = { ...evaluationData };
+      if (!canViewClientIdentity) {
+        reportData.name = "";
+        reportData.email = "";
+        delete reportData.age;
+      }
       const requestedLanguage = String(req.query.language || "").trim().toLowerCase();
       const profileLanguage = ownerProfile?.exists && ownerProfile.data()?.language === "en" ? "en" : "es";
       const reportLanguage = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : profileLanguage;
-      const pdf = await buildEvaluationPdf(evaluationData, {
+      const pdf = await buildEvaluationPdf(reportData, {
         includeAnswers: true,
         language: reportLanguage
       });
