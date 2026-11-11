@@ -2267,7 +2267,14 @@ const REPORT_TRANSLATIONS = {
   "Usuarios agrupados por país": "Users grouped by country",
   "Aún no hay grupos de países que puedan ubicarse": "There are no mappable country groups yet.",
   " años": " years",
-  "⚙️   Configuración": "⚙️   Settings"
+  "⚙️   Configuración": "⚙️   Settings",
+  "Información sobre privacidad y uso de datos": "Privacy and data use information",
+  "NeuroEval Pro es una herramienta de autorregistro orientativo para personas adultas. No diagnostica ni sustituye la valoración de profesionales.": "NeuroEval Pro is an informational self-report tool for adults. It does not diagnose or replace professional assessment.",
+  "Se procesan datos de cuenta, edad adulta, idioma, respuestas y resultados para prestar el servicio, generar informes, gestionar pagos y proteger la plataforma.": "Account details, adult age, language, answers, and results are processed to provide the service, generate reports, manage payments, and protect the platform.",
+  "País y ciudad son opcionales. No se solicita GPS. Los datos geográficos y demográficos se muestran al equipo autorizado únicamente de forma agregada y con un mínimo de 10 personas por grupo.": "Country and city are optional. GPS is not requested. Geographic and demographic data are shown to authorized staff only in aggregate, with at least 10 people per group.",
+  "La observación de menores debe realizarla un adulto autorizado. No escribas nombres, colegios ni otros datos que identifiquen al menor; el sistema conserva una franja de edad, no su edad exacta.": "Observation of minors must be completed by an authorized adult. Do not enter names, schools, or other identifying details; the system stores an age band, not the child's exact age.",
+  "Puedes solicitar acceso, rectificación o revisión de eliminación desde los canales de privacidad. Algunos registros pueden conservarse cuando existan obligaciones legales, contables o relacionadas con pagos. Consulta la política de privacidad completa antes del lanzamiento internacional.": "You may request access, correction, or review of deletion through the privacy channels. Some records may be retained where legal, accounting, or payment obligations apply. Consult the full privacy policy before the international launch.",
+  "Versión del aviso: 2026-11-11.": "Notice version: 2026-11-11."
 };
 const REPORT_TRANSLATION_ENTRIES = Object.entries(REPORT_TRANSLATIONS).sort((a,b)=>b[0].length-a[0].length);
 function translateReportText(value, language = "es") {
