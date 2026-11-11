@@ -659,7 +659,22 @@ const uiTranslations = {
   "Cargando historial…": "Loading history…",
   "Detalle de evaluación": "Assessment details",
   "Cerrar ✕": "Close ✕",
-  "NeuroEval Pro · Una herramienta de autorregistro orientativo.": "NeuroEval Pro · An informational self-report tool."
+  "NeuroEval Pro · Una herramienta de autorregistro orientativo.": "NeuroEval Pro · An informational self-report tool.",
+  "4–7 años": "Ages 4–7",
+  "8–12 años": "Ages 8–12",
+  "13–17 años": "Ages 13–17",
+  "casa": "home",
+  "colegio": "school",
+  "social": "social",
+  "Explora la facilidad para mantener el foco, seguir conversaciones, recordar instrucciones y evitar distracciones.": "Explores the ability to maintain focus, follow conversations, remember instructions, and avoid distractions.",
+  "Explora la planificación, el inicio y finalización de tareas, la gestión del tiempo y la capacidad de retomar actividades.": "Explores planning, starting and completing tasks, time management, and the ability to resume activities.",
+  "Explora la necesidad de movimiento, la espera, la tendencia a interrumpir y la pausa antes de actuar.": "Explores the need for movement, waiting, interrupting, and pausing before acting.",
+  "Explora la intensidad de las respuestas emocionales y la recuperación ante frustraciones o cambios.": "Explores the intensity of emotional responses and recovery after frustration or change.",
+  "Explora factores contextuales que pueden influir en la concentración, como el sueño, la tensión y la sobrecarga.": "Explores contextual factors that may affect concentration, such as sleep, tension, and overload.",
+  "Explora si las experiencias descritas generan dificultades funcionales y si son observadas por otras personas.": "Explores whether the described experiences cause functional difficulties and are noticed by other people.",
+  "Explora si las experiencias parecen remontarse a la infancia y si ocurren en más de un contexto.": "Explores whether the experiences may date back to childhood and occur in more than one setting.",
+  "Frecuencia descriptiva de las conductas observadas por el familiar; no equivale a una probabilidad clínica.": "Descriptive frequency of behaviors observed by the family member; it is not a clinical probability.",
+  "Señala circunstancias que también podrían influir en la conducta; no son síntomas de TDAH ni aumentan una puntuación de síntomas.": "Indicates circumstances that may also affect behavior; they are not ADHD symptoms and do not increase a symptom score."
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
@@ -1281,7 +1296,7 @@ async function registerWithEmail(event) {
 
     const country = $("reg-country")?.value.trim() || "";
     const city = $("reg-city")?.value.trim() || "";
-    const language = (navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es";
+    const language = currentLanguage === "en" ? "en" : "es";
     profileData = { name, age, goal, country, city, language };
 
     const credential = await createUserWithEmailAndPassword(
