@@ -958,12 +958,14 @@ app.post("/api/profile", requireUser, async (req, res) => {
 app.get("/api/privacy/export", requireUser, backupExportLimiter, async (req, res) => {
   try {
     const uid = req.user.uid;
-    const [profileSnapshot, evaluationsSnapshot] = await Promise.all([
-      db.collection("users").doc(uid).get(),
-      db.collection("evaluations").where("uid", "==", uid).limit(1000).get()
+    const userRef = db.collection("users").doc(uid);
+    const [profileSnapshot, evaluationsSnapshot, consentSnapshot, sensitiveConsentSnapshot] = await Promise.all([
+      userRef.get(),
+      db.collection("evaluations").where("uid", "==", uid).limit(1001).get(),
+      userRef.collection("privacyConsents").get(),
+      userRef.collection("sensitiveDataConsents").get()
     ]);
-    const consentSnapshot = await db.collection("users").doc(uid).collection("privacyConsents").get();
-    const evaluations = evaluationsSnapshot.docs.map(document => ({
+    const evaluations = evaluationsSnapshot.docs.slice(0, 1000).map(document => ({
       id: document.id,
       ...document.data()
     }));
@@ -974,8 +976,9 @@ app.get("/api/privacy/export", requireUser, backupExportLimiter, async (req, res
       exportedAt: new Date().toISOString(),
       account: profileSnapshot.exists ? profileSnapshot.data() : null,
       consents: consentSnapshot.docs.map(document => document.data()),
+      sensitiveDataConsents: sensitiveConsentSnapshot.docs.map(document => document.data()),
       evaluations,
-      truncated: evaluationsSnapshot.size >= 1000
+      truncated: evaluationsSnapshot.size > 1000
     });
   } catch (error) {
     console.error("Exportación de datos personales:", error);
