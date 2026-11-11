@@ -826,7 +826,21 @@ const uiTranslations = {
   "Este cliente todavía no tiene evaluaciones.": "This client does not have any assessments yet.",
   "Este expediente muestra datos de perfil y metadatos de evaluaciones. Las respuestas clínicas y los informes completos mantienen sus permisos independientes.": "This record shows profile data and assessment metadata. Assessment answers and full reports have separate access permissions.",
   "Cargando información protegida…": "Loading protected information…",
-  "Por ejemplo: mueves manos o pies, cambias de postura o te levantas.": "For example: you move your hands or feet, change posture, or stand up.",
+  "Por ejemplo: mueves manos o pies, cambias de postura o te levantas.": "For example: you move your hands or feet, change posture, or stand up.",  "Puede ocurrir al hablar, comprar, decidir o reaccionar.": "It may happen when speaking, shopping, making decisions or reacting.",
+  "NUBE   ·   PAN   ·   RELOJ   ·   FLOR": "CLOUD   ·   BREAD   ·   CLOCK   ·   FLOWER",
+  "Piensa en actividades que normalmente disfruta y requieren continuidad.": "Think about activities the child normally enjoys and that require sustained attention.",
+  "En adolescentes puede manifestarse como inquietud interna.": "In teenagers, it may appear as inner restlessness.",
+  "Por ejemplo, se incorpora a una actividad o toma la palabra repentinamente.": "For example, they join an activity or suddenly start speaking.",
+  "Piensa en informes escolares, recuerdos familiares o comentarios docentes.": "Think about school reports, family memories or teachers' comments.",
+  "LUNA · LLAVE · RÍO": "MOON · KEY · RIVER",
+  "LUNA · LIBRO · RÍO": "MOON · BOOK · RIVER",
+  "LLAVE · RÍO · ROSA": "KEY · RIVER · ROSE",
+  "LUNA · LLAVE · SOL": "MOON · KEY · SUN",
+  "NUBE · PAN · RELOJ · FLOR": "CLOUD · BREAD · CLOCK · FLOWER",
+  "NUBE · PAN · RELOJ · LUNA": "CLOUD · BREAD · CLOCK · MOON",
+  "NUBE · LIBRO · RELOJ · FLOR": "CLOUD · BOOK · CLOCK · FLOWER",
+  "PAN · RELOJ · FLOR · ROSA": "BREAD · CLOCK · FLOWER · ROSE",
+
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
