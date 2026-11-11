@@ -427,6 +427,7 @@
               </div>
             </details>
             <label class="flex gap-2 items-start text-xs text-slate-500 mt-4"><input id="consent" type="checkbox" class="mt-1" required><span>He leído y acepto el aviso de privacidad y el tratamiento de mis datos para esta experiencia.</span></label>
+            <label class="flex gap-2 items-start text-xs text-slate-500 mt-3"><input id="sensitive-data-consent" type="checkbox" class="mt-1"><span>Autorizo expresamente el tratamiento de mis respuestas, que pueden revelar datos sensibles relacionados con salud, atención y bienestar cognitivo, para generar mi autorregistro e informe. Entiendo que puedo no aceptar y no iniciar la evaluación.</span></label>
             <button class="btn primary w-full mt-5" type="submit">Crear cuenta y comenzar →</button>
           </form>
 
@@ -707,6 +708,7 @@
           </fieldset>
           <div class="md:col-span-2 notice">Importante: esta herramienta no diagnostica ni descarta TDAH y no es una escala clínica validada. No escribas el nombre del menor, su colegio ni otros datos que permitan identificarlo. Si te preocupa su desarrollo o bienestar, consulta con pediatría o un profesional de salud infantil.</div>
           <label class="md:col-span-2 flex items-start gap-2 text-sm"><input id="parent-guardian-consent" type="checkbox" required class="mt-1"><span>Confirmo que soy su padre, madre, tutor o cuidador autorizado y que puedo proporcionar esta información para recibir orientación.</span></label>
+          <label class="md:col-span-2 flex items-start gap-2 text-sm"><input id="parent-sensitive-data-consent" type="checkbox" required class="mt-1"><span>Autorizo expresamente el tratamiento de esta información del menor, que puede revelar datos sensibles relacionados con su salud y bienestar, únicamente para generar esta orientación. Entiendo que puedo no autorizarlo y no continuar.</span></label>
           <div class="md:col-span-2"><p id="parent-intro-message" class="message" role="status" aria-live="polite"></p><button class="btn primary w-full mt-3" type="submit">Continuar al cuestionario →</button><button class="btn outline w-full mt-2" type="button" onclick="document.getElementById('dashboard-view').classList.remove('hidden');document.getElementById('parent-intro-view').classList.add('hidden')">Volver al catálogo</button></div>
         </form>
       </div>
