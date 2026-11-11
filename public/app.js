@@ -764,7 +764,14 @@ const uiTranslations = {
   "País y ciudad son opcionales. No se solicita GPS. Los datos geográficos y demográficos se muestran al equipo autorizado únicamente de forma agregada y con un mínimo de 10 personas por grupo.": "Country and city are optional. GPS is not requested. Geographic and demographic data are shown to authorized staff only in aggregate, with at least 10 people per group.",
   "La observación de menores debe realizarla un adulto autorizado. No escribas nombres, colegios ni otros datos que identifiquen al menor; el sistema conserva una franja de edad, no su edad exacta.": "Observation of minors must be completed by an authorized adult. Do not enter names, schools, or other identifying details; the system stores an age band, not the child's exact age.",
   "Puedes solicitar acceso, rectificación o revisión de eliminación desde los canales de privacidad. Algunos registros pueden conservarse cuando existan obligaciones legales, contables o relacionadas con pagos. Consulta la política de privacidad completa antes del lanzamiento internacional.": "You may request access, correction, or review of deletion through the privacy channels. Some records may be retained where legal, accounting, or payment obligations apply. Consult the full privacy policy before the international launch.",
-  "Versión del aviso: 2026-11-11.": "Notice version: 2026-11-11."
+  "Versión del aviso: 2026-11-11.": "Notice version: 2026-11-11.",
+  "Tus datos y privacidad": "Your data and privacy",
+  "Puedes descargar una copia de los datos asociados a tu cuenta o registrar una solicitud de acceso, rectificación o revisión de eliminación.": "You can download a copy of the data associated with your account or submit a request for access, correction, or deletion review.",
+  "Descargar mis datos": "Download my data",
+  "Acceso a mis datos": "Access my data",
+  "Rectificar mis datos": "Correct my data",
+  "Solicitar revisión de eliminación": "Request deletion review",
+  "La solicitud queda registrada para revisión; no elimina datos automáticamente. Algunos registros pueden estar sujetos a obligaciones legales o de pago.": "The request is recorded for review; it does not automatically delete data. Some records may be subject to legal or payment obligations."
 };
 const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
 
@@ -3763,6 +3770,27 @@ function registerEventListeners() {
       setLanguage(next.language);
       status.textContent=translateUiText("Preferencias regionales guardadas.");
     } catch(error) {status.textContent=error.message;}
+  });
+  $("privacy-export-button").addEventListener("click", async () => {
+    const status = $("privacy-request-message");
+    status.textContent = currentLanguage === "en" ? "Preparing your data export…" : "Preparando la exportación de tus datos…";
+    try {
+      const response = await api("/api/privacy/export");
+      downloadBlob(await response.blob(), "neuroeval-pro-datos-personales.json");
+      status.textContent = currentLanguage === "en" ? "Your data export has been prepared." : "Se preparó la copia de tus datos.";
+    } catch (error) { status.textContent = error.message; }
+  });
+  $("privacy-request-button").addEventListener("click", async () => {
+    const status = $("privacy-request-message");
+    const type = $("privacy-request-type").value;
+    if (type === "deletion" && !window.confirm(currentLanguage === "en"
+      ? "This records a deletion review request; it does not immediately delete your account or records. Continue?"
+      : "Esto registra una solicitud de revisión de eliminación; no borra inmediatamente tu cuenta ni tus registros. ¿Continuar?")) return;
+    status.textContent = currentLanguage === "en" ? "Submitting your request…" : "Enviando tu solicitud…";
+    try {
+      await api("/api/privacy/requests", { method: "POST", body: JSON.stringify({ type }) });
+      status.textContent = currentLanguage === "en" ? "Your privacy request was recorded for review." : "Tu solicitud de privacidad quedó registrada para revisión.";
+    } catch (error) { status.textContent = error.message; }
   });
   $("profile-back").addEventListener("click", () => {
     if (currentIsAdmin) showAdmin();
