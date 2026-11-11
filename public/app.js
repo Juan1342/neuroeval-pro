@@ -2645,8 +2645,13 @@ async function loadOwnResult(evaluationId) {
 async function downloadEvaluationPdf(evaluationId) {
   if (!evaluationId) { alert("No se encontró el identificador de la evaluación."); return; }
   try {
+    if (currentUser && !currentIsAdmin) {
+      const localePayload = { ...(profileData || {}), language: currentLanguage };
+      await api("/api/profile", { method:"POST", body:JSON.stringify(localePayload) });
+      profileData = localePayload;
+    }
     const response = await api("/api/my-evaluations/" + encodeURIComponent(evaluationId) + "/pdf?language=" + encodeURIComponent(currentLanguage));
-    downloadBlob(await response.blob(), "NeuroEval-Pro-informe.pdf");
+    downloadBlob(await response.blob(), currentLanguage === "en" ? "NeuroEval-Pro-report.pdf" : "NeuroEval-Pro-informe.pdf");
   } catch (error) { alert(error.message); }
 }
 
