@@ -174,3 +174,18 @@ test("withdrawing sensitive-data consent blocks future assessments immediately",
   assert.match(app, /if \(type === "withdraw_consent"\)/);
   assert.match(html, /value="withdraw_consent"/);
 });
+
+
+test("global analytics is admin-only, minimized and suppresses small groups", () => {
+  const routeStart = server.indexOf('app.get("/api/admin/analytics/global"');
+  const routeEnd = server.indexOf('app.get("/api/admin/analytics/commercial"', routeStart);
+  assert.ok(routeStart >= 0 && routeEnd > routeStart, "global analytics route must exist");
+  const route = server.slice(routeStart, routeEnd);
+  assert.match(route, /requireStaffAdmin\("dashboard\.view"\)/);
+  assert.match(route, /select\("country", "city", "detectedCountryCode", "age", "language"\)/);
+  assert.match(route, /aggregateProfiles\(profiles, 10\)/);
+  assert.match(route, /privacyThreshold: 10/);
+  assert.doesNotMatch(route, /customerEmail|answers|recommendations|profileDescription/);
+  assert.match(route, /GLOBAL_ANALYTICS_MAX_USERS = 50000/);
+  assert.match(route, /truncated: hasMore/);
+});
