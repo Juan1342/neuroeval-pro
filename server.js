@@ -3561,6 +3561,8 @@ app.post(
         throw error;
       }
 
+      const userProfileSnapshot = await db.collection("users").doc(userRecord.uid).get();
+      const resetLanguage = userProfileSnapshot.exists && userProfileSnapshot.data()?.language === "en" ? "en" : "es";
       const code = String(
         crypto.randomInt(0, 1000000)
       ).padStart(6, "0");
@@ -3581,20 +3583,35 @@ app.post(
       });
 
       try {
+        const emailCopy = resetLanguage === "en"
+          ? {
+              subject: "Password reset code · NeuroEval Pro",
+              text: `Your password reset code is: ${code}\n\nThis code expires in 10 minutes. If you did not request this change, you can ignore this message.`,
+              intro: "We received a request to change your account password.",
+              label: "Your verification code is:",
+              expiry: "This code expires in 10 minutes and can only be used once.",
+              ignore: "If you did not request this change, you can ignore this message."
+            }
+          : {
+              subject: "Código de recuperación · NeuroEval Pro",
+              text: `Tu código de recuperación es: ${code}\n\nEste código vence en 10 minutos. Si no solicitaste este cambio, ignora este mensaje.`,
+              intro: "Recibimos una solicitud para cambiar la contraseña de tu cuenta.",
+              label: "Tu código de verificación es:",
+              expiry: "El código vence en 10 minutos y solo puede utilizarse una vez.",
+              ignore: "Si no solicitaste este cambio, puedes ignorar este mensaje."
+            };
         await sendTransactionalEmail({
           to: email,
-          subject: "Código de recuperación · NeuroEval Pro",
-          text:
-            `Tu código de recuperación es: ${code}\n\n` +
-            "Este código vence en 10 minutos. Si no solicitaste este cambio, ignora este mensaje.",
+          subject: emailCopy.subject,
+          text: emailCopy.text,
           html: `
             <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:28px;color:#202642">
               <h2 style="color:#5149bb">NeuroEval Pro</h2>
-              <p>Recibimos una solicitud para cambiar la contraseña de tu cuenta.</p>
-              <p>Tu código de verificación es:</p>
+              <p>${emailCopy.intro}</p>
+              <p>${emailCopy.label}</p>
               <div style="font-size:32px;font-weight:bold;letter-spacing:8px;padding:18px;background:#f1f0ff;border-radius:12px;text-align:center;color:#5149bb">${code}</div>
-              <p>El código vence en 10 minutos y solo puede utilizarse una vez.</p>
-              <p style="color:#77809b;font-size:12px">Si no solicitaste este cambio, puedes ignorar este mensaje.</p>
+              <p>${emailCopy.expiry}</p>
+              <p style="color:#77809b;font-size:12px">${emailCopy.ignore}</p>
             </div>
           `
         });
