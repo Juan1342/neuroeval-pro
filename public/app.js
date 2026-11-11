@@ -2602,7 +2602,7 @@ async function loadOwnResult(evaluationId) {
     }
 
     $("result-name").textContent = evaluation.evaluationType === "parent_observation"
-      ? `Informe de observación familiar · ${evaluation.parentContext?.childAge || "—"} años (${evaluation.parentContext?.ageBand || "etapa no especificada"}) · Familiar: ${evaluation.parentContext?.relationship || "no especificado"} · ${currentUser.email}`
+      ? `Informe de observación familiar · ${evaluation.parentContext?.childAgeBand || evaluation.parentContext?.ageBand || "franja no especificada"} · Familiar: ${evaluation.parentContext?.relationship || "no especificado"} · ${currentUser.email}`
       : `${evaluation.name || profileData?.name || ""} · ${currentUser.email}`;
     $("result-profile").textContent = evaluation.profile || "Resumen orientativo";
     $("result-description").textContent = evaluation.profileDescription || "";
