@@ -1464,7 +1464,222 @@ app.post(
    15. GENERACIÓN DE INFORME PDF
 ========================================================= */
 
+const REPORT_TRANSLATIONS = {
+  "Plataforma segura": "Secure platform",
+  "🌐 Español": "🌐 Spanish",
+  "Azul": "Blue",
+  "Amarillo": "Yellow",
+  "Morado": "Purple",
+  "Verde": "Green",
+  "← Anterior": "← Previous",
+  "Mi cuenta": "My account",
+  "Panel de administración": "Admin dashboard",
+  "Perfil": "Profile",
+  "Pruebas": "Assessments",
+  "Juegos": "Games",
+  "Actividades": "Activities",
+  "Recomendaciones": "Recommendations",
+  "Mi progreso": "My progress",
+  "Configuración": "Settings",
+  "Cerrar sesión": "Sign out",
+  "Conocimiento · Atención · Bienestar": "Awareness · Attention · Well-being",
+  "Conoce mejor cómo funciona tu mente.": "Understand how your mind works.",
+  "Explora tus hábitos de atención, organización y autorregulación mediante una experiencia interactiva diseñada para ayudarte a conocerte mejor.": "Explore your attention, organization and self-regulation habits through an interactive experience designed to help you understand yourself better.",
+  "Comienza tu experiencia": "Start your experience",
+  "Accede a tu cuenta o crea una nueva en pocos pasos.": "Sign in or create an account in just a few steps.",
+  "Bienvenido a NeuroEval": "Welcome to NeuroEval",
+  "Ingresa tus datos para continuar.": "Enter your details to continue.",
+  "Iniciar sesión": "Sign in",
+  "Crear cuenta": "Create account",
+  "Correo electrónico": "Email address",
+  "Contraseña": "Password",
+  "Ingresar a mi cuenta →": "Sign in →",
+  "¿Olvidaste tu contraseña?": "Forgot your password?",
+  "Nombre completo": "Full name",
+  "Crea una contraseña": "Create a password",
+  "Edad": "Age",
+  "Objetivo": "Goal",
+  "Seleccionar": "Select",
+  "Explorar atención": "Explore attention",
+  "Concentración": "Focus",
+  "Debes aceptar el aviso de privacidad.": "You must accept the privacy notice.",
+  "Tu cuenta": "Your account",
+  "Mi perfil": "My profile",
+  "Consulta la información asociada a tu cuenta.": "Review the information associated with your account.",
+  "Nombre": "Name",
+  "País (opcional)": "Country (optional)",
+  "Ciudad (opcional)": "City (optional)",
+  "Idioma preferido": "Preferred language",
+  "Guardar preferencias regionales": "Save regional preferences",
+  "La ciudad y el país son voluntarios. Se utilizan en estadísticas agregadas y no para localizarte individualmente.": "City and country are optional. They are used for aggregated statistics, not to locate you individually.",
+  "Volver a mis pruebas": "Back to my assessments",
+  "Guardando preferencias…": "Saving preferences…",
+  "Preferencias regionales guardadas.": "Regional preferences saved.",
+  "Nunca": "Never",
+  "Rara vez": "Rarely",
+  "A veces": "Sometimes",
+  "Con frecuencia": "Often",
+  "Casi siempre": "Almost always",
+  "Finalizar evaluación": "Finish assessment",
+  "Siguiente →": "Next →",
+  "Anterior": "Previous",
+  "Memoria inmediata": "Immediate memory",
+  "Atención sostenida": "Sustained attention",
+  "Búsqueda visual": "Visual search",
+  "Organización y planificación": "Organization and planning",
+  "Inquietud e impulsividad": "Restlessness and impulsivity",
+  "Regulación emocional": "Emotional regulation",
+  "Estrés y descanso": "Stress and rest",
+  "Impacto cotidiano": "Everyday impact",
+  "Historia y contexto": "History and context",
+  "Recuerdo de palabras": "Word recall",
+  "Memoria de secuencias": "Sequence memory",
+  "Recuerdo de números": "Number recall",
+  "Recuerdo de patrones": "Pattern recall",
+  "Recuerdo final de palabras": "Final word recall",
+  "Memoriza estas tres palabras. Más adelante te pediremos recordarlas.": "Memorize these three words. We will ask you to recall them later.",
+  "Cuando lees, estudias o trabajas, ¿pierdes el hilo aunque quieras prestar atención?": "When reading, studying or working, do you lose track even when you want to pay attention?",
+  "Cuenta cuántas estrellas aparecen entre los símbolos.": "Count how many stars appear among the symbols.",
+  "¿Te cuesta dividir una tarea grande en pasos y decidir por dónde empezar?": "Do you find it difficult to break a large task into steps and decide where to start?",
+  "Memoriza estos números en el mismo orden. Más adelante tendrás que seleccionarlos.": "Memorize these numbers in the same order. You will select them later.",
+  "¿Sientes inquietud física o necesidad de moverte cuando debes permanecer sentado?": "Do you feel physically restless or need to move when you have to remain seated?",
+  "¿Qué color aparece más veces en esta secuencia?": "Which color appears most often in this sequence?",
+  "¿Una frustración pequeña puede provocarte una reacción emocional intensa o difícil de regular?": "Can a small frustration trigger an intense or difficult-to-regulate emotional reaction?",
+  "¿Qué grupo contiene exactamente las tres palabras que memorizaste al comienzo?": "Which group contains exactly the three words you memorized at the beginning?",
+  "¿Notas que tu concentración empeora cuando duermes poco o descansas mal?": "Does your concentration get worse when you sleep too little or rest poorly?",
+  "¿Postergas tareas importantes aunque tengas claro que debes hacerlas?": "Do you put off important tasks even when you know you need to do them?",
+  "Memoriza el orden de estos símbolos. Más adelante tendrás que reconocer la secuencia exacta.": "Memorize the order of these symbols. You will need to recognize the exact sequence later.",
+  "¿Estas experiencias dificultan tus estudios, trabajo, tareas domésticas o relaciones?": "Do these experiences make studying, working, household tasks or relationships more difficult?",
+  "¿Cuál era la secuencia numérica que viste anteriormente?": "What was the number sequence you saw earlier?",
+  "¿Actúas o respondes rápidamente y luego piensas que habrías preferido hacer una pausa?": "Do you act or respond quickly and later wish you had paused first?",
+  "¿Recuerdas que algunas de estas dificultades ya estaban presentes antes de los 12 años?": "Do you remember some of these difficulties being present before age 12?",
+  "Cuenta cuántos círculos negros aparecen en la secuencia.": "Count how many black circles appear in the sequence.",
+  "Memoriza estas cuatro palabras. Después de varias actividades te preguntaremos por ellas.": "Memorize these four words. We will ask you about them after several activities.",
+  "¿Cuál era el orden exacto de los cuatro símbolos que memorizaste?": "What was the exact order of the four symbols you memorized?",
+  "¿La preocupación, tensión o ansiedad ocupa tu mente e interfiere con lo que estás haciendo?": "Do worry, tension or anxiety occupy your mind and interfere with what you are doing?",
+  "¿Te cuesta terminar una actividad cuando aparecen notificaciones, conversaciones o ruidos?": "Do you find it difficult to finish an activity when notifications, conversations or noise appear?",
+  "Cuenta cuántos triángulos aparecen en esta secuencia.": "Count how many triangles appear in this sequence.",
+  "¿Estas dificultades aparecen en más de un entorno, por ejemplo casa, estudio, trabajo o vida social?": "Do these difficulties occur in more than one setting, such as home, school, work or social life?",
+  "¿Te cuesta recuperar la calma cuando algo interrumpe tus planes?": "Do you find it difficult to regain your calm when something disrupts your plans?",
+  "¿Otras personas te han señalado dificultades de atención, organización, inquietud o impulsividad?": "Have other people pointed out difficulties with attention, organization, restlessness or impulsivity?",
+  "Al inicio de esta parte memorizaste cuatro palabras. ¿Cuál es el grupo exacto?": "At the beginning of this section, you memorized four words. Which group is exact?",
+  "Ya memoricé la secuencia": "I memorized the sequence",
+  "Ya memoricé los números": "I memorized the numbers",
+  "Ya memoricé las palabras": "I memorized the words",
+  "Por ejemplo: relees el mismo párrafo varias veces y al final no recuerdas qué decía.": "For example: you reread the same paragraph several times and still cannot remember what it said.",
+  "Por ejemplo: tienes varias cosas pendientes y no sabes cómo ordenarlas.": "For example: you have several pending tasks and do not know how to organize them.",
+  "Observa cuánto tarda en bajar la intensidad de la emoción.": "Notice how long it takes for the intensity of the emotion to decrease.",
+  "Compara tus días descansados con los días de poco sueño.": "Compare well-rested days with days when you sleep little.",
+  "No se trata de pereza: observa si te cuesta iniciar o sostener el primer paso.": "This is not about laziness: notice whether starting or maintaining the first step is difficult.",
+  "Responde pensando en consecuencias concretas y repetidas.": "Answer by thinking about specific, recurring consequences.",
+  "Selecciona los cuatro números en el mismo orden.": "Select the four numbers in the same order.",
+  "Piensa en recuerdos escolares, familiares o relatos de personas cercanas.": "Think about school or family memories, or accounts from people close to you.",
+  "Elige la secuencia que viste, en el mismo orden.": "Choose the sequence you saw, in the same order.",
+  "Por ejemplo: intentas trabajar, pero sigues pensando en un problema.": "For example: you try to work, but keep thinking about a problem.",
+  "Piensa en lo que ocurre cuando intentas concentrarte y algo interrumpe tu tarea.": "Think about what happens when you try to focus and something interrupts your task.",
+  "No tienen que presentarse igual en todos los lugares.": "They do not have to appear in the same way in every setting.",
+  "Piensa en cambios inesperados o tareas que no salen como esperabas.": "Think about unexpected changes or tasks that do not go as planned.",
+  "Considera comentarios respetuosos de personas que te conocen bien.": "Consider thoughtful feedback from people who know you well.",
+  "Elige la secuencia que recuerdes, sin volver atrás.": "Choose the sequence you remember without going back.",
+  "Observa y memoriza estos elementos. No los anotes: te preguntaremos por ellos más adelante.": "Observe and memorize these items. Do not write them down: we will ask you about them later.",
+  "Piensa en una situación habitual de tu vida cotidiana.": "Think of a typical situation in your everyday life.",
+  "¡Vas muy bien! Sigue a tu ritmo; cada respuesta ayuda a construir una imagen más completa.": "You are doing great! Keep your own pace; every answer helps build a more complete picture.",
+  "¡Ya superaste la mitad! Mantén la concentración: estás avanzando muy bien.": "You are past the halfway point! Stay focused; you are making great progress.",
+  "¡Último tramo! Ya falta poco. Respira y responde con tranquilidad.": "Final stretch! You are almost there. Breathe and answer calmly.",
+  "¡Casi terminamos! Una respuesta honesta es más útil que intentar elegir la respuesta perfecta.": "Almost done! An honest answer is more useful than trying to choose the perfect answer.",
+  "Tómate tu tiempo. Responde pensando en lo que suele ocurrirte, no en un día excepcional.": "Take your time. Think about what usually happens to you, not an unusual day.",
+  "Información general": "General information",
+  "Resumen del autorregistro": "Self-report summary",
+  "Dimensiones exploradas": "Dimensions explored",
+  "Mapa comparativo de dimensiones": "Comparative dimensions map",
+  "Actividades interactivas de atención y memoria": "Interactive attention and memory activities",
+  "Contexto e impacto cotidiano": "Everyday context and impact",
+  "Orientaciones generales": "General guidance",
+  "Alcance y límites del informe": "Report scope and limitations",
+  "Detalle de respuestas": "Answer details",
+  "Respuesta:": "Answer:",
+  "Aviso importante": "Important notice",
+  "Documento de carácter orientativo": "Informational document",
+  "INFORME DE OBSERVACIÓN FAMILIAR": "FAMILY OBSERVATION REPORT",
+  "INFORME DE AUTORREGISTRO COGNITIVO": "COGNITIVE SELF-REPORT",
+  "No registrado": "Not provided",
+  "No registrada": "Not provided",
+  "No especificado": "Not specified",
+  "No especificada": "Not specified",
+  "No disponible": "Not available",
+  "Correo": "Email",
+  "Edad del menor": "Child's age",
+  "Etapa de edad": "Age group",
+  "Parentesco de quien responde": "Respondent relationship",
+  "Entornos observados": "Observed settings",
+  "Fecha": "Date",
+  "Resultado orientativo": "Informational result",
+  "Atención sostenida y memoria cotidiana": "Sustained attention and everyday memory",
+  "Atención y seguimiento de tareas": "Attention and task follow-through",
+  "Organización y funciones ejecutivas": "Organization and executive functions",
+  "Actividad motora e inquietud": "Motor activity and restlessness",
+  "Impulsividad y espera de turnos": "Impulsivity and turn-taking",
+  "Estrés, preocupación y descanso": "Stress, worry and rest",
+  "Duración, entornos y observación externa": "Duration, settings and external observations",
+  "Otros factores que conviene considerar": "Other factors to consider",
+  "Impacto en la vida cotidiana": "Everyday impact",
+  "Historia y presencia en distintos entornos": "History and presence across settings",
+  "Porcentaje descriptivo de las respuestas de esta dimensión.": "Descriptive percentage of responses in this dimension.",
+  "Retos de selección correctos:": "Correct selection tasks:",
+  "de": "of",
+  "Recuerdo de memoria:": "Memory recall:",
+  "Búsqueda visual:": "Visual search:",
+  "Actividad interactiva no diagnóstica.": "Non-diagnostic interactive activity.",
+  "Otros factores que pueden influir": "Other factors that may influence",
+  "Historia y contextos": "History and settings",
+  "Señales presentes": "Signals present",
+  "No destacadas en este autorregistro": "Not prominent in this self-report",
+  "Impacto referido": "Reported impact",
+  "Impacto no elevado en las respuestas": "Impact not elevated in the responses",
+  "Conviene explorar antecedentes y contextos": "History and settings worth exploring",
+  "Antecedentes no claramente señalados": "No clear history reported",
+  "Orientación": "Guidance",
+  "Este autorregistro es orientativo y no es una prueba diagnóstica ni una escala clínica validada. Los porcentajes describen la frecuencia de las respuestas dentro de este cuestionario; no representan la probabilidad de tener TDAH u otro trastorno.": "This self-report is informational and is not a diagnostic test or a validated clinical scale. Percentages describe response frequency within this questionnaire; they do not represent the probability of having ADHD or another disorder.",
+  "Este cuestionario orientativo de observación familiar creado para NeuroEval Pro. No es una escala clínica validada, no diagnostica ni descarta TDAH. Las puntuaciones describen únicamente la frecuencia de las respuestas; no se aplican puntos de corte clínicos ni se calcula una probabilidad de TDAH. La evaluación clínica requiere valoración profesional y datos de más de un entorno.": "This family-observation questionnaire is an informational tool created for NeuroEval Pro. It is not a validated clinical scale and cannot diagnose or rule out ADHD. Scores describe response frequency only; no clinical cutoffs or ADHD probabilities are calculated. Clinical assessment requires professional evaluation and information from more than one setting.",
+  "Este documento presenta un autorregistro orientativo y no constituye una evaluación clínica, diagnóstico, tratamiento ni concepto médico. Los porcentajes describen las respuestas de este cuestionario y no representan probabilidades diagnósticas. No sustituye la valoración de un profesional cualificado.": "This document presents an informational self-report and is not a clinical evaluation, diagnosis, treatment, or medical opinion. Percentages describe questionnaire responses and do not represent diagnostic probabilities. It does not replace assessment by a qualified professional.",
+  "Este autorregistro es orientativo y no constituye una prueba diagnóstica. Los porcentajes describen las respuestas y no representan la probabilidad de tener un trastorno.": "This self-report is informational and is not a diagnostic test. Percentages describe responses and do not represent the probability of having a disorder.",
+  "Tus respuestas reflejan experiencias frecuentes en ": "Your answers indicate frequent experiences in ",
+  "Esto describe patrones de autorregistro; no permite establecer por sí solo su causa ni confirmar TDAH.": "This describes self-reported patterns; it cannot establish their cause or confirm ADHD on its own.",
+  "En este autorregistro no aparecen frecuencias elevadas de forma marcada en las áreas principales. Esto no descarta dificultades: pueden variar según la situación, el entorno o el momento vital.": "This self-report does not show notably elevated frequencies in the main areas. This does not rule out difficulties, which may vary by situation, setting, or stage of life.",
+  "También aparecen señales de que el estrés, la preocupación o el descanso podrían estar influyendo en tu atención y funcionamiento.": "There are also signs that stress, worry, or rest may be affecting attention and daily functioning.",
+  "Indicas que estas experiencias tienen repercusiones en actividades cotidianas, por lo que conviene explorarlas con mayor detalle.": "You indicate that these experiences affect everyday activities and may merit further exploration.",
+  "Tus respuestas sugieren posibles antecedentes desde la infancia o presencia en más de un entorno; sería útil contrastarlo con recuerdos, informes escolares o familiares si están disponibles.": "Your answers suggest possible childhood history or presence in more than one setting; where available, this may be compared with memories, school reports, or family accounts.",
+  "Reduce las distracciones visibles": "Reduce visible distractions",
+  "Apoya la memoria con señales externas": "Support memory with external cues",
+  "Convierte las tareas en primeros pasos": "Break tasks into first steps",
+  "Haz visible el tiempo": "Make time visible",
+  "Programa movimiento y pausas": "Schedule movement and breaks",
+  "Crea un intervalo para regular emociones": "Create a pause to regulate emotions",
+  "Revisa los factores que cambian tu concentración": "Review factors that affect your concentration",
+  "Considera una valoración profesional": "Consider a professional assessment",
+  "Conserva lo que ya te funciona": "Keep what already works for you",
+  "Trabaja en bloques breves de 15–25 minutos, deja a la vista solo lo necesario y anota en una hoja cualquier idea que te interrumpa para retomarla después.": "Work in short 15–25 minute blocks, keep only what you need in view, and write down distracting thoughts to return to later.",
+  "Usa un único calendario, alarmas con nombre de la tarea y un lugar fijo para llaves, documentos y objetos cotidianos.": "Use one calendar, alarms that name the task, and a fixed place for keys, documents, and everyday items.",
+  "Escribe la siguiente acción concreta, no el objetivo completo. Por ejemplo, en vez de “organizar el informe”, empieza por “abrir el documento y escribir tres títulos”.": "Write down the next concrete action, not the entire goal. For example, instead of “organize the report,” start with “open the document and write three headings.”",
+  "Prueba temporizadores, márgenes de preparación y listas con máximo tres prioridades al día.": "Try timers, preparation buffers, and lists with no more than three daily priorities.",
+  "Incluye pausas breves de movimiento entre actividades y practica una pausa de tres respiraciones antes de responder o decidir.": "Include short movement breaks between activities and pause for three breaths before responding or making a decision.",
+  "Nombra la emoción, identifica qué la activó y espera a que baje su intensidad antes de abordar una conversación o decisión importante.": "Name the emotion, identify its trigger, and wait for its intensity to decrease before addressing an important conversation or decision.",
+  "Durante dos semanas registra horas de sueño, nivel de estrés y momentos de mayor dificultad. Esto puede ayudar a reconocer patrones y conversar con un profesional.": "For two weeks, track sleep hours, stress levels, and moments of greatest difficulty. This may help identify patterns and support a conversation with a professional.",
+  "Consulta con psicología clínica, psiquiatría o un profesional capacitado en TDAH. Lleva ejemplos concretos, cuándo comenzaron, en qué entornos ocurren y cómo afectan tu vida.": "Consult a clinical psychologist, psychiatrist, or professional trained in ADHD. Bring concrete examples, when they began, where they occur, and how they affect your life.",
+  "Mantén rutinas realistas, descansos y apoyos de organización. Si una dificultad concreta persiste o te preocupa, coméntala con un profesional aunque el resultado no muestre elevaciones.": "Maintain realistic routines, breaks, and organizational supports. If a specific difficulty persists or concerns you, discuss it with a professional even if this result shows no elevations."
+};
+function translateReportText(value, language = "es") {
+  const source = String(value ?? "");
+  if (language !== "en" || !source) return source;
+  if (REPORT_TRANSLATIONS[source]) return REPORT_TRANSLATIONS[source];
+  let translated = source;
+  Object.entries(REPORT_TRANSLATIONS).sort((a,b)=>b[0].length-a[0].length).forEach(([es,en]) => {
+    if (es.length >= 18 && translated.includes(es)) translated = translated.split(es).join(en);
+  });
+  return translated;
+}
 function buildEvaluationPdf(evaluation, options = {}) {
+  const language = options.language === "en" ? "en" : "es";
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
@@ -1476,12 +1691,17 @@ function buildEvaluationPdf(evaluation, options = {}) {
           right: 55
         },
         info: {
-          Title: "Informe NeuroEval Pro",
+          Title: language === "en" ? "NeuroEval Pro Report" : "Informe NeuroEval Pro",
           Author: "NeuroEval Pro",
           Subject: "Informe de autorregistro cognitivo"
         }
       });
 
+      const originalText = doc.text.bind(doc);
+      doc.text = (value, ...args) => originalText(
+        typeof value === "string" ? translateReportText(value, language) : value,
+        ...args
+      );
       const chunks = [];
 
       const drawFooter = () => {
@@ -1571,7 +1791,7 @@ function buildEvaluationPdf(evaluation, options = {}) {
         ["Objetivo", evaluation.goal || "No especificado"],
         [
           "Fecha",
-          asDate(evaluation.createdAt)?.toLocaleString("es-CO") ||
+          asDate(evaluation.createdAt)?.toLocaleString(language === "en" ? "en-US" : "es-CO") ||
             "No disponible"
         ]
       ];
@@ -1867,7 +2087,9 @@ app.get(
         );
       }
 
-      const pdf = await buildEvaluationPdf(result.data);
+      const profileSnapshot = await db.collection("users").doc(req.user.uid).get();
+      const reportLanguage = profileSnapshot.exists && profileSnapshot.data()?.language === "en" ? "en" : "es";
+      const pdf = await buildEvaluationPdf(result.data, { language: reportLanguage });
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
@@ -2519,8 +2741,14 @@ app.get(
         return sendError(res, 404, "No encontramos esa evaluación.");
       }
 
-      const pdf = await buildEvaluationPdf(snapshot.data(), {
-        includeAnswers: true
+      const evaluationData = snapshot.data();
+      const ownerProfile = evaluationData.uid
+        ? await db.collection("users").doc(evaluationData.uid).get()
+        : null;
+      const reportLanguage = ownerProfile?.exists && ownerProfile.data()?.language === "en" ? "en" : "es";
+      const pdf = await buildEvaluationPdf(evaluationData, {
+        includeAnswers: true,
+        language: reportLanguage
       });
 
       res.setHeader("Content-Type", "application/pdf");
