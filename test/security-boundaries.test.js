@@ -8,6 +8,7 @@ const vm = require("node:vm");
 const server = fs.readFileSync("server.js", "utf8");
 const app = fs.readFileSync("public/app.js", "utf8");
 const html = fs.readFileSync("public/index.html", "utf8");
+const privacyPolicy = fs.readFileSync("public/privacy.html", "utf8");
 
 test("server and browser application source parse successfully", () => {
   assert.doesNotThrow(() => new vm.Script(server, { filename: "server.js" }));
@@ -34,6 +35,10 @@ test("evaluation creation requires current privacy consent and an adult account"
   assert.match(app, /privacyConsent: \{ accepted: true, version: PRIVACY_NOTICE_VERSION, language \}/);
   assert.match(html, /id="consent"/);
   assert.match(html, /id="parent-guardian-consent"/);
+  assert.match(html, /id="admin-panel-privacy"/);
+  assert.match(privacyPolicy, /BORRADOR NO APTO PARA PUBLICACIÓN/);
+  assert.match(privacyPolicy, /NOT READY FOR PUBLICATION/);
+  assert.match(privacyPolicy, /\[NOMBRE LEGAL O RAZÓN SOCIAL DEL RESPONSABLE\]/);
 });
 
 test("personal data rights endpoints are owner-scoped and admin review is restricted", () => {
