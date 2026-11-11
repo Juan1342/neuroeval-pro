@@ -209,3 +209,14 @@ test("registration offers localized country suggestions without requesting GPS",
   assert.match(app, /new Intl\.DisplayNames\(\[locale\], \{ type: "region" \}\)/);
   assert.doesNotMatch(app, /navigator\.geolocation|Geolocation\.getCurrentPosition/);
 });
+
+
+test("webhook reference fields cannot override or suppress the authenticated Wompi reference", () => {
+  assert.match(server, /const reference = String\(verifiedTransaction\.reference \|\| ""\)/);
+  assert.match(server, /La referencia del evento difiere de la referencia autenticada de Wompi/);
+  const eventReferenceBlockStart = server.indexOf('const eventReference = String(transaction.reference');
+  const eventReferenceBlockEnd = server.indexOf('const query = await db', eventReferenceBlockStart);
+  assert.ok(eventReferenceBlockStart >= 0 && eventReferenceBlockEnd > eventReferenceBlockStart);
+  const eventReferenceBlock = server.slice(eventReferenceBlockStart, eventReferenceBlockEnd);
+  assert.doesNotMatch(eventReferenceBlock, /return res\.status\(200\)\.json/);
+});
