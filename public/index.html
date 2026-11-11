@@ -399,6 +399,11 @@
               <div><label class="field-label" for="reg-age">Edad</label><input class="field" id="reg-age" type="number" min="18" max="99" placeholder="Edad" required></div>
               <div><label class="field-label" for="reg-goal">Objetivo</label><select class="field" id="reg-goal" required><option value="">Seleccionar</option><option value="TDAH">Explorar atención</option><option value="concentración y organización">Concentración</option><option value="fatiga o ansiedad laboral">Estrés y fatiga</option><option value="autoconocimiento">Autoconocimiento</option></select></div>
             </div>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+              <div><label class="field-label" for="reg-country">País (opcional)</label><input class="field" id="reg-country" type="text" maxlength="80" autocomplete="country-name" placeholder="Ej. Colombia"></div>
+              <div><label class="field-label" for="reg-city">Ciudad (opcional)</label><input class="field" id="reg-city" type="text" maxlength="100" autocomplete="address-level2" placeholder="Ej. Medellín"></div>
+            </div>
+            <p class="muted-text text-xs mt-2">País y ciudad son voluntarios y se usan para estadísticas generales. No se almacena tu ubicación GPS.</p>
             <label class="flex gap-2 items-start text-xs text-slate-500 mt-4"><input id="consent" type="checkbox" class="mt-1" required><span>He leído y acepto el aviso de privacidad y el tratamiento de mis datos para esta experiencia.</span></label>
             <button class="btn primary w-full mt-5" type="submit">Crear cuenta y comenzar →</button>
           </form>
@@ -752,7 +757,7 @@
       <div class="hero mb-7" style="min-height:190px"><div class="hero-copy"><div class="eyebrow">Administración segura</div><h1 style="font-size:clamp(29px,4vw,42px)">Centro de administración.</h1><p>Gestiona clientes, evaluaciones, pagos e informes desde un solo lugar.</p></div><div class="hero-art"><span>🛡️</span></div></div>
       <div class="admin-workspace">
       <div class="admin-sidebar" role="tablist" aria-label="Opciones administrativas">
-        <button class="btn primary admin-tab" data-admin-tab="overview" type="button">📊 Resumen</button><button class="btn outline admin-tab" data-admin-tab="clients" type="button">👥 Clientes</button><button class="btn outline admin-tab" data-admin-tab="evaluations" type="button">🧠 Evaluaciones</button><button class="btn outline admin-tab" data-admin-tab="payments" type="button">💳 Pagos</button><button class="btn outline admin-tab" data-admin-tab="analytics" type="button">📈 Analítica comercial</button><button class="btn outline admin-tab" data-admin-tab="pricing" type="button">🏷️ Precios y promociones</button><button class="btn outline admin-tab" data-admin-tab="settings" type="button">⚙️ Configuración</button><button class="btn outline admin-tab" data-admin-tab="health" type="button">🩺 Salud del sistema</button><button class="btn outline admin-tab" data-admin-tab="administrators" type="button">🛡️ Colaboradores</button><button class="btn outline admin-tab" data-admin-tab="support" type="button">🎧 Centro de soporte</button><button class="btn outline admin-tab" data-admin-tab="audit" type="button">📋 Actividad</button>
+        <button class="btn primary admin-tab" data-admin-tab="overview" type="button">📊 Resumen</button><button class="btn outline admin-tab" data-admin-tab="clients" type="button">👥 Clientes</button><button class="btn outline admin-tab" data-admin-tab="evaluations" type="button">🧠 Evaluaciones</button><button class="btn outline admin-tab" data-admin-tab="payments" type="button">💳 Pagos</button><button class="btn outline admin-tab" data-admin-tab="analytics" type="button">📈 Analítica comercial</button><button class="btn outline admin-tab" data-admin-tab="global" type="button">🌍 Alcance internacional</button><button class="btn outline admin-tab" data-admin-tab="pricing" type="button">🏷️ Precios y promociones</button><button class="btn outline admin-tab" data-admin-tab="settings" type="button">⚙️ Configuración</button><button class="btn outline admin-tab" data-admin-tab="health" type="button">🩺 Salud del sistema</button><button class="btn outline admin-tab" data-admin-tab="administrators" type="button">🛡️ Colaboradores</button><button class="btn outline admin-tab" data-admin-tab="support" type="button">🎧 Centro de soporte</button><button class="btn outline admin-tab" data-admin-tab="audit" type="button">📋 Actividad</button>
       </div>
       <div class="admin-content">
       <div id="admin-panel-overview" class="admin-panel space-y-5">
@@ -776,6 +781,18 @@
         </div>
         <div class="card"><h3 class="text-xl font-extrabold mb-2">Rendimiento de promociones</h3><p class="muted-text mb-4">Usos reservados por código y evaluaciones que lo tienen asociado. Un uso reservado no garantiza que el pago haya sido aprobado.</p><div id="admin-analytics-promos" class="space-y-3"><p class="muted-text">Cargando…</p></div></div>
         <p id="admin-analytics-updated" class="muted-text text-xs"></p>
+      </div>
+      <div id="admin-panel-global" class="admin-panel hidden space-y-5">
+        <div class="flex flex-wrap justify-between items-center gap-3"><div><h2 class="text-xl font-extrabold">Alcance internacional</h2><p class="muted-text">Distribución agregada por país, ciudad, edad, idioma y objetivo declarado.</p></div><button id="admin-global-refresh" class="btn outline" type="button">↻ Actualizar datos</button></div>
+        <div id="admin-global-status" class="notice">Los grupos de menos de 10 usuarios se ocultan para proteger la privacidad.</div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="chart-card"><h3 class="chart-title">Usuarios por país</h3><div id="admin-global-countries" class="space-y-3 mt-4"></div></div>
+          <div class="chart-card"><h3 class="chart-title">Usuarios por ciudad</h3><div id="admin-global-cities" class="space-y-3 mt-4"></div></div>
+          <div class="chart-card"><h3 class="chart-title">Distribución por edades</h3><div id="admin-global-ages" class="space-y-3 mt-4"></div></div>
+          <div class="chart-card"><h3 class="chart-title">Idioma</h3><div id="admin-global-languages" class="space-y-3 mt-4"></div></div>
+          <div class="chart-card lg:col-span-2"><h3 class="chart-title">Objetivos declarados</h3><div id="admin-global-goals" class="space-y-3 mt-4"></div></div>
+        </div>
+        <p class="muted-text text-xs">No se muestran nombres, correos, identificadores, respuestas ni ubicaciones individuales. Los grupos inferiores a 10 se ocultan. La ciudad es voluntaria; no se usa GPS.</p>
       </div>
       <div id="admin-panel-payments" class="admin-panel hidden"><div class="card"><div class="mb-5"><h2 class="text-xl font-extrabold">Pagos y transacciones Wompi</h2><p class="muted-text">Seguimiento de referencias, identificadores y confirmaciones recibidas por webhook.</p></div><div class="admin-table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Valor</th><th>Estado</th><th>Referencia</th><th>ID transacción</th><th>Confirmación</th></tr></thead><tbody id="admin-payment-rows"><tr><td colspan="7">Cargando...</td></tr></tbody></table></div></div></div>
       <div id="admin-panel-pricing" class="admin-panel hidden space-y-5">
