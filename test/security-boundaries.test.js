@@ -220,3 +220,9 @@ test("webhook reference fields cannot override or suppress the authenticated Wom
   const eventReferenceBlock = server.slice(eventReferenceBlockStart, eventReferenceBlockEnd);
   assert.doesNotMatch(eventReferenceBlock, /return res\.status\(200\)\.json/);
 });
+
+
+test("initial UI language follows saved preference or browser language before first render", () => {
+  assert.match(app, /function preferredLanguage\(profileLanguage\)/);
+  assert.match(app, /setLanguage\(preferredLanguage\(\)\);\s*initializeFirebase\(\);/);
+});
