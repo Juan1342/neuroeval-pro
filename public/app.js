@@ -1603,7 +1603,6 @@ function renderQuestion() {
       })
     : questions[currentIndex];
   activeChoices = currentLanguage === "en" ? choices.map(translateUiText) : choices;
-  const question = questions[currentIndex];
   const percentage = Math.round(((currentIndex + 1) / questions.length) * 100);
   const progress = (currentIndex + 1) / questions.length;
 
