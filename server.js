@@ -3442,10 +3442,17 @@ app.get(
         return sendError(res, 404, "No encontramos esa evaluación.");
       }
 
+      const evaluationData = snapshot.data() || {};
+      const parentContext = evaluationData.parentContext || {};
+      // No devolver la edad exacta de menores en registros históricos.
+      const { childAge, ...safeParentContext } = parentContext;
       return res.json({
         evaluation: {
           id: snapshot.id,
-          ...snapshot.data()
+          ...evaluationData,
+          ...(evaluationData.evaluationType === "parent_observation"
+            ? { parentContext: safeParentContext }
+            : {})
         }
       });
 
