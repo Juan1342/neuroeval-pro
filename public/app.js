@@ -24,6 +24,7 @@ const $ = (id) => document.getElementById(id);
 const EVALUATION_PRICE_COP = 4000; // Valor de respaldo visual; el servidor determina el importe real.
 // Solo bloquea el registro público de la cuenta reservada; no concede permisos.
 const ADMIN_EMAIL = "jzamorazapata@gmail.com";
+const PRIVACY_NOTICE_VERSION = "2026-11-11";
 
 let auth;
 let currentUser = null;
@@ -1302,6 +1303,40 @@ async function api(url, options = {}) {
   return response;
 }
 
+async function ensureCurrentPrivacyConsent() {
+  if (!currentUser) return false;
+  if (profileData?.privacyConsentVersion === PRIVACY_NOTICE_VERSION) return true;
+
+  const notice = currentLanguage === "en"
+    ? "Privacy notice (version 2026-11-11)\n\nNeuroEval Pro processes your account details and assessment answers to provide an informational self-report and report. This is not a diagnosis or a substitute for professional care. Country and city are optional and used only in aggregated statistics; the platform does not request GPS location. Family observation is provided by an adult who confirms they are authorized to do so. You may request access, correction, or deletion review through the privacy request channel. Some records may need to be retained where payment or legal obligations apply.\n\nDo you agree to this processing and wish to continue?"
+    : "Aviso de privacidad (versión 2026-11-11)\n\nNeuroEval Pro trata los datos de tu cuenta y las respuestas de evaluación para ofrecer un autorregistro y un informe orientativos. No es un diagnóstico ni sustituye la atención profesional. País y ciudad son opcionales y se usan solo en estadísticas agregadas; la plataforma no solicita ubicación GPS. La observación familiar la realiza un adulto que confirma estar autorizado. Puedes solicitar acceso, corrección o revisión de eliminación mediante el canal de solicitudes de privacidad. Algunos registros podrían conservarse cuando existan obligaciones legales o de pago.\n\n¿Aceptas este tratamiento y deseas continuar?";
+  if (!window.confirm(notice)) return false;
+
+  let age = Number(profileData?.age);
+  if (!Number.isInteger(age) || age < 18 || age > 99) {
+    const answer = window.prompt(currentLanguage === "en"
+      ? "Enter your age (18–99) to confirm that this is an adult account."
+      : "Indica tu edad (18–99) para confirmar que esta es una cuenta de una persona adulta.");
+    age = Number(answer);
+    if (!Number.isInteger(age) || age < 18 || age > 99) {
+      window.alert(currentLanguage === "en" ? "An adult age is required to continue." : "Se requiere una edad adulta válida para continuar.");
+      return false;
+    }
+  }
+
+  const payload = {
+    ...(profileData || {}),
+    name: profileData?.name || currentUser.displayName || currentUser.email || "Usuario",
+    age,
+    goal: profileData?.goal || "Autoconocimiento",
+    language: currentLanguage,
+    privacyConsent: { accepted: true, version: PRIVACY_NOTICE_VERSION, language: currentLanguage }
+  };
+  await api("/api/profile", { method: "POST", body: JSON.stringify(payload) });
+  profileData = { ...payload, privacyConsentVersion: PRIVACY_NOTICE_VERSION };
+  return true;
+}
+
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -1386,7 +1421,7 @@ async function registerWithEmail(event) {
     const country = $("reg-country")?.value.trim() || "";
     const city = $("reg-city")?.value.trim() || "";
     const language = currentLanguage === "en" ? "en" : "es";
-    profileData = { name, age, goal, country, city, language };
+    profileData = { name, age, goal, country, city, language, privacyConsentVersion: PRIVACY_NOTICE_VERSION };
 
     const credential = await createUserWithEmailAndPassword(
       auth,
@@ -1398,7 +1433,7 @@ async function registerWithEmail(event) {
 
     await api("/api/profile", {
       method: "POST",
-      body: JSON.stringify({ name, age, goal, country, city, language })
+      body: JSON.stringify({ name, age, goal, country, city, language, privacyConsent: { accepted: true, version: PRIVACY_NOTICE_VERSION, language } })
     });
 
     // La pantalla de evaluación se inicia desde el observador de sesión.
@@ -1695,7 +1730,7 @@ function openParentEvaluation() {
   show("parent-intro-view");
 }
 
-function startParentEvaluation(event) {
+async function startParentEvaluation(event) {
   event.preventDefault();
   const childAge = Number($("parent-child-age").value);
   const relationship = $("parent-relationship").value;
@@ -1713,8 +1748,13 @@ function startParentEvaluation(event) {
   if (!$("parent-guardian-consent").checked) {
     return showMessage("parent-intro-message", "Confirma que tienes autorización para proporcionar esta información.", true);
   }
+  try {
+    if (!await ensureCurrentPrivacyConsent()) return;
+  } catch (error) {
+    return showMessage("parent-intro-message", error.message, true);
+  }
   currentEvaluationType = "parent_observation";
-  parentEvaluationContext = { childAge, relationship, settings, consent: true };
+  parentEvaluationContext = { childAge, relationship, settings, consent: true, consentLanguage: currentLanguage };
   profileData = { ...(profileData || {}), name: profileData?.name || currentUser.displayName || currentUser.email, goal: "Observación familiar de indicadores asociados al TDAH" };
   questions = parentQuestionBank.map(([category, question, dimension, icon, example]) => {
     const ageExample = childAge <= 7
@@ -1733,13 +1773,19 @@ function startParentEvaluation(event) {
   show("quiz-view");
 }
 
-function startAdhdEvaluation() {
+async function startAdhdEvaluation() {
   if (!currentUser) {
     show("auth-view");
     showMessage("auth-message", "Inicia sesión para comenzar una evaluación.", true);
     return;
   }
 
+  try {
+    if (!await ensureCurrentPrivacyConsent()) return;
+  } catch (error) {
+    showMessage("auth-message", error.message, true);
+    return;
+  }
   startQuiz(
     profileData?.name || currentUser.displayName || currentUser.email,
     profileData?.age ?? null,
@@ -2187,7 +2233,7 @@ async function startQuiz(name, age, goal) {
   currentEvaluationType = "self_report";
   parentEvaluationContext = null;
   activeChoices = choices;
-  profileData = { name, age, goal };
+  profileData = { ...(profileData || {}), name, age, goal };
   // Orden temático fijo para que la experiencia tenga una progresión comprensible.
   questions = [...bank];
   answers = new Array(questions.length).fill(null);
