@@ -1927,6 +1927,7 @@ const REPORT_TRANSLATIONS = {
   "Cuéntanos sobre el menor que observas": "Tell us about the child you are observing",
   "Responde como padre, madre o cuidador. No hay respuestas correctas o incorrectas. La evaluación se refiere a conductas observadas durante los últimos seis meses, teniendo en cuenta la edad y las circunstancias. Ten en cuenta las diferencias esperables entre las etapas de 4–7, 8–12 y 13–17 años.": "Answer as a parent or caregiver. There are no right or wrong answers. This assessment concerns behaviors observed over the last six months, taking age and circumstances into account. Consider expected differences across ages 4–7, 8–12, and 13–17.",
   "Nombre del familiar que responde": "Name of the responding family member",
+  "Franja de edad del menor": "Child's age band",
   "Edad del menor": "Child's age",
   "Seleccionar edad": "Select age",
   "¿Qué parentesco tienes con el menor?": "What is your relationship to the child?",
