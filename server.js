@@ -921,10 +921,8 @@ app.post("/api/profile", requireUser, async (req, res) => {
         acceptedAt: FieldValue.serverTimestamp()
       }, { merge: true });
     }
-    globalAnalyticsCache = null;
-    await db.collection("systemCache").doc("globalAnalytics").delete().catch(error => {
-      console.warn("No se pudo invalidar la caché global compartida:", error.message);
-    });
+    // La analítica agregada admite hasta cinco minutos de desfase para evitar
+    // invalidar la caché y volver a escanear perfiles en cada actualización.
     return res.json({ ok: true, profile });
   } catch (error) {
     console.error("POST perfil:", error);
