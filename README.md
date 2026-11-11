@@ -7,8 +7,8 @@ Plataforma de autorregistro cognitivo con Firebase Authentication, Firestore, re
 - NeuroEval Pro es una herramienta de autorregistro orientativo; **no diagnostica TDAH ni ninguna otra condición**, y sus preguntas y porcentajes no constituyen una escala clínica validada.
 - Se procesan datos personales y respuestas que pueden revelar información sensible. Antes de abrir el servicio al público, publica política de privacidad y tratamiento de datos, consentimiento informado, canales para ejercer derechos, plazos de conservación/eliminación y controles de acceso. Solicita revisión legal y de seguridad conforme a la normativa aplicable.
 - No subas archivos `.env`, claves privadas, JSON de cuentas de servicio ni contraseñas a GitHub.
-- La administración requiere el custom claim `admin: true` asignado desde Firebase Admin SDK. El servidor consulta los claims actuales de Firebase en cada ruta administrativa; el correo reservado por sí solo **no** concede privilegios.
-- Los pagos solo deben considerarse confirmados mediante el webhook firmado de Wompi; una URL de retorno no demuestra que exista un pago.
+- El administrador principal se identifica por una cuenta activa, con correo verificado, que coincide con `ADMIN_EMAIL` en el servidor. Los administradores secundarios se autorizan mediante `adminRoles` y permisos específicos. Un custom claim antiguo `admin: true` no concede privilegios por sí solo.
+- Una firma válida del webhook no basta por sí sola para desbloquear un informe: el servidor también consulta la transacción en la API autenticada de Wompi con `WOMPI_PRIVATE_KEY` y contrasta referencia, importe, moneda y estado. Una URL de retorno nunca demuestra que exista un pago.
 
 ## 1. Preparar Firebase
 
