@@ -24,7 +24,7 @@ const $ = (id) => document.getElementById(id);
 const EVALUATION_PRICE_COP = 4000; // Valor de respaldo visual; el servidor determina el importe real.
 // Solo bloquea el registro público de la cuenta reservada; no concede permisos.
 const ADMIN_EMAIL = "jzamorazapata@gmail.com";
-const PRIVACY_NOTICE_VERSION = "2026-11-11";
+const PRIVACY_NOTICE_VERSION = "2026-11-11-v2";
 
 let auth;
 let currentUser = null;
@@ -1396,11 +1396,11 @@ async function api(url, options = {}) {
 
 async function ensureCurrentPrivacyConsent() {
   if (!currentUser) return false;
-  if (profileData?.privacyConsentVersion === PRIVACY_NOTICE_VERSION) return true;
+  if (profileData?.privacyConsentVersion === PRIVACY_NOTICE_VERSION && profileData?.sensitiveDataConsentVersion === PRIVACY_NOTICE_VERSION) return true;
 
   const notice = currentLanguage === "en"
-    ? "Privacy notice (version 2026-11-11)\n\nNeuroEval Pro processes your account details and assessment answers to provide an informational self-report and report. This is not a diagnosis or a substitute for professional care. Country and city are optional and used only in aggregated statistics; the platform does not request GPS location. Family observation is provided by an adult who confirms they are authorized to do so. You may request access, correction, or deletion review through the privacy request channel. Some records may need to be retained where payment or legal obligations apply.\n\nDo you agree to this processing and wish to continue?"
-    : "Aviso de privacidad (versión 2026-11-11)\n\nNeuroEval Pro trata los datos de tu cuenta y las respuestas de evaluación para ofrecer un autorregistro y un informe orientativos. No es un diagnóstico ni sustituye la atención profesional. País y ciudad son opcionales y se usan solo en estadísticas agregadas; la plataforma no solicita ubicación GPS. La observación familiar la realiza un adulto que confirma estar autorizado. Puedes solicitar acceso, corrección o revisión de eliminación mediante el canal de solicitudes de privacidad. Algunos registros podrían conservarse cuando existan obligaciones legales o de pago.\n\n¿Aceptas este tratamiento y deseas continuar?";
+    ? "Privacy notice and explicit sensitive-data consent (version 2026-11-11-v2)\n\nNeuroEval Pro processes your account details and assessment answers to provide an informational self-report and report. Your answers may reveal sensitive health-related information about attention and cognitive well-being. By choosing OK, you explicitly authorize this processing for the assessment and report. You may decline and choose not to start the assessment. This is not a diagnosis or a substitute for professional care. Country and city are optional and used only in aggregated statistics; the platform does not request GPS location. Family observation is provided by an adult who separately confirms their authority and consent for the minor's information. You may request access, correction, or deletion review through the privacy request channel. Some records may need to be retained where payment or legal obligations apply.\n\nDo you explicitly consent to this sensitive-data processing and wish to continue?"
+    : "Aviso de privacidad y autorización expresa de datos sensibles (versión 2026-11-11-v2)\n\nNeuroEval Pro trata los datos de tu cuenta y las respuestas de evaluación para ofrecer un autorregistro y un informe orientativos. Tus respuestas pueden revelar información sensible relacionada con salud, atención y bienestar cognitivo. Al elegir Aceptar, autorizas expresamente ese tratamiento para realizar la evaluación y generar el informe. Puedes negarte y no iniciar la evaluación. El servicio no es un diagnóstico ni sustituye la atención profesional. País y ciudad son opcionales y se usan solo en estadísticas agregadas; la plataforma no solicita ubicación GPS. La observación familiar requiere que un adulto confirme por separado su autoridad y autorización para tratar la información del menor. Puedes solicitar acceso, corrección o revisión de eliminación mediante el canal de solicitudes de privacidad. Algunos registros podrían conservarse cuando existan obligaciones legales o de pago.\n\n¿Autorizas expresamente este tratamiento de datos sensibles y deseas continuar?";
   if (!window.confirm(notice)) return false;
 
   let age = Number(profileData?.age);
@@ -1421,10 +1421,11 @@ async function ensureCurrentPrivacyConsent() {
     age,
     goal: profileData?.goal || "Autoconocimiento",
     language: currentLanguage,
-    privacyConsent: { accepted: true, version: PRIVACY_NOTICE_VERSION, language: currentLanguage }
+    privacyConsent: { accepted: true, version: PRIVACY_NOTICE_VERSION, language: currentLanguage },
+    sensitiveDataConsent: { accepted: true, version: PRIVACY_NOTICE_VERSION, language: currentLanguage }
   };
   await api("/api/profile", { method: "POST", body: JSON.stringify(payload) });
-  profileData = { ...payload, privacyConsentVersion: PRIVACY_NOTICE_VERSION };
+  profileData = { ...payload, privacyConsentVersion: PRIVACY_NOTICE_VERSION, sensitiveDataConsentVersion: PRIVACY_NOTICE_VERSION };
   return true;
 }
 
@@ -1512,7 +1513,12 @@ async function registerWithEmail(event) {
     const country = $("reg-country")?.value.trim() || "";
     const city = $("reg-city")?.value.trim() || "";
     const language = currentLanguage === "en" ? "en" : "es";
-    profileData = { name, age, goal, country, city, language, privacyConsentVersion: PRIVACY_NOTICE_VERSION };
+    const sensitiveDataConsentAccepted = $("sensitive-data-consent")?.checked === true;
+    profileData = {
+      name, age, goal, country, city, language,
+      privacyConsentVersion: PRIVACY_NOTICE_VERSION,
+      ...(sensitiveDataConsentAccepted ? { sensitiveDataConsentVersion: PRIVACY_NOTICE_VERSION } : {})
+    };
 
     const credential = await createUserWithEmailAndPassword(
       auth,
@@ -1524,7 +1530,11 @@ async function registerWithEmail(event) {
 
     await api("/api/profile", {
       method: "POST",
-      body: JSON.stringify({ name, age, goal, country, city, language, privacyConsent: { accepted: true, version: PRIVACY_NOTICE_VERSION, language } })
+      body: JSON.stringify({
+        name, age, goal, country, city, language,
+        privacyConsent: { accepted: true, version: PRIVACY_NOTICE_VERSION, language },
+        ...(sensitiveDataConsentAccepted ? { sensitiveDataConsent: { accepted: true, version: PRIVACY_NOTICE_VERSION, language } } : {})
+      })
     });
 
     // La pantalla de evaluación se inicia desde el observador de sesión.
@@ -1628,7 +1638,9 @@ async function handleAuthState(user) {
         goal: savedProfile.goal || "Autoconocimiento",
         country: savedProfile.country || "",
         city: savedProfile.city || "",
-        language: savedProfile.language || "es"
+        language: savedProfile.language || "es",
+        privacyConsentVersion: savedProfile.privacyConsentVersion || "",
+        sensitiveDataConsentVersion: savedProfile.sensitiveDataConsentVersion || ""
       };
     } else {
       profileData = {
@@ -1819,6 +1831,7 @@ function openParentEvaluation() {
   $("parent-setting-school").checked = false;
   $("parent-setting-social").checked = false;
   $("parent-guardian-consent").checked = false;
+  $("parent-sensitive-data-consent").checked = false;
   showMessage("parent-intro-message", "");
   show("parent-intro-view");
 }
@@ -1841,13 +1854,16 @@ async function startParentEvaluation(event) {
   if (!$("parent-guardian-consent").checked) {
     return showMessage("parent-intro-message", "Confirma que tienes autorización para proporcionar esta información.", true);
   }
+  if (!$("parent-sensitive-data-consent").checked) {
+    return showMessage("parent-intro-message", "Debes autorizar expresamente el tratamiento de los datos sensibles del menor para continuar.", true);
+  }
   try {
     if (!await ensureCurrentPrivacyConsent()) return;
   } catch (error) {
     return showMessage("parent-intro-message", error.message, true);
   }
   currentEvaluationType = "parent_observation";
-  parentEvaluationContext = { childAge, relationship, settings, consent: true, consentLanguage: currentLanguage };
+  parentEvaluationContext = { childAge, relationship, settings, consent: true, sensitiveDataConsent: true, consentLanguage: currentLanguage };
   profileData = { ...(profileData || {}), name: profileData?.name || currentUser.displayName || currentUser.email, goal: "Observación familiar de indicadores asociados al TDAH" };
   questions = parentQuestionBank.map(([category, question, dimension, icon, example]) => {
     const ageExample = childAge <= 7
