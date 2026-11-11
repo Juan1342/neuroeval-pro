@@ -1016,7 +1016,6 @@ app.get("/api/my-evaluations", requireUser, async (req, res) => {
     const snapshot = await db
       .collection("evaluations")
       .where("uid", "==", req.user.uid)
-      .limit(50)
       .get();
 
     // El historial del usuario solo expone metadatos de pago.
