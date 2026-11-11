@@ -4085,4 +4085,6 @@ function registerEventListeners() {
    16. ARRANQUE
 ========================================================= */
 
+// Selecciona el idioma guardado o el idioma preferido del navegador antes de mostrar el formulario.
+setLanguage(preferredLanguage());
 initializeFirebase();
