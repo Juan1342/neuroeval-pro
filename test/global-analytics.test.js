@@ -8,6 +8,7 @@ test("normalizes accented country names and resolves ISO alpha-2 codes", () => {
   assert.equal(normalizeCountryName("México"), "mexico");
   assert.equal(resolveCountryCode("México"), "MX");
   assert.equal(resolveCountryCode("United States"), "US");
+  assert.equal(resolveCountryCode("UK"), "GB");
   assert.equal(resolveCountryCode("co"), "CO");
   assert.equal(resolveCountryCode("XX"), "");
 });
@@ -30,7 +31,7 @@ test("suppresses country, city, age and language groups below threshold", () => 
   assert.deepEqual(result.countries, [{ label: "Colombia", count: 10, code: "CO", labelEn: "Colombia" }]);
   assert.deepEqual(result.cities, [{ label: "Medellín, Colombia", count: 10, labelEn: "Medellín, Colombia" }]);
   assert.deepEqual(result.ages, [{ label: "25–34", count: 10 }]);
-  assert.deepEqual(result.languages, [{ label: "Español", count: 10 }]);
+  assert.deepEqual(result.languages, [{ label: "Español", count: 10, labelEn: "Spanish" }]);
 });
 
 test("uses detected country code only when voluntary country is absent", () => {
