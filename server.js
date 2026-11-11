@@ -884,7 +884,7 @@ app.post("/api/profile", requireUser, async (req, res) => {
     const language = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : "es";
     if (!name) return sendError(res, 400, "El nombre es obligatorio.");
     if (age !== null && (!Number.isInteger(age) || age < 18 || age > 99)) return sendError(res, 400, "La edad no es válida.");
-    const proxyCountry = String(req.headers["cf-ipcountry"] || req.headers["x-vercel-ip-country"] || req.headers["x-country-code"] || "").trim().toUpperCase();
+    const proxyCountry = String(req.headers["cf-ipcountry"] || req.headers["x-vercel-ip-country"] || "").trim().toUpperCase();
     const validProxyCountry = /^[A-Z]{2}$/.test(proxyCountry) && proxyCountry !== "XX" ? proxyCountry : "";
     const userRef = db.collection("users").doc(req.user.uid);
     const existing = await userRef.get();
@@ -2318,7 +2318,7 @@ app.get(
 app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard.view"), async (req, res) => {
   try {
     const snapshot = await db.collection("users").limit(10000).get();
-    const buckets = { countries:new Map(), cities:new Map(), ages:new Map(), languages:new Map(), goals:new Map() };
+    const buckets = { countries:new Map(), cities:new Map(), ages:new Map(), languages:new Map() };
     const add = (map, value) => { const label=String(value||"Sin dato").trim().slice(0,100)||"Sin dato"; map.set(label,(map.get(label)||0)+1); };
     const ageLabel = age => { const n=Number(age); if(!Number.isInteger(n)||n<18||n>99)return "Sin dato"; if(n<=24)return "18–24"; if(n<=34)return "25–34"; if(n<=44)return "35–44"; if(n<=54)return "45–54"; return "55+"; };
     snapshot.docs.forEach(doc => {
@@ -2328,13 +2328,12 @@ app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard
       if(u.city&&country!=="Sin dato")add(buckets.cities,cleanText(u.city,100)+", "+country);
       add(buckets.ages,ageLabel(u.age));
       add(buckets.languages,u.language==="en"?"English":u.language==="es"?"Español":"Sin dato");
-      add(buckets.goals,cleanText(u.goal,100)||"Sin dato");
     });
     const safeRows=map=>[...map.entries()].filter(([,count])=>count>=10).map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count);
     return res.json({
       ok:true,generatedAt:new Date().toISOString(),users:snapshot.size,truncated:snapshot.size>=10000,privacyThreshold:10,
       countries:safeRows(buckets.countries),cities:safeRows(buckets.cities),ages:safeRows(buckets.ages),
-      languages:safeRows(buckets.languages),goals:safeRows(buckets.goals)
+      languages:safeRows(buckets.languages)
     });
   } catch(error) { console.error("Analítica global:",error); return sendError(res,500,"No se pudo calcular la analítica geográfica."); }
 });
