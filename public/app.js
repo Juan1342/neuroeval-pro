@@ -2715,8 +2715,13 @@ function renderWorldMap(rows = []) {
     const max=Math.max(1,...mapped.map(row=>Number(row.count)||0));
     mapped.forEach(row=>{
       const [lat,lon]=WORLD_COUNTRY_CENTROIDS[row.code],pos=project(lat,lon);
-      const circle=document.createElementNS(NS,"circle");circle.setAttribute("cx",pos.x);circle.setAttribute("cy",pos.y);circle.setAttribute("r",String(5+Math.sqrt(Number(row.count)/max)*13));circle.setAttribute("class","map-point");
-      const title=document.createElementNS(NS,"title");title.textContent=row.label+": "+Number(row.count).toLocaleString(currentLanguage==="en"?"en-US":"es-CO");circle.appendChild(title);svg.appendChild(circle);
+      const circle=document.createElementNS(NS,"circle");circle.setAttribute("cx",pos.x);circle.setAttribute("cy",pos.y);circle.setAttribute("r",String(5+Math.sqrt(Number(row.count)/max)*13));circle.setAttribute("class","map-point");circle.setAttribute("tabindex","0");circle.setAttribute("role","button");
+      const countLabel=Number(row.count).toLocaleString(currentLanguage==="en"?"en-US":"es-CO");
+      circle.setAttribute("aria-label",row.label+": "+countLabel+(currentLanguage==="en"?" users":" usuarios"));
+      const title=document.createElementNS(NS,"title");title.textContent=row.label+": "+countLabel+(currentLanguage==="en"?" users":" usuarios");circle.appendChild(title);
+      const reveal=()=>{const status=$("admin-global-status");if(status)status.textContent=row.label+": "+countLabel+(currentLanguage==="en"?" users in this aggregated group.":" usuarios en este grupo agregado.");};
+      circle.addEventListener("click",reveal);circle.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();reveal();}});
+      svg.appendChild(circle);
     });
   }
   host.appendChild(svg);
