@@ -1203,14 +1203,34 @@ app.post(
           transactionWriter.set(promoRef, { uses: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
         }
         if (!Number.isSafeInteger(amountCop) || amountCop < 1) return { error: "invalid-price" };
-        const reference = makeReference();
-        transactionWriter.set(result.ref, {
-          originalAmountCop: basePrice, discountCop, amountCop, promoCode: appliedCode,
-          paymentReference: reference, paymentStatus: "pending", paymentProvider: "wompi",
-          wompiTransactionId: FieldValue.delete(),
-          wompiTransactionStatus: FieldValue.delete(),
+        // Al retomar una evaluación pendiente, conservar la referencia activa
+        // de Wompi siempre que el importe y el código promocional sigan iguales.
+        // Solo se crea una referencia nueva para una evaluación nueva o un intento
+        // que realmente cambie sus condiciones de pago.
+        const storedAmount = Number(evaluation.amountCop || basePrice);
+        const canReuseReference =
+          evaluation.paymentStatus === "pending" &&
+          Boolean(evaluation.paymentReference) &&
+          (!requestedPromoCode || evaluation.promoCode === requestedPromoCode) &&
+          storedAmount === amountCop;
+        const reference = canReuseReference
+          ? evaluation.paymentReference
+          : makeReference();
+        const paymentUpdate = {
+          originalAmountCop: basePrice,
+          discountCop,
+          amountCop,
+          promoCode: appliedCode,
+          paymentReference: reference,
+          paymentStatus: "pending",
+          paymentProvider: "wompi",
           updatedAt: FieldValue.serverTimestamp()
-        }, { merge: true });
+        };
+        if (!canReuseReference) {
+          paymentUpdate.wompiTransactionId = FieldValue.delete();
+          paymentUpdate.wompiTransactionStatus = FieldValue.delete();
+        }
+        transactionWriter.set(result.ref, paymentUpdate, { merge: true });
         return { reference, amountCop, originalAmountCop: basePrice, discountCop, promoCode: appliedCode };
       });
 
