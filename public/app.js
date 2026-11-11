@@ -2271,6 +2271,41 @@ const ADMIN_PERMISSION_LABELS = {
   "support.manage": "Responder y gestionar soporte"
 };
 
+const WORLD_COUNTRY_CENTROIDS = {
+  CO:[4,-74],US:[39,-98],CA:[57,-106],MX:[23,-102],BR:[-10,-52],AR:[-34,-64],CL:[-30,-71],PE:[-9,-75],EC:[-1,-78],VE:[8,-66],PA:[9,-80],CR:[10,-84],GT:[15,-90],DO:[19,-70],ES:[40,-4],GB:[55,-3],FR:[46,2],DE:[51,10],IT:[42,12],PT:[39,-8],NL:[52,5],CH:[47,8],IE:[53,-8],AU:[-25,134],NZ:[-41,174],JP:[37,138],KR:[36,128],CN:[35,103],IN:[22,79],SG:[1,104],AE:[24,54],SA:[24,45],ZA:[-29,24],NG:[9,8],KE:[0,38],EG:[26,30],SE:[62,15],NO:[62,10],DK:[56,10],FI:[64,26],PL:[52,20],UA:[49,32],TR:[39,35],IL:[31,35],TH:[16,101],ID:[-2,118],PH:[13,122],PK:[30,70]
+};
+function renderWorldMap(rows = []) {
+  const host = $("admin-world-map");
+  if (!host) return;
+  host.replaceChildren();
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS,"svg");
+  svg.setAttribute("viewBox","0 0 900 440");
+  svg.setAttribute("role","img");
+  svg.setAttribute("aria-label",currentLanguage==="en"?"Aggregated users by country":"Usuarios agrupados por país");
+  const addLand = d => { const p=document.createElementNS(NS,"path");p.setAttribute("d",d);p.setAttribute("class","land");svg.appendChild(p); };
+  addLand("M65 85 L115 45 190 35 245 60 270 100 240 130 220 170 190 185 175 230 145 220 130 180 100 165 80 125 Z");
+  addLand("M210 235 L245 245 270 280 265 320 245 365 225 405 205 370 195 325 180 285 Z");
+  addLand("M395 85 L435 65 475 70 500 95 535 95 565 120 550 150 520 160 505 190 475 195 455 165 425 155 410 125 Z");
+  addLand("M465 195 L500 185 535 205 550 245 540 285 515 330 490 350 470 320 455 275 445 235 Z");
+  addLand("M540 90 L590 55 680 45 770 75 820 120 790 160 730 175 680 155 640 180 600 155 560 145 Z");
+  addLand("M710 260 L755 245 790 270 785 315 755 345 720 325 700 290 Z");
+  addLand("M820 350 L840 340 855 355 845 375 825 370 Z");
+  const project=(lat,lon)=>({x:(lon+180)/360*900,y:(90-lat)/180*440});
+  const mapped=rows.filter(row=>row.code&&WORLD_COUNTRY_CENTROIDS[row.code]);
+  if (!mapped.length) {
+    const note=document.createElementNS(NS,"text");note.setAttribute("x","450");note.setAttribute("y","220");note.setAttribute("text-anchor","middle");note.setAttribute("class","map-point-label");note.textContent=currentLanguage==="en"?"No mappable country groups yet":"Aún no hay grupos de países que puedan ubicarse";svg.appendChild(note);
+  } else {
+    const max=Math.max(1,...mapped.map(row=>Number(row.count)||0));
+    mapped.forEach(row=>{
+      const [lat,lon]=WORLD_COUNTRY_CENTROIDS[row.code],pos=project(lat,lon);
+      const circle=document.createElementNS(NS,"circle");circle.setAttribute("cx",pos.x);circle.setAttribute("cy",pos.y);circle.setAttribute("r",String(5+Math.sqrt(Number(row.count)/max)*13));circle.setAttribute("class","map-point");
+      const title=document.createElementNS(NS,"title");title.textContent=row.label+": "+Number(row.count).toLocaleString(currentLanguage==="en"?"en-US":"es-CO");circle.appendChild(title);svg.appendChild(circle);
+    });
+  }
+  host.appendChild(svg);
+}
+
 async function loadAdminGlobalAnalytics() {
   const ids={countries:"admin-global-countries",cities:"admin-global-cities",ages:"admin-global-ages",languages:"admin-global-languages"};
   const status=$("admin-global-status"); if(!status||!hasAdminPermission("dashboard.view"))return;
@@ -2279,6 +2314,7 @@ async function loadAdminGlobalAnalytics() {
   try {
     const response=await api("/api/admin/analytics/global"); const data=await response.json();
     if(!response.ok)throw new Error(data.error||"No se pudo consultar la analítica internacional.");
+    renderWorldMap(data.countries || []);
     Object.entries(ids).forEach(([key,id])=>{
       const host=$(id);if(!host)return;host.replaceChildren();
       const rows=Array.isArray(data[key])?data[key]:[];
@@ -2294,7 +2330,7 @@ async function loadAdminGlobalAnalytics() {
         track.appendChild(bar);item.append(line,track);host.appendChild(item);
       });
     });
-    status.textContent="Actualizado: "+new Date(data.generatedAt).toLocaleString()+" · "+Number(data.users||0).toLocaleString()+" perfiles analizados"+(data.truncated?" · muestra limitada a 10.000 perfiles":"")+". Se ocultan grupos menores de 10.";
+    status.textContent=(currentLanguage==="en"?"Updated: ":"Actualizado: ")+new Date(data.generatedAt).toLocaleString(currentLanguage==="en"?"en-US":"es-CO")+" · "+Number(data.users||0).toLocaleString(currentLanguage==="en"?"en-US":"es-CO")+(currentLanguage==="en"?" profiles analyzed":" perfiles analizados")+(data.truncated?(currentLanguage==="en"?" · sample limited to 10,000 profiles":" · muestra limitada a 10.000 perfiles"):"")+(currentLanguage==="en"?". Groups under 10 are hidden.":". Se ocultan grupos menores de 10.");
   } catch(error) {status.textContent="No fue posible cargar las estadísticas: "+error.message;}
 }
 
