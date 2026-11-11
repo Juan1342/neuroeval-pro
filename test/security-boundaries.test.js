@@ -72,3 +72,13 @@ test("legacy exact minor age is not exposed by administrative endpoints", () => 
   assert.match(server, /const \{ childAge, \.\.\.safeParentContext \} = parentContext/);
   assert.match(server, /parentContext: safeParentContext/);
 });
+
+
+test("admin evaluation views redact client identity without clients.view", () => {
+  assert.match(server, /if \(!can\("clients\.view"\)\) \{\s*\["uid", "name", "email", "age"\]/);
+  assert.match(server, /const canViewClientIdentity = req\.adminAccess\?\.isPrimaryAdmin === true/);
+  assert.match(server, /if \(!canViewClientIdentity\) \{\s*\["uid", "name", "email", "age"\]/);
+  assert.match(server, /reportData\.name = ""/);
+  assert.match(server, /reportData\.email = ""/);
+  assert.match(server, /delete reportData\.age/);
+});
