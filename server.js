@@ -900,6 +900,7 @@ app.post("/api/profile", requireUser, async (req, res) => {
     };
     if (!existing.exists) profile.createdAt = FieldValue.serverTimestamp();
     await userRef.set(profile, { merge: true });
+    globalAnalyticsCache = null;
     return res.json({ ok: true, profile });
   } catch (error) {
     console.error("POST perfil:", error);
@@ -2314,9 +2315,16 @@ app.get(
   }
 );
 
+/* Caché breve para evitar repetir lecturas de hasta 10.000 perfiles en cada apertura del panel. */
+let globalAnalyticsCache = null;
+const GLOBAL_ANALYTICS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /* Estadísticas geográficas y demográficas agregadas. Sin PII ni respuestas. */
 app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard.view"), async (req, res) => {
   try {
+    if (globalAnalyticsCache && Date.now() - globalAnalyticsCache.cachedAt < GLOBAL_ANALYTICS_CACHE_TTL_MS) {
+      return res.json({ ...globalAnalyticsCache.payload, cached: true });
+    }
     const snapshot = await db.collection("users").limit(10000).get();
     const buckets = { countries:new Map(), cities:new Map(), ages:new Map(), languages:new Map() };
     const add = (map, value) => { const label=String(value||"Sin dato").trim().slice(0,100)||"Sin dato"; map.set(label,(map.get(label)||0)+1); };
@@ -2330,11 +2338,13 @@ app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard
       add(buckets.languages,u.language==="en"?"English":u.language==="es"?"Español":"Sin dato");
     });
     const safeRows=map=>[...map.entries()].filter(([,count])=>count>=10).map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count);
-    return res.json({
+    const payload = {
       ok:true,generatedAt:new Date().toISOString(),users:snapshot.size,truncated:snapshot.size>=10000,privacyThreshold:10,
       countries:safeRows(buckets.countries),cities:safeRows(buckets.cities),ages:safeRows(buckets.ages),
-      languages:safeRows(buckets.languages)
-    });
+      languages:safeRows(buckets.languages),cached:false
+    };
+    globalAnalyticsCache = { cachedAt:Date.now(), payload };
+    return res.json(payload);
   } catch(error) { console.error("Analítica global:",error); return sendError(res,500,"No se pudo calcular la analítica geográfica."); }
 });
 
