@@ -28,7 +28,7 @@ test("suppresses country, city, age and language groups below threshold", () => 
   ];
   const result = aggregateProfiles(profiles, 10);
   assert.deepEqual(result.countries, [{ label: "Colombia", count: 10, code: "CO", labelEn: "Colombia" }]);
-  assert.deepEqual(result.cities, [{ label: "Medellín, Colombia", count: 10 }]);
+  assert.deepEqual(result.cities, [{ label: "Medellín, Colombia", count: 10, labelEn: "Medellín, Colombia" }]);
   assert.deepEqual(result.ages, [{ label: "25–34", count: 10 }]);
   assert.deepEqual(result.languages, [{ label: "Español", count: 10 }]);
 });
