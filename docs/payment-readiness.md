@@ -29,7 +29,7 @@ Si falta la llave privada, o Wompi no puede confirmar la transacción mediante s
 ## Alcance internacional confirmado por la documentación de Wompi
 
 - La integración de checkout utilizada por NeuroEval Pro cobra en **COP**; Wompi documenta COP como moneda disponible para esa integración.
-- Wompi informa que acepta tarjetas internacionales Visa, Mastercard y American Express, con exclusión de tarjetas virtuales, sujeto a las condiciones de la cuenta del comercio.
+- Wompi informa en un artículo de soporte (publicado el 26 de octubre de 2020) que acepta tarjetas internacionales Visa, Mastercard y American Express, con exclusión de tarjetas virtuales. Por la antigüedad de esa publicación y porque la habilitación depende de la cuenta, debe confirmarse con Wompi antes del lanzamiento.
 - El comercio recibe el abono en COP. La conversión que vea el comprador depende del emisor de su tarjeta; NeuroEval Pro no está convirtiendo ni cobrando en la moneda local de cada país.
 - PSE, Nequi y otros métodos locales no deben presentarse como disponibles mundialmente. La disponibilidad efectiva depende de los métodos habilitados para la cuenta del comercio.
 
