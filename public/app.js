@@ -982,8 +982,10 @@ function formatProgressEvaluationDate(value) {
 async function loadEvaluationHistory() {
   const container = $("progress-evaluations");
   const count = $("progress-evaluation-count");
+  const pendingCount = $("progress-pending-count");
+  const totalCount = $("progress-total-count");
   if (!container || !count) return;
-  if (!currentUser) { count.textContent = "0"; container.textContent = "Inicia sesión para consultar tus evaluaciones."; return; }
+  if (!currentUser) { count.textContent = "0"; if (pendingCount) pendingCount.textContent = "0"; if (totalCount) totalCount.textContent = "0"; container.textContent = "Inicia sesión para consultar tus evaluaciones."; return; }
   container.textContent = "Consultando tus evaluaciones...";
   try {
     const response = await api("/api/my-evaluations");
@@ -995,7 +997,10 @@ async function loadEvaluationHistory() {
     };
     evaluations.sort((a,b) => getTime(b.createdAt) - getTime(a.createdAt));
     const paid = evaluations.filter(item => item.paymentStatus === "paid");
+    const pending = evaluations.filter(item => item.paymentStatus !== "paid");
     count.textContent = String(paid.length);
+    if (pendingCount) pendingCount.textContent = String(pending.length);
+    if (totalCount) totalCount.textContent = String(evaluations.length);
     container.replaceChildren();
     if (!evaluations.length) { container.textContent = "Todavía no tienes evaluaciones registradas."; return; }
     evaluations.forEach(evaluation => {
@@ -1016,13 +1021,28 @@ async function loadEvaluationHistory() {
         button.addEventListener("click", () => downloadEvaluationPdf(evaluation.id));
         card.appendChild(button);
       } else {
+        const actions = document.createElement("div");
+        actions.style.display = "flex"; actions.style.alignItems = "center"; actions.style.gap = ".75rem"; actions.style.flexWrap = "wrap";
         const pending = document.createElement("span"); pending.className = "muted-text text-sm";
-        pending.textContent = "El informe estará disponible al confirmarse el pago."; card.appendChild(pending);
+        pending.textContent = "Evaluación pendiente de pago."; 
+        const resume = document.createElement("button"); resume.type = "button"; resume.className = "btn primary";
+        resume.textContent = "Continuar al pago";
+        resume.addEventListener("click", async () => {
+          stopPaymentPolling();
+          lastEvaluationId = evaluation.id;
+          paymentReference = evaluation.reference || null;
+          show("payment-view");
+          await showPaymentForExistingEvaluation();
+        });
+        actions.append(pending, resume); card.appendChild(actions);
       }
       container.appendChild(card);
     });
   } catch (error) {
-    count.textContent = "—"; container.textContent = error.message || "No se pudo cargar tu historial de evaluaciones.";
+    count.textContent = "—";
+    if (pendingCount) pendingCount.textContent = "—";
+    if (totalCount) totalCount.textContent = "—";
+    container.textContent = error.message || "No se pudo cargar tu historial de evaluaciones.";
   }
 }
 function gameLevel(game) {
