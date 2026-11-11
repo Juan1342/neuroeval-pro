@@ -39,7 +39,8 @@ test("evaluation creation requires current privacy consent and an adult account"
   assert.match(html, /id="admin-panel-privacy"/);
   assert.match(privacyPolicy, /BORRADOR NO APTO PARA PUBLICACIÓN/);
   assert.match(privacyPolicy, /NOT READY FOR PUBLICATION/);
-  assert.match(privacyPolicy, /JUAN MANUEL ZAMORA ZAPATA/);\n  assert.match(privacyPolicy, /\[DIRECCIÓN DE NOTIFICACIÓN EN COLOMBIA\]/);
+  assert.match(privacyPolicy, /JUAN MANUEL ZAMORA ZAPATA/);
+  assert.match(privacyPolicy, /\[DIRECCIÓN DE NOTIFICACIÓN EN COLOMBIA\]/);
 });
 
 test("personal data rights endpoints are owner-scoped and admin review is restricted", () => {
