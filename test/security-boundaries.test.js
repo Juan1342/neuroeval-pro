@@ -114,3 +114,11 @@ test("adult and family questionnaires have English translations for visible prom
     }
   }
 });
+
+
+test("password recovery email follows the account language", () => {
+  assert.match(server, /const resetLanguage = userProfileSnapshot\.exists[\s\S]{0,180}\? "en" : "es"/);
+  assert.match(server, /subject: "Password reset code · NeuroEval Pro"/);
+  assert.match(server, /Your verification code is:/);
+  assert.match(server, /Tu código de verificación es:/);
+});
