@@ -29,7 +29,7 @@ Variables principales:
 - Correo: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`.
 - Aplicación: `APP_ORIGIN`, `CORS_ORIGINS`, `NODE_ENV`, `PORT`.
 - Administrador: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`.
-- Wompi: `WOMPI_PUBLIC_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_EVENTS_SECRET`.
+- Wompi: `WOMPI_PUBLIC_KEY`, `WOMPI_PRIVATE_KEY`, `WOMPI_INTEGRITY_SECRET`, `WOMPI_EVENTS_SECRET`. La llave privada debe corresponder al mismo ambiente que la llave pública; el webhook consulta con ella la transacción directamente en Wompi antes de confirmar un pago.
 - Pruebas: `ALLOW_DEMO_PAY=false` fuera de entornos locales controlados.
 
 Para Gmail, utiliza una contraseña de aplicación si tu cuenta y política de seguridad lo permiten; no uses la contraseña normal de la cuenta. Configura el puerto **587** para STARTTLS (o **465** para TLS implícito), y deja que `SMTP_FROM` sea la dirección remitente autorizada por el proveedor. El servidor comprueba la conexión SMTP al iniciar y el endpoint `/api/health` distingue entre `smtpConfigured` (variables presentes y puerto válido) y `smtpConnectionVerified` (conexión verificada). Un valor `false` en la segunda propiedad indica que aún debe revisarse la conectividad, el usuario, la contraseña de aplicación, el puerto o las restricciones del proveedor. La confirmación definitiva del envío se obtiene al completar una solicitud real de recuperación; no se deben introducir credenciales reales en GitHub ni compartirlas en el chat.
