@@ -53,3 +53,17 @@ Si falta la llave privada, o Wompi no puede confirmar la transacción mediante s
 - Consulta autenticada de transacciones: https://docs.wompi.co/docs/colombia/transacciones/
 - Métodos de pago: https://docs.wompi.co/docs/colombia/metodos-de-pago/
 - Pagos con tarjetas internacionales: https://soporte.wompi.co/hc/es-419/articles/360042975693--Puedo-recibir-pagos-internacionales-y-como-realizo-la-conversi%C3%B3n-a-la-moneda-de-mi-cliente
+
+## Revisión de alternativas para cobro internacional (11 de noviembre de 2026)
+
+- **Wompi:** mantenerlo como pasarela colombiana actual. Su artículo de soporte indica aceptación de tarjetas Visa, Mastercard y American Express internacionales (con exclusiones) y liquidación al comercio en COP. El artículo es de 2020, por lo que no se debe prometer aceptación global sin confirmación escrita y pruebas con la cuenta real: https://soporte.wompi.co/hc/es-419/articles/360042975693--Puedo-recibir-pagos-internacionales-y-como-realizo-la-conversi%C3%B3n-a-la-moneda-de-mi-cliente
+- **Stripe:** no es una opción directa para abrir una cuenta comercial colombiana en este momento; Colombia no aparece en la lista oficial de países admitidos. No intentar resolverlo declarando un país distinto ni creando una entidad ficticia: https://stripe.com/global
+- **PayPal:** candidato para una segunda pasarela. PayPal Colombia promociona pagos en más de 200 mercados y más de 100 divisas, pero advierte que la disponibilidad de productos varía por mercado. Su ayuda local indica que recibir fondos requiere asociar la cuenta con un partner local con licencia. Antes de programar la integración, el titular debe confirmar que su cuenta Empresas colombiana puede recibir pagos por Checkout/API, las monedas de cobro y liquidación, comisiones, retiros y restricciones: https://www.paypal.com/co/cshelp/article/%C2%BFqu%C3%A9-es-paypal-checkout-y-c%C3%B3mo-funciona-help302 y https://www.paypal.com/co/business/accept-payments
+- **PayU Latam:** alternativa a consultar directamente con el área comercial. La API de Colombia documenta tarjetas y métodos locales; la habilitación de pagos internacionales depende de aprobación y condiciones de la cuenta. No asumir que las opciones documentadas para PayU India aplican a Colombia: https://developers.payulatam.com/latam/es/docs/integrations/api-integration/payments-api-colombia.html
+
+### Decisión técnica provisional
+
+Hasta que el titular confirme las capacidades de su cuenta y entregue credenciales de Sandbox, mantener COP como moneda de cobro y Wompi como proveedor activo. La plataforma puede ofrecer interfaz en español e inglés a usuarios de otros países, pero no debe anunciar precios en USD/EUR ni métodos de pago internacionales como disponibles hasta que el proveedor los habilite y se completen pruebas de autorización, webhook, conciliación, reembolsos e idempotencia.
+
+No agregar llaves, tokens ni secretos a GitHub. Las credenciales de cada proveedor se configurarían únicamente en el gestor de secretos del entorno correspondiente, después de autorización del titular.
+
