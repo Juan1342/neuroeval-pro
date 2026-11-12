@@ -66,7 +66,7 @@ test("personal PDF and password reset email follow the selected account language
   assert.match(server, /function translateReportText\(value, language = "es"\)/);
   assert.match(server, /const reportLanguage = \["es", "en"\]/);
   assert.match(server, /buildEvaluationPdf\(result\.data, \{ language: reportLanguage \}\)/);
-  assert.match(server, /includeAnswers: true,[\\s\\S]{0,80}language: reportLanguage/);
+  assert.match(server, /includeAnswers: true,[\s\S]{0,80}language: reportLanguage/);
   assert.match(server, /const resetLanguage = userProfileSnapshot\.exists[\s\S]{0,180}\? "en" : "es"/);
   assert.match(server, /subject: "Password reset code · NeuroEval Pro"/);
   assert.match(server, /Your verification code is:/);
