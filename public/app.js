@@ -961,7 +961,8 @@ function setLanguage(language, options = {}) {
       .catch(error => console.warn("No se pudo sincronizar el idioma del perfil:", error));
   }
 }
-function preferredLanguage() {
+function preferredLanguage(profileLanguage) {
+  if (profileLanguage === "en" || profileLanguage === "es") return profileLanguage;
   try {
     const saved = localStorage.getItem("neuroeval-language");
     if (saved === "en" || saved === "es") return saved;
@@ -1715,6 +1716,8 @@ async function handleAuthState(user) {
         body: JSON.stringify(profileData)
       });
     }
+
+    setLanguage(preferredLanguage(profileData?.language));
 
     // Si la pasarela devolvió al usuario a la plataforma, consultar primero
     // si existe una evaluación pendiente de pago.
