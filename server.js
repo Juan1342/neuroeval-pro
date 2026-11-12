@@ -1278,7 +1278,7 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       age,
       goal,
       evaluationType,
-      parentContext: evaluationType === "parent_observation" ? { ...calculated.parentContext, consentAt: new Date().toISOString() } : null,
+      parentContext: evaluationType === "parent_observation" ? { ...calculated.parentContext, guardianConsent: true, sensitiveDataConsent: true, consentVersion: PRIVACY_NOTICE_VERSION, consentAt: new Date().toISOString(), consentByUid: req.user.uid } : null,
       answers: calculated.answers,
       scores: calculated.scores,
       profile: calculated.profile,
