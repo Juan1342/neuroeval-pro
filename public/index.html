@@ -632,9 +632,10 @@
           <div><label class="field-label" for="profile-country-input">País (opcional)</label><input class="field" id="profile-country-input" maxlength="80" autocomplete="country-name" placeholder="Ej. Colombia"></div>
           <div><label class="field-label" for="profile-city-input">Ciudad (opcional)</label><input class="field" id="profile-city-input" maxlength="100" autocomplete="address-level2" placeholder="Ej. Medellín"></div>
           <div class="md:col-span-2"><label class="field-label" for="profile-language-input">Idioma preferido</label><select class="field" id="profile-language-input"><option value="es">Español</option><option value="en">English</option></select></div>
+          <div class="md:col-span-2"><label class="flex items-start gap-3 text-sm leading-6"><input id="profile-regional-consent" type="checkbox" class="mt-1"><span>Acepto compartir voluntariamente mi país, ciudad, rango de edad e idioma para estadísticas agregadas. Solo se muestran grupos de 10 o más perfiles.</span></label></div>
           <div class="md:col-span-2"><button class="btn outline" type="submit">Guardar preferencias regionales</button><p id="profile-locale-message" class="message" role="status"></p></div>
         </form>
-        <p class="muted-text text-xs mt-3">La ciudad y el país son voluntarios. Se utilizan en estadísticas agregadas y no para localizarte individualmente.</p>
+        <p class="muted-text text-xs mt-3">El consentimiento es voluntario. Si lo aceptas, tu país, ciudad, rango de edad e idioma se usan solo en estadísticas agregadas; nunca se muestra tu ubicación individual ni se registra GPS.</p>
         <button id="profile-back" class="btn primary mt-6" type="button">Volver a mis pruebas</button>
       </div>
     </section>
