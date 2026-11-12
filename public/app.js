@@ -3204,6 +3204,7 @@ async function renderWorldMap(rows = []) {
       if (!pathData) return;
 
       const path = document.createElementNS(NS, "path");
+      path.setAttribute("data-country-code", code);
       path.setAttribute("d", pathData);
       path.setAttribute("class", "land" + (count >= 10 ? " has-users" : ""));
       path.setAttribute("fill-rule", "evenodd");
