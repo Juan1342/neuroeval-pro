@@ -128,7 +128,7 @@ test("privacy documents open and account privacy controls export data and submit
   await page.locator("#privacy-request-type").selectOption("deletion");
   await page.locator("#privacy-request-details").fill("Solicito revisión de supresión de mi cuenta.");
   await page.locator("#privacy-request-submit").click();
-  await expect(page.locator("#privacy-request-status")).toContainText("Solicitud registrada");
+  await expect(page.locator("#privacy-request-status")).toContainText("Request submitted");
 });
 
 test("family observation requires both guardian authority and sensitive-data consent", async ({ page }) => {
@@ -150,11 +150,11 @@ test("family observation requires both guardian authority and sensitive-data con
   await page.locator("#parent-setting-home").check();
   await page.locator("#parent-guardian-consent").check();
   await page.locator("#parent-evaluation-form button[type=submit]").click();
-  await expect(page.locator("#parent-intro-message")).toContainText("autorizar expresamente");
+  await expect(page.locator("#parent-intro-message")).toContainText("explicitly authorize");
   await expect(page.locator("#quiz-view")).toBeHidden();
   await page.locator("#parent-sensitive-consent").check();
   await page.locator("#parent-evaluation-form button[type=submit]").click();
-  await expect(page.locator("#parent-intro-message")).toContainText("explicaste la actividad al menor");
+  await expect(page.locator("#parent-intro-message")).toContainText("explained the activity to the child");
   await expect(page.locator("#quiz-view")).toBeHidden();
   await page.locator("#parent-child-informed-consent").check();
   await page.locator("#parent-evaluation-form button[type=submit]").click();
