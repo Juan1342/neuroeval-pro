@@ -89,9 +89,9 @@ test("world map clips antimeridian-crossing geometry instead of drawing across t
   assert.ok(fiji, "Fiji must be present in the world map");
   assert.match(fiji.attributes["aria-label"], /^Fiji: 12 users$/);
 
-  const subpaths = fiji.attributes.d.split(/\\s+Z\\s*/).filter(Boolean);
+  const subpaths = fiji.attributes.d.split(" Z ").filter(Boolean);
   for (const subpath of subpaths) {
-    const points = [...subpath.matchAll(/[ML](-?\\d+(?:\\.\\d+)?) (-?\\d+(?:\\.\\d+)?)/g)]
+    const points = [...subpath.matchAll(/[ML](-?[0-9.]+) (-?[0-9.]+)/g)]
       .map(match => Number(match[1]));
     for (let index = 1; index < points.length; index++) {
       assert.ok(Math.abs(points[index] - points[index - 1]) <= 450,
