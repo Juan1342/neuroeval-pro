@@ -484,6 +484,94 @@ const uiTranslations = {
   "No se pudo calcular la analítica geográfica.": "Global geographic analytics could not be calculated.",
   "No fue posible cargar las estadísticas:": "Could not load statistics:",
   "No se pudo cargar el mapa mundial.": "The world map could not be loaded.",
+  "No se pudo cargar la lista de países:": "Could not load the country list:",
+  "No se pudo obtener la configuración de Firebase.": "Could not retrieve the Firebase configuration.",
+  "La configuración pública de Firebase está incompleta.": "The public Firebase configuration is incomplete.",
+  "Se requiere una edad adulta válida para continuar.": "A valid adult age is required to continue.",
+  "La edad debe estar entre 18 y 99 años.": "Age must be between 18 and 99.",
+  "Selecciona el objetivo de tu evaluación.": "Select the goal of your assessment.",
+  "Este correo está reservado para administración.": "This email address is reserved for administration.",
+  "Administración": "Administration",
+  "Error de sesión:": "Session error:",
+  "No se pudo validar la sesión.": "Could not validate the session.",
+  "Evaluación NeuroEval Pro": "NeuroEval Pro Assessment",
+  "Secuencia relámpago": "Flash sequence",
+  "Cazador de símbolos": "Symbol hunter",
+  "Completa el patrón": "Complete the pattern",
+  "Cálculo mental": "Mental math",
+  "Color bajo presión": "Color under pressure",
+  "Código secreto": "Secret code",
+  "Doble misión": "Double mission",
+  "¡Nivel ": "Level ",
+  " superado! ": " completed! ",
+  "No se superó el nivel ": "Level not passed ",
+  " dígitos. Luego escríbelos en el mismo orden.": " digits. Then enter them in the same order.",
+  " dígitos": " digits",
+  " estrellas. Hay más distractores y menos tiempo en cada nivel.": " stars. Each level has more distractors and less time.",
+  "Cuenta los círculos negros entre ": "Count the black circles among ",
+  " círculos.": " circles.",
+  "¡Cálculo correcto!": "Correct calculation!",
+  "Ese no era el símbolo diferente.": "That was not the odd symbol.",
+  "Después de ": "After ",
+  "Tu reacción: ": "Your reaction: ",
+  "¡Deducción correcta!": "Correct deduction!",
+  "¡Atendiste a las dos reglas!": "You followed both rules!",
+  "Había ": "There were ",
+  "No se pudo solicitar el código.": "Could not request the code.",
+  "El código debe tener seis dígitos.": "The code must contain six digits.",
+  "No se pudo cambiar la contraseña.": "Could not change the password.",
+  "No se pudo guardar tu evaluación: ": "Could not save your assessment: ",
+  "No se encontró la evaluación que deseas consultar.": "The assessment you want to view could not be found.",
+  "El servidor no entregó los datos necesarios para Wompi.": "The server did not provide the information required by Wompi.",
+  "Informe de observación familiar · ": "Family observation report · ",
+  " · Familiar: ": " · Relationship: ",
+  " · no especificado": " · not specified",
+  "Atención y seguimiento de tareas": "Attention and task follow-up",
+  "Atención sostenida y memoria cotidiana": "Sustained attention and everyday memory",
+  "Organización y funciones ejecutivas": "Organization and executive functions",
+  "Duración, entornos y observación externa": "Duration, settings, and external observation",
+  "Estrés, preocupación y descanso": "Stress, worry, and rest",
+  "Orientación": "Guidance",
+  "No hay evaluaciones que coincidan con la búsqueda.": "No assessments match your search.",
+  "Todavía no hay perfiles registrados.": "No profiles have been registered yet.",
+  "Exportación generada. ": "Export created. ",
+  "Exportación parcial: ": "Partial export: ",
+  " superó el límite de 500 documentos. No la uses como respaldo completo; solicita una copia administrada en Google Cloud.": " exceeded the 500-document limit. Do not use it as a complete backup; request a managed copy in Google Cloud.",
+  "Última comprobación: ": "Last checked: ",
+  "No fue posible ejecutar el diagnóstico: ": "Could not run the diagnostic: ",
+  "Precio por evaluación": "Price per assessment",
+  "Pagos de demostración": "Demo payments",
+  "Mapa mundial con países que tienen grupos agregados de usuarios": "World map showing countries with aggregated user groups",
+  "Aún no hay grupos de países que cumplan el umbral de privacidad": "No country groups meet the privacy threshold yet",
+  "No fue posible cargar el mapa mundial. Las estadísticas por país siguen disponibles abajo.": "The world map could not be loaded. Country statistics remain available below.",
+  "No fue posible cargar el mapa. Las estadísticas por país siguen disponibles abajo.": "The map could not be loaded. Country statistics remain available below.",
+  "No fue posible cargar las estadísticas: ": "Could not load statistics: ",
+  "No se pudo consultar la analítica.": "Could not retrieve analytics.",
+  "Conversión a pago": "Payment conversion",
+  "No se pudo cargar la analítica: ": "Could not load analytics: ",
+  "En gestión": "In progress",
+  "Evaluación": "Assessment",
+  "Escribe un mensaje para continuar la conversación…": "Write a message to continue the conversation…",
+  "Rectificación": "Correction",
+  "Revisión de eliminación": "Deletion review",
+  "Retiro de autorización de datos sensibles": "Withdrawal of sensitive-data consent",
+  "En revisión": "Under review",
+  "Marcar en revisión": "Mark as under review",
+  "No se pudo cargar la configuración comercial: ": "Could not load commercial settings: ",
+  "Código ": "Code ",
+  "¿Revocar definitivamente el acceso administrativo de ": "Permanently revoke administrative access for ",
+  "Último acceso": "Last access",
+  "La respuesta del servidor no contiene una evaluación válida.": "The server response does not contain a valid assessment.",
+  "Descripción": "Description",
+  "Dimensión": "Dimension",
+  "La autenticación todavía no está disponible.": "Authentication is not available yet.",
+  "Error al cerrar sesión:": "Sign-out error:",
+  "No se pudo cerrar la sesión. ": "Could not sign out. ",
+  "Inténtalo nuevamente.": "Please try again.",
+  "Preparando la exportación de tus datos…": "Preparing your data export…",
+  "Se preparó la copia de tus datos.": "Your data copy is ready.",
+  "Esto registra una solicitud de revisión de eliminación; no borra inmediatamente tu cuenta ni tus registros. ¿Continuar?": "This records a deletion-review request; it does not immediately delete your account or records. Continue?",
+  "Tu solicitud de privacidad quedó registrada para revisión.": "Your privacy request has been submitted for review.",
   "Alcance internacional": "International reach",
   "Distribución agregada por país, ciudad, edad, idioma y objetivo declarado.": "Aggregated distribution by country, city, age, language, and stated goal.",
   "↻ Actualizar datos": "↻ Refresh data",
@@ -984,6 +1072,12 @@ function startLanguageObserver() {
       if (record.type === "characterData") {
         const translated = translateUiText(record.target.nodeValue);
         if (translated !== record.target.nodeValue) record.target.nodeValue = translated;
+      } else if (record.type === "attributes") {
+        const attribute = record.attributeName;
+        const target = record.target;
+        const original = target.getAttribute(attribute);
+        const translated = translateUiText(original);
+        if (original && translated !== original) target.setAttribute(attribute, translated);
       }
       record.addedNodes?.forEach(node => {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -995,7 +1089,7 @@ function startLanguageObserver() {
       });
     });
   });
-  languageDomObserver.observe(document.body, { childList: true, characterData: true, subtree: true });
+  languageDomObserver.observe(document.body, { childList: true, characterData: true, attributes: true, attributeFilter: ["placeholder", "title", "aria-label", "alt"], subtree: true });
 }
 
 const choices = [
