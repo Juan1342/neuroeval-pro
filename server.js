@@ -902,7 +902,6 @@ app.post("/api/profile", requireUser, async (req, res) => {
     const userRef = db.collection("users").doc(req.user.uid);
     const existing = await userRef.get();
 
-    const previous = existing.exists ? existing.data() || {} : {};
     const profile = {
       uid: req.user.uid,
       name,
