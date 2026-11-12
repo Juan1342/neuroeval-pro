@@ -21,7 +21,7 @@ test("bilingual privacy and terms pages identify the controller and privacy cont
     const page = read(file);
     assert.match(page, /JUAN MANUEL ZAMORA ZAPATA/);
     assert.match(page, /soporte\.neuroevalpro@gmail\.com/);
-    assert.match(page, /Versión preliminar|Preliminary version/);
+    assert.match(page, /Versión 1\.2|Version 1\.2/);
   }
 });
 
