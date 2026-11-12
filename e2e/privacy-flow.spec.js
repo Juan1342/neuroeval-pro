@@ -45,7 +45,7 @@ async function mockBrowserServices(page) {
     if (url.pathname === "/api/profile" && method === "GET") return route.fulfill({ json: { profile: null } });
     if (url.pathname === "/api/profile" && method === "POST") return route.fulfill({ json: { ok: true, profile: body } });
     if (url.pathname === "/api/support/tickets") return route.fulfill({ json: { tickets: [] } });
-    if (url.pathname === "/api/privacy/consent") return route.fulfill({ json: { ok: true, consent: body.consent === true, version: "2026-11-11-v1" } });
+    if (url.pathname === "/api/privacy/consent") return route.fulfill({ json: { ok: true, consent: body.consent === true, version: "2026-11-11-v2" } });
     if (url.pathname === "/api/privacy/requests" && method === "GET") return route.fulfill({ json: { requests: [] } });
     if (url.pathname === "/api/privacy/requests" && method === "POST") return route.fulfill({ status: 201, json: { ok: true, requestId: "privacy-e2e", status: "pending" } });
     if (url.pathname === "/api/my-data/export") return route.fulfill({ json: { product: "NeuroEval Pro", account: { email: "browser@example.com" }, evaluations: [] } });
@@ -150,6 +150,10 @@ test("family observation requires both guardian authority and sensitive-data con
   await expect(page.locator("#parent-intro-message")).toContainText("autorizar expresamente");
   await expect(page.locator("#quiz-view")).toBeHidden();
   await page.locator("#parent-sensitive-consent").check();
+  await page.locator("#parent-evaluation-form button[type=submit]").click();
+  await expect(page.locator("#parent-intro-message")).toContainText("explicaste la actividad al menor");
+  await expect(page.locator("#quiz-view")).toBeHidden();
+  await page.locator("#parent-child-informed-consent").check();
   await page.locator("#parent-evaluation-form button[type=submit]").click();
   await expect(page.locator("#quiz-view")).toBeVisible();
 });
