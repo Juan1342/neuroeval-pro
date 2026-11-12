@@ -153,3 +153,6 @@ Los tres documentos se prepararon en español e inglés en la rama `feature/glob
 - Se eliminaron los marcadores visibles de `public/privacy.html` y se reemplazaron por explicaciones sobre el estado real de la información y las verificaciones pendientes. Esto no cierra los pendientes de retención automatizada, inventario de cookies en navegador, contratos de proveedores, bases jurídicas por país ni designación de delegado si fuese obligatoria.
 - Los términos mantienen pendiente la fecha efectiva, que solo debe completarse tras aprobación y publicación.
 - La elegibilidad por edades no se ha modificado. La aplicación actual limita las evaluaciones individuales a adultos y el flujo familiar contempla rangos de menores; no debe publicarse una política que prometa acceso universal por edad hasta revisar la arquitectura y las normas aplicables.
+
+- [x] Se incorporó una propuesta de conservación/eliminación en `docs/data-retention-policy-proposal.md` (plazos propuestos pendientes de aprobación y de implementación técnica).
+- [x] Se incorporó un análisis jurídico preliminar en `docs/legal-preliminary-review.md` para Colombia, UE/EEE, Reino Unido y Estados Unidos; no constituye dictamen ni habilita automáticamente otros mercados.
