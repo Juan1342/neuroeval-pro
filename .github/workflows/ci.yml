@@ -1,0 +1,65 @@
+name: Verificación de NeuroEval Pro
+
+on:
+  push:
+    branches:
+      - mejoras/neuroeval-pro
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Sincronizar lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Aplicar correcciones compatibles de seguridad
+        run: npm audit fix
+
+      - name: Verificar instalación reproducible
+        run: npm ci
+
+      - name: Bloquear dependencias vulnerables
+        run: npm audit --audit-level=moderate
+
+      - name: Verificar APIs modulares y transporte de correo
+        run: |
+          node -e "require('firebase-admin/app'); require('firebase-admin/auth'); require('firebase-admin/firestore'); const mailer=require('nodemailer'); if(typeof mailer.createTransport!=='function') process.exit(1); console.log('Firebase Admin modular y Nodemailer disponibles')"
+
+      - name: Comprobar sintaxis
+        run: |
+          node --check server.js
+          node --check bootstrap-admin.js
+          node --check public/app.js
+          node --check lib/evaluation.js
+          node --check lib/payment-state.js
+
+      - name: Ejecutar pruebas
+        run: npm test
+
+      - name: Guardar lockfile actualizado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: refresh dependency lockfile"
+            git push
+          fi
