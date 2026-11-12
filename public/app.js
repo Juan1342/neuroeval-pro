@@ -3144,7 +3144,7 @@ async function loadAdminGlobalAnalytics() {
   try {
     const response=await api("/api/admin/analytics/global"); const data=await response.json();
     if(!response.ok)throw new Error(data.error||"No se pudo consultar la analítica internacional.");
-    renderWorldMap(data.countries || []);
+    await renderWorldMap(data.countries || []);
     Object.entries(ids).forEach(([key,id])=>{
       const host=$(id);if(!host)return;host.replaceChildren();
       const rows=Array.isArray(data[key])?data[key]:[];
