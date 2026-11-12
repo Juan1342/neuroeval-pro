@@ -2007,11 +2007,11 @@ async function loadAdminPrivacyRequests() {
 function renderAdminPrivacyRequests(requests) {
   const target = $("admin-privacy-list"); target.replaceChildren();
   if (!requests.length) { const empty = document.createElement("p"); empty.className = "muted-text"; empty.textContent = "No hay solicitudes de privacidad."; target.appendChild(empty); return; }
-  const labels = { access: "Acceso", correction: "Rectificación", withdraw_consent: "Retiro de consentimiento", deletion: "Supresión" };
+  const labels = currentLanguage === "en" ? { access: "Access", correction: "Correction", withdraw_consent: "Withdraw consent", deletion: "Deletion" } : { access: "Acceso", correction: "Rectificación", withdraw_consent: "Retiro de consentimiento", deletion: "Supresión" };
   requests.forEach(item => {
     const card = document.createElement("article"); card.className = "card space-y-2";
     const title = document.createElement("strong"); title.textContent = (labels[item.requestType] || item.requestType) + " · " + (item.email || "Cuenta no disponible");
-    const meta = document.createElement("p"); meta.className = "muted-text text-xs"; const statusLabels = { pending: "Pendiente", in_review: "En revisión", approved: "Aprobada", completed: "Completada", rejected: "Rechazada" }; meta.textContent = (statusLabels[item.status] || item.status || "pending") + " · " + formatAdminDate(item.createdAt);
+    const meta = document.createElement("p"); meta.className = "muted-text text-xs"; const statusLabels = { pending: currentLanguage === "en" ? "Pending" : "Pendiente", in_review: currentLanguage === "en" ? "Under review" : "En revisión", approved: currentLanguage === "en" ? "Approved" : "Aprobada", completed: currentLanguage === "en" ? "Completed" : "Completada", rejected: currentLanguage === "en" ? "Rejected" : "Rechazada" }; meta.textContent = (statusLabels[item.status] || item.status || "pending") + " · " + formatAdminDate(item.createdAt);
     const details = document.createElement("p"); details.className = "text-sm"; details.textContent = item.details || "Sin detalle adicional.";
     const actions = document.createElement("div"); actions.className = "flex flex-wrap gap-2";
     const addAction = (label, action) => { const button = document.createElement("button"); button.type = "button"; button.className = "btn outline"; button.textContent = label; button.addEventListener("click", action); actions.appendChild(button); };
