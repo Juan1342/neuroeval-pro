@@ -3421,8 +3421,11 @@ app.get(
         return sendError(res, 404, "No encontramos esa evaluación.");
       }
 
+      const requestedLanguage = String(req.query.language || "").trim().toLowerCase();
+      const reportLanguage = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : "es";
       const pdf = await buildEvaluationPdf(snapshot.data(), {
-        includeAnswers: true
+        includeAnswers: true,
+        language: reportLanguage
       });
 
       res.setHeader("Content-Type", "application/pdf");
