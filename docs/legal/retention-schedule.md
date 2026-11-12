@@ -16,7 +16,7 @@
 ## Reglas de ejecución
 
 1. Verificar identidad del solicitante de forma proporcional.
-2. Registrar la solicitud y su fecha; responder dentro de los plazos legales aplicables.
+2. Registrar la solicitud y su fecha. Las consultas se atienden en 10 días hábiles (extensión informada máxima de 5); los reclamos, en 15 días hábiles (extensión informada máxima de 8), conforme a la Ley 1581 de 2012.
 3. Antes de borrar, identificar obligaciones legales, contables, tributarias, litigios o pagos pendientes.
 4. Si hay un pago confirmado que deba conservarse, eliminar respuestas, puntajes, edad, perfil, nombre y correo de la evaluación; conservar únicamente el mínimo soporte transaccional exigible, sin vincularlo a la cuenta cuando sea viable.
 5. Eliminar documentos de cuenta, evaluaciones no sujetas a retención, tickets y credenciales de recuperación; eliminar la cuenta de Firebase Authentication al final del proceso.
