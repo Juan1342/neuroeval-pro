@@ -1015,6 +1015,22 @@ function setLanguage(language, options = {}) {
   try { localStorage.setItem("neuroeval-language", currentLanguage); } catch (_) {}
   document.documentElement.lang = currentLanguage;
   document.title = currentLanguage === "en" ? "NeuroEval Pro | Understand how your mind works" : "NeuroEval Pro | Conoce cómo funciona tu mente";
+  if (options.persist) {
+    const languageUrl = new URL(window.location.href);
+    languageUrl.searchParams.set("lang", currentLanguage);
+    window.history.replaceState({}, document.title, languageUrl.pathname + languageUrl.search + languageUrl.hash);
+  }
+  const description = currentLanguage === "en"
+    ? "NeuroEval Pro is a self-reflection tool for attention, organization, and cognitive habits. It is informative and does not provide a medical diagnosis."
+    : "NeuroEval Pro es una herramienta de autorregistro orientativo sobre atención, organización y hábitos cognitivos. Ofrece información y no emite diagnósticos médicos.";
+  const descriptionTag = document.querySelector('meta[name="description"]');
+  if (descriptionTag) descriptionTag.setAttribute("content", description);
+  const canonicalTag = document.querySelector('link[rel="canonical"]');
+  if (canonicalTag) {
+    const canonicalUrl = new URL(window.location.href);
+    canonicalUrl.searchParams.set("lang", currentLanguage);
+    canonicalTag.href = canonicalUrl.origin + canonicalUrl.pathname + canonicalUrl.search;
+  }
   const selector = $("global-language");
   if (selector) selector.value = currentLanguage;
   document.querySelectorAll("[data-legal-link]").forEach(link => {
@@ -1032,6 +1048,10 @@ function setLanguage(language, options = {}) {
   }
 }
 function preferredLanguage(profileLanguage) {
+  try {
+    const requested = new URLSearchParams(window.location.search).get("lang");
+    if (requested === "en" || requested === "es") return requested;
+  } catch (_) {}
   if (profileLanguage === "en" || profileLanguage === "es") return profileLanguage;
   try {
     const saved = localStorage.getItem("neuroeval-language");
