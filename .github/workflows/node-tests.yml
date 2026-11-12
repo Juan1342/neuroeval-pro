@@ -1,4 +1,5 @@
 name: ES-EN and world map checks
+# Run server, browser-module syntax checks and regression tests.
 
 on:
   push:
