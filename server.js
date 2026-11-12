@@ -951,6 +951,284 @@ app.post("/api/profile", requireUser, async (req, res) => {
    9. CREAR EVALUACIÓN
 ========================================================= */
 
+
+/* =========================================================
+   PRIVACIDAD: CONSENTIMIENTO, EXPORTACIÓN Y SOLICITUDES
+========================================================= */
+
+const PRIVACY_NOTICE_VERSION = "2026-11-11-v1";
+
+app.post("/api/privacy/consent", requireUser, async (req, res) => {
+  try {
+    const consent = req.body.consent === true;
+    const userRef = db.collection("users").doc(req.user.uid);
+    const snapshot = await userRef.get();
+    if (!snapshot.exists) return sendError(res, 404, "No encontramos tu perfil.");
+    await userRef.set(consent ? {
+      sensitiveDataConsent: true,
+      sensitiveDataConsentVersion: PRIVACY_NOTICE_VERSION,
+      sensitiveDataConsentAt: FieldValue.serverTimestamp(),
+      sensitiveDataConsentRevokedAt: FieldValue.delete(),
+      updatedAt: FieldValue.serverTimestamp()
+    } : {
+      sensitiveDataConsent: false,
+      sensitiveDataConsentRevokedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
+    }, { merge: true });
+    return res.json({ ok: true, consent, version: PRIVACY_NOTICE_VERSION });
+  } catch (error) {
+    console.error("Consentimiento de datos sensibles:", error);
+    return sendError(res, 500, "No se pudo actualizar tu autorización.");
+  }
+});
+
+app.get("/api/my-data/export", requireUser, async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const [profileSnapshot, evaluationSnapshot, ticketSnapshot, privacySnapshot] = await Promise.all([
+      db.collection("users").doc(uid).get(),
+      db.collection("evaluations").where("uid", "==", uid).get(),
+      db.collection("supportTickets").where("uid", "==", uid).get(),
+      db.collection("privacyRequests").where("uid", "==", uid).get()
+    ]);
+    const exportValue = value => {
+      if (value && typeof value.toDate === "function") return value.toDate().toISOString();
+      if (Array.isArray(value)) return value.map(exportValue);
+      if (value && typeof value === "object") {
+        return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, exportValue(item)]));
+      }
+      return value;
+    };
+    const data = {
+      product: "NeuroEval Pro",
+      exportedAt: new Date().toISOString(),
+      account: profileSnapshot.exists ? exportValue(profileSnapshot.data()) : null,
+      evaluations: evaluationSnapshot.docs.map(doc => ({ id: doc.id, ...exportValue(doc.data()) })),
+      supportRequests: ticketSnapshot.docs.map(doc => ({ id: doc.id, ...exportValue(doc.data()) })),
+      privacyRequests: privacySnapshot.docs.map(doc => ({ id: doc.id, ...exportValue(doc.data()) }))
+    };
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="neuroeval-pro-mis-datos.json"');
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.send(JSON.stringify(data));
+  } catch (error) {
+    console.error("Exportación de datos del titular:", error);
+    return sendError(res, 500, "No se pudo preparar la copia de tus datos.");
+  }
+});
+
+app.post("/api/privacy/requests", supportCreateLimiter, requireUser, async (req, res) => {
+  try {
+    const requestType = String(req.body.requestType || "");
+    const details = cleanText(req.body.details, 1500);
+    if (!["access", "correction", "withdraw_consent", "deletion"].includes(requestType)) {
+      return sendError(res, 400, "El tipo de solicitud no es válido.");
+    }
+    const account = await firebaseAuth.getUser(req.user.uid);
+    const requestRef = db.collection("privacyRequests").doc();
+    await requestRef.set({
+      uid: req.user.uid,
+      email: String(account.email || req.user.email || "").toLowerCase(),
+      requestType,
+      details,
+      status: "pending",
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp()
+    });
+    if (requestType === "withdraw_consent") {
+      await db.collection("users").doc(req.user.uid).set({
+        sensitiveDataConsent: false,
+        sensitiveDataConsentRevokedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+    return res.status(201).json({ ok: true, requestId: requestRef.id, status: "pending" });
+  } catch (error) {
+    console.error("Crear solicitud de privacidad:", error);
+    return sendError(res, 500, "No se pudo registrar tu solicitud.");
+  }
+});
+
+app.get("/api/privacy/requests", requireUser, async (req, res) => {
+  try {
+    const snapshot = await db.collection("privacyRequests")
+      .where("uid", "==", req.user.uid).limit(50).get();
+    const requests = snapshot.docs.map(doc => {
+      const data = doc.data() || {};
+      return {
+        id: doc.id,
+        requestType: data.requestType || "",
+        status: data.status || "pending",
+        createdAt: asDate(data.createdAt)?.toISOString() || null,
+        updatedAt: asDate(data.updatedAt)?.toISOString() || null
+      };
+    }).sort((a,b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+    return res.json({ requests });
+  } catch (error) {
+    console.error("Consultar solicitudes de privacidad:", error);
+    return sendError(res, 500, "No se pudieron consultar tus solicitudes.");
+  }
+});
+
+app.get("/api/admin/privacy/requests", requireUser, requireStaffAdmin("support.view"), async (req, res) => {
+  try {
+    if (req.adminAccess?.isPrimaryAdmin !== true) {
+      return sendError(res, 403, "La bandeja de privacidad está reservada al administrador principal.");
+    }
+    const snapshot = await db.collection("privacyRequests").limit(100).get();
+    const requests = snapshot.docs.map(doc => {
+      const data = doc.data() || {};
+      return {
+        id: doc.id,
+        uid: data.uid || "",
+        email: data.email || "",
+        requestType: data.requestType || "",
+        details: data.details || "",
+        status: data.status || "pending",
+        createdAt: asDate(data.createdAt)?.toISOString() || null,
+        updatedAt: asDate(data.updatedAt)?.toISOString() || null
+      };
+    }).sort((a,b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+    return res.json({ requests });
+  } catch (error) {
+    console.error("Consultar bandeja de privacidad:", error);
+    return sendError(res, 500, "No se pudieron consultar las solicitudes de privacidad.");
+  }
+});
+
+app.patch("/api/admin/privacy/requests/:id", requireUser, requireStaffAdmin("support.view"), async (req, res) => {
+  try {
+    if (req.adminAccess?.isPrimaryAdmin !== true) {
+      return sendError(res, 403, "Solo el administrador principal puede gestionar estas solicitudes.");
+    }
+    const status = String(req.body.status || "");
+    const allowed = ["in_review", "approved", "completed", "rejected"];
+    if (!allowed.includes(status)) return sendError(res, 400, "El estado solicitado no es válido.");
+    const ref = db.collection("privacyRequests").doc(String(req.params.id || ""));
+    const snapshot = await ref.get();
+    if (!snapshot.exists) return sendError(res, 404, "No encontramos esa solicitud.");
+    const data = snapshot.data() || {};
+    if (data.requestType === "deletion" && status === "completed") {
+      return sendError(res, 409, "La supresión debe ejecutarse mediante el proceso de eliminación verificada.");
+    }
+    const note = cleanText(req.body.note, 1000);
+    await ref.set({
+      status,
+      adminNote: note,
+      updatedAt: FieldValue.serverTimestamp(),
+      reviewedBy: req.user.uid
+    }, { merge: true });
+    await writeAdminAudit(req.user.uid, "privacy.request.updated", null, {
+      requestId: ref.id, requestType: data.requestType || "", status
+    });
+    return res.json({ ok: true, status });
+  } catch (error) {
+    console.error("Actualizar solicitud de privacidad:", error);
+    return sendError(res, 500, "No se pudo actualizar la solicitud.");
+  }
+});
+
+app.post("/api/admin/privacy/requests/:id/complete-deletion", requireUser, requireStaffAdmin("support.view"), async (req, res) => {
+  try {
+    if (req.adminAccess?.isPrimaryAdmin !== true) {
+      return sendError(res, 403, "Solo el administrador principal puede completar una supresión.");
+    }
+    const requestRef = db.collection("privacyRequests").doc(String(req.params.id || ""));
+    const requestSnapshot = await requestRef.get();
+    if (!requestSnapshot.exists) return sendError(res, 404, "No encontramos esa solicitud.");
+    const requestData = requestSnapshot.data() || {};
+    if (requestData.requestType !== "deletion" || requestData.status !== "approved" || !requestData.uid) {
+      return sendError(res, 409, "La solicitud debe ser de supresión, estar aprobada y conservar su vínculo de verificación.");
+    }
+    const targetUid = String(requestData.uid);
+    const targetAccount = await firebaseAuth.getUser(targetUid).catch(error => {
+      if (error.code === "auth/user-not-found") return null;
+      throw error;
+    });
+    if (targetAccount?.email?.toLowerCase() === ADMIN_EMAIL) {
+      return sendError(res, 409, "No se puede eliminar la cuenta administradora principal.");
+    }
+    const roleSnapshot = await db.collection("adminRoles").doc(targetUid).get();
+    if (roleSnapshot.exists) {
+      return sendError(res, 409, "Revoca y revisa los permisos administrativos antes de tramitar esta cuenta.");
+    }
+
+    const [evaluations, tickets, otherRequests] = await Promise.all([
+      db.collection("evaluations").where("uid", "==", targetUid).get(),
+      db.collection("supportTickets").where("uid", "==", targetUid).get(),
+      db.collection("privacyRequests").where("uid", "==", targetUid).get()
+    ]);
+    let retainedPaymentRecords = 0;
+    let deletedEvaluations = 0;
+    const paymentFields = [
+      "paymentStatus", "paymentProvider", "paymentReference", "wompiTransactionId",
+      "wompiTransactionStatus", "amountCop", "originalAmountCop", "discountCop",
+      "currency", "serviceId", "serviceLabel", "createdAt", "updatedAt", "paidAt"
+    ];
+    let batch = db.batch();
+    let operations = 0;
+    const commitIfNeeded = async force => {
+      if (operations >= 400 || (force && operations > 0)) {
+        await batch.commit();
+        batch = db.batch();
+        operations = 0;
+      }
+    };
+    for (const document of evaluations.docs) {
+      const value = document.data() || {};
+      const retainPayment = value.paymentProvider === "wompi" &&
+        ["paid", "pending"].includes(String(value.paymentStatus || "").toLowerCase());
+      if (retainPayment) {
+        const minimal = {};
+        paymentFields.forEach(key => { if (value[key] !== undefined) minimal[key] = value[key]; });
+        minimal.anonymizedAt = FieldValue.serverTimestamp();
+        minimal.retentionReason = "Datos personales y contenido sensible suprimidos; se conserva referencia mínima de pago para conciliación y obligaciones aplicables.";
+        batch.set(document.ref, minimal);
+        retainedPaymentRecords++;
+      } else {
+        batch.delete(document.ref);
+        deletedEvaluations++;
+      }
+      operations++;
+      await commitIfNeeded(false);
+    }
+    for (const document of tickets.docs) {
+      batch.delete(document.ref);
+      operations++;
+      await commitIfNeeded(false);
+    }
+    batch.delete(db.collection("users").doc(targetUid)); operations++;
+    batch.delete(db.collection("passwordResets").doc(targetUid)); operations++;
+    batch.delete(db.collection("systemCache").doc("globalAnalytics")); operations++;
+    for (const document of otherRequests.docs) {
+      if (document.id !== requestRef.id) { batch.delete(document.ref); operations++; await commitIfNeeded(false); }
+    }
+    await commitIfNeeded(true);
+    if (targetAccount) await firebaseAuth.deleteUser(targetUid);
+    await requestRef.set({
+      uid: FieldValue.delete(),
+      email: FieldValue.delete(),
+      details: FieldValue.delete(),
+      adminNote: "Solicitud ejecutada. Datos de cuenta y contenido de evaluación suprimidos.",
+      status: "completed",
+      processedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      deletedEvaluations,
+      retainedPaymentRecords,
+      anonymized: true
+    }, { merge: true });
+    globalAnalyticsCache = null;
+    await writeAdminAudit(req.user.uid, "privacy.deletion.completed", null, {
+      requestId: requestRef.id, deletedEvaluations, retainedPaymentRecords,
+      deletedSupportTickets: tickets.size
+    });
+    return res.json({ ok: true, deletedEvaluations, retainedPaymentRecords, deletedSupportTickets: tickets.size });
+  } catch (error) {
+    console.error("Completar supresión de datos:", error);
+    return sendError(res, 500, "No se pudo completar la supresión. La solicitud permanece disponible para revisión.");
+  }
+});
+
 app.post("/api/evaluations", requireUser, async (req, res) => {
   try {
     const body = req.body || {};
@@ -963,6 +1241,19 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
     }
 
     const evaluationType = body.evaluationType === "parent_observation" ? "parent_observation" : "self_report";
+    if (evaluationType === "self_report") {
+      const consentSnapshot = await db.collection("users").doc(req.user.uid).get();
+      const consentProfile = consentSnapshot.exists ? consentSnapshot.data() || {} : {};
+      if (consentProfile.sensitiveDataConsent !== true || consentProfile.sensitiveDataConsentVersion !== PRIVACY_NOTICE_VERSION) {
+        return sendError(res, 403, "Debes otorgar autorización expresa para el tratamiento de datos sensibles antes de iniciar esta evaluación.");
+      }
+    } else {
+      const parentContext = body.parentContext || {};
+      if (parentContext.consent !== true || parentContext.sensitiveDataConsent !== true ||
+          parentContext.consentVersion !== PRIVACY_NOTICE_VERSION || !parentContext.consentAt) {
+        return sendError(res, 403, "El adulto responsable debe autorizar expresamente el tratamiento de los datos sensibles del menor.");
+      }
+    }
     const calculated = evaluationType === "parent_observation"
       ? calculateParentEvaluation(body.answers, body.parentContext || {})
       : calculateEvaluationOnServer(body.answers);
