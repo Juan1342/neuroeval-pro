@@ -946,6 +946,10 @@ function setLanguage(language, options = {}) {
   if (selector) selector.value = currentLanguage;
   applyLanguageToDom();
   populateCountryOptions();
+  const globalAdminPanel = $("admin-panel-global");
+  if (currentIsAdmin && globalAdminPanel && !globalAdminPanel.classList.contains("hidden")) {
+    loadAdminGlobalAnalytics();
+  }
   if (options.persist && currentUser && !currentIsAdmin) {
     profileData = { ...(profileData || {}), language: currentLanguage };
     api("/api/profile", {
