@@ -48,8 +48,8 @@ let activeChoices;
 /* =========================================================
    INTERNACIONALIZACIÓN INICIAL ES / EN
    La preferencia se guarda localmente y en el perfil autenticado.
-   Las traducciones son de interfaz; los informes/PDF y correos
-   requieren localización independiente del servidor.
+   La interfaz usa este diccionario; el servidor localiza por separado
+   los informes PDF y los correos transaccionales compatibles.
 ========================================================= */
 let currentLanguage = "es";
 const uiTranslations = {
