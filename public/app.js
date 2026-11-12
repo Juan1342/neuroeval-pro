@@ -996,6 +996,10 @@ function applyLanguageToDom(root = document.body) {
     const translated = translateUiText(element.getAttribute("placeholder"));
     if (translated !== element.getAttribute("placeholder")) element.setAttribute("placeholder", translated);
   });
+  root.querySelectorAll?.("input[type=button][value],input[type=submit][value],input[type=reset][value]").forEach(element => {
+    const translated = translateUiText(element.getAttribute("value"));
+    if (translated !== element.getAttribute("value")) element.setAttribute("value", translated);
+  });
   root.querySelectorAll?.("[title],[aria-label],[alt]").forEach(element => {
     ["title","aria-label","alt"].forEach(attribute => {
       const original = element.getAttribute(attribute);
@@ -1076,6 +1080,7 @@ function startLanguageObserver() {
         const attribute = record.attributeName;
         const target = record.target;
         const original = target.getAttribute(attribute);
+        if (attribute === "value" && !["button", "submit", "reset"].includes(target.type)) return;
         const translated = translateUiText(original);
         if (original && translated !== original) target.setAttribute(attribute, translated);
       }
@@ -1089,7 +1094,7 @@ function startLanguageObserver() {
       });
     });
   });
-  languageDomObserver.observe(document.body, { childList: true, characterData: true, attributes: true, attributeFilter: ["placeholder", "title", "aria-label", "alt"], subtree: true });
+  languageDomObserver.observe(document.body, { childList: true, characterData: true, attributes: true, attributeFilter: ["placeholder", "title", "aria-label", "alt", "value"], subtree: true });
 }
 
 const choices = [
@@ -2303,7 +2308,7 @@ function openGame(game) {
       choices([answer,answer+2,Math.max(0,answer-3),answer+5].sort(()=>Math.random()-.5),answer,"¡Cálculo correcto!",Math.max(5,15-Math.floor(level/2)));
     }
     if(game==="words"){
-      const bank=["NUBE","LÁPIZ","RÍO","TAZA","LUNA","FLOR","RELOJ","PAN","LLAVE","MONTAÑA","LIBRO","VENTANA","CAMINO","NARANJA","ESTRELLA","JARDÍN","MÚSICA","TREN"];
+      const bank=currentLanguage==="en"?["CLOUD","PENCIL","RIVER","CUP","MOON","FLOWER","CLOCK","BREAD","KEY","MOUNTAIN","BOOK","WINDOW","ROAD","ORANGE","STAR","GARDEN","MUSIC","TRAIN"]:["NUBE","LÁPIZ","RÍO","TAZA","LUNA","FLOR","RELOJ","PAN","LLAVE","MONTAÑA","LIBRO","VENTANA","CAMINO","NARANJA","ESTRELLA","JARDÍN","MÚSICA","TREN"];
       const len=Math.min(3+Math.floor(level/2),16),selected=bank.slice().sort(()=>Math.random()-.5).slice(0,len);
       const display=document.createElement("div");display.className="game-sequence";display.textContent=selected.join(" · ");intro.textContent="Memoriza estas "+len+" palabras y después reconoce una.";content.appendChild(display);
       content.appendChild(gameButton("Ocultar y jugar",()=>{
