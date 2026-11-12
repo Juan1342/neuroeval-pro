@@ -1924,7 +1924,9 @@ async function exportMyData() {
   try {
     const response = await api("/api/my-data/export");
     if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.error || "No se pudo preparar la copia de tus datos."); }
-    downloadBlob(await response.blob(), "neuroeval-pro-mis-datos.json");
+    const exported = await response.json();
+    exported.localProgress = readProgress();
+    downloadBlob(new Blob([JSON.stringify(exported, null, 2)], { type: "application/json" }), "neuroeval-pro-mis-datos.json");
   } catch (error) { $("privacy-request-status").textContent = error.message; }
   finally { button.disabled = false; }
 }
@@ -1996,6 +1998,7 @@ function renderAdminPrivacyRequests(requests) {
     const actions = document.createElement("div"); actions.className = "flex flex-wrap gap-2";
     const addAction = (label, action) => { const button = document.createElement("button"); button.type = "button"; button.className = "btn outline"; button.textContent = label; button.addEventListener("click", action); actions.appendChild(button); };
     if (item.status === "pending") addAction("En revisión", () => updateAdminPrivacyRequest(item.id, "in_review"));
+    if (["pending","in_review"].includes(item.status)) addAction("Rechazar", () => updateAdminPrivacyRequest(item.id, "rejected"));
     if (item.requestType === "deletion" && item.status === "in_review") addAction("Aprobar supresión", () => updateAdminPrivacyRequest(item.id, "approved"));
     if (item.requestType !== "deletion" && ["pending","in_review"].includes(item.status)) addAction("Marcar completada", () => updateAdminPrivacyRequest(item.id, "completed"));
     if (item.requestType === "deletion" && item.status === "approved") addAction("Completar supresión", () => completeAdminPrivacyDeletion(item.id));
