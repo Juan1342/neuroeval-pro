@@ -20,6 +20,1092 @@ import {
 ========================================================= */
 
 const $ = (id) => document.getElementById(id);
+let currentLanguage = "es";
+const uiTranslations = {
+  "Plataforma segura": "Secure platform",
+  "🌐 Español": "🌐 Spanish",
+  "Azul": "Blue",
+  "Amarillo": "Yellow",
+  "Morado": "Purple",
+  "Verde": "Green",
+  "← Anterior": "← Previous",
+  "Mi cuenta": "My account",
+  "Panel de administración": "Admin dashboard",
+  "Perfil": "Profile",
+  "Pruebas": "Assessments",
+  "Juegos": "Games",
+  "Actividades": "Activities",
+  "Recomendaciones": "Recommendations",
+  "Mi progreso": "My progress",
+  "Configuración": "Settings",
+  "Cerrar sesión": "Sign out",
+  "Conocimiento · Atención · Bienestar": "Awareness · Attention · Well-being",
+  "Conoce mejor cómo funciona tu mente.": "Understand how your mind works.",
+  "Explora tus hábitos de atención, organización y autorregulación mediante una experiencia interactiva diseñada para ayudarte a conocerte mejor.": "Explore your attention, organization, and self-regulation habits through an interactive experience designed to help you understand yourself better.",
+  "Comienza tu experiencia": "Start your experience",
+  "Accede a tu cuenta o crea una nueva en pocos pasos.": "Sign in or create an account in a few steps.",
+  "Bienvenido a NeuroEval": "Welcome to NeuroEval",
+  "Ingresa tus datos para continuar.": "Enter your details to continue.",
+  "Iniciar sesión": "Sign in",
+  "Crear cuenta": "Create account",
+  "Correo electrónico": "Email address",
+  "Contraseña": "Password",
+  "Ingresar a mi cuenta →": "Sign in →",
+  "¿Olvidaste tu contraseña?": "Forgot your password?",
+  "Nombre completo": "Full name",
+  "Crea una contraseña": "Create a password",
+  "Edad": "Age",
+  "Objetivo": "Goal",
+  "Seleccionar": "Select",
+  "Explorar atención": "Explore attention",
+  "Concentración": "Focus",
+  "Debes aceptar el aviso de privacidad.": "You must accept the privacy notice.",
+  "He leído el": "I have read the",
+  "aviso de privacidad": "privacy notice",
+  "y acepto los": "and accept the",
+  "términos de uso": "terms of use",
+  "Autorizo expresamente el tratamiento de las respuestas y resultados sensibles del menor para generar esta orientación. He leído la": "I expressly authorize the processing of the minor's sensitive answers and results to provide this guidance. I have read the",
+  "Consulta la": "Read the",
+  "Entiendo que es una orientación no diagnóstica.": "I understand this is guidance and not a diagnosis.",
+  "Autorización independiente": "Separate authorization",
+  "Tratamiento de datos sensibles": "Sensitive data processing",
+  "Las respuestas y resultados de esta evaluación pueden revelar información relacionada con tu salud, atención y bienestar, y por ello pueden ser datos sensibles. Su entrega es voluntaria. Puedes usar tu cuenta y las funciones que no requieren esta información sin autorizar este tratamiento.": "Answers and results from this assessment may reveal information about your health, attention and well-being and may therefore be sensitive data. Providing them is voluntary. You can use your account and features that do not require this information without authorizing this processing.",
+  "Si continúas, autorizas de manera previa, expresa e informada a JUAN MANUEL ZAMORA ZAPATA, responsable de NeuroEval Pro, a tratar tus respuestas y resultados para procesar la evaluación, generar tu informe y permitirte consultarlo. Consulta la": "If you continue, you give prior, express and informed authorization to JUAN MANUEL ZAMORA ZAPATA, the NeuroEval Pro controller, to process your answers and results to run the assessment, generate your report and let you access it. Read the",
+  "política de tratamiento de datos": "data processing policy",
+  "Autorizo expresamente el tratamiento de mis datos sensibles para esta evaluación. Entiendo que puedo retirar esta autorización para evaluaciones futuras y solicitar la supresión de mis datos, sujeto a obligaciones legales de conservación.": "I expressly authorize the processing of my sensitive data for this assessment. I understand that I may withdraw this authorization for future assessments and request deletion, subject to legal retention duties.",
+  "Autorizo y continuar": "Authorize and continue",
+  "Ahora no": "Not now",
+  "Debes marcar la autorización expresa para continuar.": "You must check the express authorization to continue.",
+  "Guardando autorización…": "Saving authorization…",
+  "No se pudo guardar la autorización.": "Could not save the authorization.",
+  "Debes autorizar expresamente el tratamiento de los datos sensibles del menor para continuar.": "You must expressly authorize processing of the minor's sensitive data to continue.",
+  "Confirma que explicaste la actividad al menor y escuchaste su opinión de acuerdo con su edad y madurez.": "Confirm that you explained the activity to the child and heard their opinion according to their age and maturity.",
+  "Confirmo que expliqué al menor, de manera adecuada a su edad y madurez, el propósito de esta observación y escuché su opinión antes de continuar, respetando su interés superior.": "I confirm that I explained the purpose of this observation to the child in an age- and maturity-appropriate way and heard their opinion before continuing, respecting their best interests.",
+  "Tus datos y privacidad": "Your data and privacy",
+  "Consulta la política, descarga una copia de tus datos o presenta una solicitud de privacidad.": "Read the policy, download a copy of your data, or submit a privacy request.",
+  "Política de privacidad": "Privacy policy",
+  "Términos de uso": "Terms of use",
+  "Descargar mis datos": "Download my data",
+  "Tipo de solicitud": "Request type",
+  "Acceso / consulta": "Access / inquiry",
+  "Rectificación": "Correction",
+  "Retirar consentimiento": "Withdraw consent",
+  "Supresión de datos / cuenta": "Data / account deletion",
+  "Detalle (opcional)": "Details (optional)",
+  "Describe brevemente lo que necesitas. No incluyas contraseñas ni datos sensibles innecesarios.": "Briefly describe what you need. Do not include passwords or unnecessary sensitive data.",
+  "Enviar solicitud": "Submit request",
+  "Retirar autorización de datos sensibles": "Withdraw sensitive-data authorization",
+  "Borrar progreso de este dispositivo": "Delete progress on this device",
+  "¿Borrar el progreso guardado en este dispositivo? Esta acción no elimina evaluaciones ni informes de tu cuenta.": "Delete progress stored on this device? This does not delete assessments or reports in your account.",
+  "Se borró el progreso local de este dispositivo.": "Local progress on this device was deleted.",
+  "No se pudo borrar el progreso local.": "Could not delete local progress.",
+  "Tus solicitudes aparecerán aquí.": "Your requests will appear here.",
+  "Enviar una solicitud no borra datos automáticamente. Algunos registros de pago o contabilidad pueden conservarse cuando exista una obligación legal. La revocatoria impide nuevas evaluaciones que requieran ese consentimiento.": "Submitting a request does not automatically delete data. Some payment or accounting records may be retained where legally required. Withdrawal prevents new assessments that require that consent.",
+  "Cargando solicitudes…": "Loading requests…",
+  "Todavía no tienes solicitudes de privacidad.": "You do not have any privacy requests yet.",
+  "Solicitud registrada. Podrás consultar su estado aquí.": "Request submitted. You can check its status here.",
+  "Enviando solicitud…": "Submitting request…",
+  "No se pudo registrar la solicitud.": "Could not submit the request.",
+  "Autorización retirada para evaluaciones futuras.": "Authorization withdrawn for future assessments.",
+  "¿Retirar tu autorización para futuras evaluaciones que traten datos sensibles? Esto no elimina automáticamente los registros anteriores.": "Withdraw your authorization for future assessments that process sensitive data? This does not automatically delete previous records.",
+  "Bandeja restringida al administrador principal. La supresión requiere revisión previa.": "Inbox restricted to the primary administrator. Deletion requires prior review.",
+  "Solicitudes de privacidad": "Privacy requests",
+  "Actualizar solicitudes": "Refresh requests",
+  "No hay solicitudes de privacidad.": "There are no privacy requests.",
+  "En revisión": "Under review",
+  "Aprobar supresión": "Approve deletion",
+  "Rechazar": "Reject",
+  "Marcar completada": "Mark completed",
+  "Completar supresión": "Complete deletion",
+  "Esta acción es irreversible. Se eliminarán la cuenta, respuestas, resultados y tickets. Solo se conservarán referencias mínimas de pagos Wompi que estén pendientes o confirmados. ¿Confirmas que la solicitud fue verificada y aprobada?": "This action is irreversible. The account, answers, results and support tickets will be deleted. Only minimal references for pending or confirmed Wompi payments will be retained. Confirm that the request has been verified and approved?",
+  "Supresión completada. Evaluaciones eliminadas: ": "Deletion completed. Assessments deleted: ",
+  ". Registros mínimos de pago conservados: ": ". Minimal payment records retained: ",
+  "No se pudo completar la supresión.": "Could not complete deletion.",
+  "No se pudieron consultar las solicitudes.": "Could not load requests.",
+  "Privacidad": "Privacy",
+  "Términos": "Terms",
+  "Tu cuenta": "Your account",
+  "Mi perfil": "My profile",
+  "Consulta la información asociada a tu cuenta.": "Review the information associated with your account.",
+  "Nombre": "Name",
+  "País (opcional)": "Country (optional)",
+  "Ciudad (opcional)": "City (optional)",
+  "Idioma preferido": "Preferred language",
+  "Guardar preferencias regionales": "Save regional preferences",
+  "El consentimiento es voluntario. Si lo aceptas, tu país, ciudad, rango de edad e idioma se usan solo en estadísticas agregadas; nunca se muestra tu ubicación individual ni se registra GPS.": "Consent is optional. If you agree, your country, city, age range and language are used only for aggregate statistics; your individual location is never shown and GPS is not collected.",
+  "Acepto compartir voluntariamente mi país, ciudad, rango de edad e idioma para estadísticas agregadas. Solo se muestran grupos de 10 o más perfiles.": "I voluntarily agree to share my country, city, age range and language for aggregated statistics. Only groups of 10 or more profiles are shown.",
+  "Volver a mis pruebas": "Back to my assessments",
+  "Guardando preferencias…": "Saving preferences…",
+  "Preferencias regionales guardadas.": "Regional preferences saved.",
+  "Nunca": "Never",
+  "Rara vez": "Rarely",
+  "A veces": "Sometimes",
+  "Con frecuencia": "Often",
+  "Casi siempre": "Almost always",
+  "Finalizar evaluación": "Finish assessment",
+  "Siguiente →": "Next →",
+  "Anterior": "Previous",
+  "Memoria inmediata": "Immediate memory",
+  "Atención sostenida": "Sustained attention",
+  "Búsqueda visual": "Visual search",
+  "Organización y planificación": "Organization and planning",
+  "Inquietud e impulsividad": "Restlessness and impulsivity",
+  "Regulación emocional": "Emotional regulation",
+  "Estrés y descanso": "Stress and rest",
+  "Impacto cotidiano": "Everyday impact",
+  "Historia y contexto": "History and context",
+  "Recuerdo de palabras": "Word recall",
+  "Memoria de secuencias": "Sequence memory",
+  "Recuerdo de números": "Number recall",
+  "Recuerdo de patrones": "Pattern recall",
+  "Recuerdo final de palabras": "Final word recall",
+  "Memoriza estas tres palabras. Más adelante te pediremos recordarlas.": "Memorize these three words. We will ask you to recall them later.",
+  "Cuando lees, estudias o trabajas, ¿pierdes el hilo aunque quieras prestar atención?": "When reading, studying or working, do you lose track even when you want to pay attention?",
+  "Cuenta cuántas estrellas aparecen entre los símbolos.": "Count how many stars appear among the symbols.",
+  "¿Te cuesta dividir una tarea grande en pasos y decidir por dónde empezar?": "Do you find it difficult to break a large task into steps and decide where to start?",
+  "Memoriza estos números en el mismo orden. Más adelante tendrás que seleccionarlos.": "Memorize these numbers in the same order. You will select them later.",
+  "¿Sientes inquietud física o necesidad de moverte cuando debes permanecer sentado?": "Do you feel physically restless or need to move when you have to remain seated?",
+  "¿Qué color aparece más veces en esta secuencia?": "Which color appears most often in this sequence?",
+  "¿Una frustración pequeña puede provocarte una reacción emocional intensa o difícil de regular?": "Can a small frustration trigger an intense or difficult-to-regulate emotional reaction?",
+  "¿Qué grupo contiene exactamente las tres palabras que memorizaste al comienzo?": "Which group contains exactly the three words you memorized at the beginning?",
+  "¿Notas que tu concentración empeora cuando duermes poco o descansas mal?": "Does your concentration get worse when you sleep too little or rest poorly?",
+  "¿Postergas tareas importantes aunque tengas claro que debes hacerlas?": "Do you put off important tasks even when you know you need to do them?",
+  "Memoriza el orden de estos símbolos. Más adelante tendrás que reconocer la secuencia exacta.": "Memorize the order of these symbols. You will need to recognize the exact sequence later.",
+  "¿Estas experiencias dificultan tus estudios, trabajo, tareas domésticas o relaciones?": "Do these experiences make studying, working, household tasks or relationships more difficult?",
+  "¿Cuál era la secuencia numérica que viste anteriormente?": "What was the number sequence you saw earlier?",
+  "¿Actúas o respondes rápidamente y luego piensas que habrías preferido hacer una pausa?": "Do you act or respond quickly and later wish you had paused first?",
+  "¿Recuerdas que algunas de estas dificultades ya estaban presentes antes de los 12 años?": "Do you remember some of these difficulties being present before age 12?",
+  "Cuenta cuántos círculos negros aparecen en la secuencia.": "Count how many black circles appear in the sequence.",
+  "Memoriza estas cuatro palabras. Después de varias actividades te preguntaremos por ellas.": "Memorize these four words. We will ask you about them after several activities.",
+  "¿Cuál era el orden exacto de los cuatro símbolos que memorizaste?": "What was the exact order of the four symbols you memorized?",
+  "¿La preocupación, tensión o ansiedad ocupa tu mente e interfiere con lo que estás haciendo?": "Do worry, tension or anxiety occupy your mind and interfere with what you are doing?",
+  "¿Te cuesta terminar una actividad cuando aparecen notificaciones, conversaciones o ruidos?": "Do you find it difficult to finish an activity when notifications, conversations or noise appear?",
+  "Cuenta cuántos triángulos aparecen en esta secuencia.": "Count how many triangles appear in this sequence.",
+  "¿Estas dificultades aparecen en más de un entorno, por ejemplo casa, estudio, trabajo o vida social?": "Do these difficulties occur in more than one setting, such as home, school, work or social life?",
+  "¿Te cuesta recuperar la calma cuando algo interrumpe tus planes?": "Do you find it difficult to regain your calm when something disrupts your plans?",
+  "¿Otras personas te han señalado dificultades de atención, organización, inquietud o impulsividad?": "Have other people pointed out difficulties with attention, organization, restlessness or impulsivity?",
+  "Al inicio de esta parte memorizaste cuatro palabras. ¿Cuál es el grupo exacto?": "At the beginning of this section, you memorized four words. Which group is exact?",
+  "Ya memoricé la secuencia": "I memorized the sequence",
+  "Ya memoricé los números": "I memorized the numbers",
+  "Ya memoricé las palabras": "I memorized the words",
+  "Por ejemplo: relees el mismo párrafo varias veces y al final no recuerdas qué decía.": "For example: you reread the same paragraph several times and still cannot remember what it said.",
+  "Por ejemplo: tienes varias cosas pendientes y no sabes cómo ordenarlas.": "For example: you have several pending tasks and do not know how to organize them.",
+  "Observa cuánto tarda en bajar la intensidad de la emoción.": "Notice how long it takes for the intensity of the emotion to decrease.",
+  "Compara tus días descansados con los días de poco sueño.": "Compare well-rested days with days when you sleep little.",
+  "No se trata de pereza: observa si te cuesta iniciar o sostener el primer paso.": "This is not about laziness: notice whether starting or maintaining the first step is difficult.",
+  "Responde pensando en consecuencias concretas y repetidas.": "Answer by thinking about specific, recurring consequences.",
+  "Selecciona los cuatro números en el mismo orden.": "Select the four numbers in the same order.",
+  "Piensa en recuerdos escolares, familiares o relatos de personas cercanas.": "Think about school or family memories, or accounts from people close to you.",
+  "Elige la secuencia que viste, en el mismo orden.": "Choose the sequence you saw, in the same order.",
+  "Por ejemplo: intentas trabajar, pero sigues pensando en un problema.": "For example: you try to work, but keep thinking about a problem.",
+  "Piensa en lo que ocurre cuando intentas concentrarte y algo interrumpe tu tarea.": "Think about what happens when you try to focus and something interrupts your task.",
+  "No tienen que presentarse igual en todos los lugares.": "They do not have to appear in the same way in every setting.",
+  "Piensa en cambios inesperados o tareas que no salen como esperabas.": "Think about unexpected changes or tasks that do not go as planned.",
+  "Considera comentarios respetuosos de personas que te conocen bien.": "Consider thoughtful feedback from people who know you well.",
+  "Elige la secuencia que recuerdes, sin volver atrás.": "Choose the sequence you remember without going back.",
+  "Observa y memoriza estos elementos. No los anotes: te preguntaremos por ellos más adelante.": "Observe and memorize these items. Do not write them down: we will ask you about them later.",
+  "Piensa en una situación habitual de tu vida cotidiana.": "Think of a typical situation in your everyday life.",
+  "¡Vas muy bien! Sigue a tu ritmo; cada respuesta ayuda a construir una imagen más completa.": "You are doing great! Keep your own pace; every answer helps build a more complete picture.",
+  "¡Ya superaste la mitad! Mantén la concentración: estás avanzando muy bien.": "You are past the halfway point! Stay focused; you are making great progress.",
+  "¡Último tramo! Ya falta poco. Respira y responde con tranquilidad.": "Final stretch! You are almost there. Breathe and answer calmly.",
+  "¡Casi terminamos! Una respuesta honesta es más útil que intentar elegir la respuesta perfecta.": "Almost done! An honest answer is more useful than trying to choose the perfect answer.",
+  "Tómate tu tiempo. Responde pensando en lo que suele ocurrirte, no en un día excepcional.": "Take your time. Think about what usually happens to you, not an unusual day.",
+  "NeuroEval Pro | Conoce cómo funciona tu mente": "NeuroEval Pro | Understand how your mind works",
+  "Idioma / Language": "Language",
+  "🛡️ &nbsp; Panel de administración": "🛡️ &nbsp; Admin dashboard",
+  "👤 &nbsp; Perfil": "👤 &nbsp; Profile",
+  "🧠 &nbsp; Pruebas": "🧠 &nbsp; Assessments",
+  "⚙️ &nbsp; Configuración": "⚙️ &nbsp; Settings",
+  "↪ &nbsp; Cerrar sesión": "↪ &nbsp; Sign out",
+  "Estrés y fatiga": "Stress and fatigue",
+  "Autoconocimiento": "Self-awareness",
+  "País y ciudad son voluntarios y se usan para estadísticas generales. No se almacena tu ubicación GPS.": "Country and city are optional and used for aggregate statistics. Your GPS location is not stored.",
+  "He leído y acepto el aviso de privacidad y el tratamiento de mis datos para esta experiencia.": "I have read and accept the privacy notice and the processing of my data for this experience.",
+  "Crear cuenta y comenzar →": "Create account and start →",
+  "O continúa con": "Or continue with",
+  "Continuar con Google": "Continue with Google",
+  "NeuroEval Pro ofrece un autorregistro orientativo. No es una prueba diagnóstica, no confirma ni descarta TDAH y no reemplaza la valoración de un profesional de salud.": "NeuroEval Pro provides an informational self-report. It is not a diagnostic test, does not confirm or rule out ADHD, and does not replace assessment by a health professional.",
+  "Tu mente merece atención": "Your mind deserves attention",
+  "Pequeños descubrimientos pueden abrir nuevas perspectivas.": "Small discoveries can open new perspectives.",
+  "Responde con calma, reflexiona sobre tus experiencias y recibe un resumen orientativo de tus respuestas.": "Answer calmly, reflect on your experiences, and receive an informational summary of your responses.",
+  "Experiencia guiada": "Guided experience",
+  "Informe personal": "Personal report",
+  "Recupera tu acceso": "Recover your access",
+  "Te enviaremos un código de verificación de seis dígitos a tu correo.": "We will send a six-digit verification code to your email.",
+  "Correo de tu cuenta": "Your account email",
+  "Enviar código": "Send code",
+  "Código de seis dígitos": "Six-digit code",
+  "Nueva contraseña": "New password",
+  "Cambiar contraseña": "Change password",
+  "Volver al inicio de sesión": "Back to sign in",
+  "Tu espacio personal": "Your personal space",
+  "Bienvenido a NeuroEval Pro": "Welcome to NeuroEval Pro",
+  "Elige la evaluación que deseas realizar. Podrás regresar a este panel para consultar las opciones disponibles.": "Choose the assessment you want to take. You can return to this dashboard to view available options.",
+  "Catálogo de evaluaciones": "Assessment catalog",
+  "Selecciona una evaluación para conocer sus características y comenzar.": "Select an assessment to learn about its features and get started.",
+  "● Disponible ahora": "● Available now",
+  "Autorregistro de atención e indicadores asociados al TDAH": "Attention self-report and ADHD-related indicators",
+  "Explora experiencias relacionadas con atención, organización, inquietud e impulsividad. Es orientativo y no constituye un diagnóstico.": "Explore experiences related to attention, organization, restlessness, and impulsivity. This is informational and is not a diagnosis.",
+  "Comenzar evaluación →": "Start assessment →",
+  "● Nueva evaluación": "● New assessment",
+  "Observación familiar de indicadores asociados al TDAH": "Family observation of ADHD-related indicators",
+  "Cuestionario para padres y cuidadores de menores de 4 a 17 años. Explora conductas observables en casa, colegio y otros entornos.": "Questionnaire for parents and caregivers of children aged 4–17. Explore observable behaviors at home, school, and other settings.",
+  "Mismo precio que la evaluación actual · Informe individual": "Same price as the current assessment · Individual report",
+  "Comenzar observación →": "Start observation →",
+  "Próximamente": "Coming soon",
+  "Una futura evaluación orientativa sobre atención, planificación y organización de actividades.": "A future informational assessment of attention, planning, and task organization.",
+  "Una futura evaluación orientativa para explorar factores que pueden influir en el bienestar y la concentración.": "A future informational assessment of factors that may affect well-being and concentration.",
+  "Las evaluaciones disponibles ofrecen información orientativa y no sustituyen una valoración profesional ni constituyen diagnósticos clínicos.": "Available assessments provide informational insights and do not replace professional evaluation or constitute clinical diagnoses.",
+  "Estamos para ayudarte": "We're here to help",
+  "Centro de soporte": "Support center",
+  "Crea una solicitud y sigue la conversación con nuestro equipo.": "Create a request and follow the conversation with our team.",
+  "↻ Actualizar solicitudes": "↻ Refresh requests",
+  "Asunto": "Subject",
+  "Categoría": "Category",
+  "Cuenta y acceso": "Account and access",
+  "Evaluaciones": "Assessments",
+  "Pagos": "Payments",
+  "Informe y PDF": "Report and PDF",
+  "Problema técnico": "Technical issue",
+  "Otro": "Other",
+  "¿En qué podemos ayudarte?": "How can we help?",
+  "Enviar solicitud": "Submit request",
+  "Mis solicitudes": "My requests",
+  "Tus conversaciones son privadas.": "Your conversations are private.",
+  "Cargando tus solicitudes…": "Loading your requests…",
+  "Entrena jugando": "Train through games",
+  "Desafíos cognitivos por niveles": "Level-based cognitive challenges",
+  "12 juegos diferentes, gratuitos y con dificultad progresiva. Supera cada reto para desbloquear el siguiente nivel.": "12 free games with progressive difficulty. Complete each challenge to unlock the next level.",
+  "100 % gratis": "100% free",
+  "Juegos disponibles": "Available games",
+  "Niveles progresivos": "Progressive levels",
+  "Tu avance": "Your progress",
+  "0 niveles": "0 levels",
+  "Memoria de trabajo": "Working memory",
+  "1. Secuencia relámpago": "1. Flash sequence",
+  "Recuerda números cada vez más largos y en el orden exacto.": "Remember increasingly long number sequences in the exact order.",
+  "Jugar →": "Play →",
+  "Atención selectiva": "Selective attention",
+  "2. Cazador de símbolos": "2. Symbol hunter",
+  "Encuentra objetivos entre más distractores y con menos tiempo.": "Find targets among more distractors and with less time.",
+  "Razonamiento abstracto": "Abstract reasoning",
+  "3. Completa el patrón": "3. Complete the pattern",
+  "Descubre reglas numéricas y secuencias que se vuelven más complejas.": "Discover numerical rules and increasingly complex sequences.",
+  "Cálculo mental · contrarreloj": "Mental math · timed",
+  "4. Mente veloz": "4. Quick mind",
+  "Resuelve operaciones con dificultad y ritmo crecientes.": "Solve calculations with increasing difficulty and pace.",
+  "Memoria verbal": "Verbal memory",
+  "5. Archivo de palabras": "5. Word archive",
+  "Memoriza palabras y reconócelas entre opciones parecidas.": "Memorize words and recognize them among similar options.",
+  "Discriminación visual": "Visual discrimination",
+  "6. El intruso": "6. The odd one out",
+  "Detecta el elemento diferente en grupos cada vez más parecidos.": "Spot the different item in increasingly similar groups.",
+  "Control inhibitorio": "Inhibitory control",
+  "7. Color bajo presión": "7. Color under pressure",
+  "Responde al color de la tinta, no a la palabra que intenta distraerte.": "Respond to the ink color, not the distracting word.",
+  "Orientación espacial": "Spatial orientation",
+  "8. Giro mental": "8. Mental rotation",
+  "Rota flechas y figuras mentalmente para elegir su orientación final.": "Mentally rotate arrows and shapes to choose their final orientation.",
+  "Velocidad de reacción": "Reaction speed",
+  "9. Reflejos": "9. Reflexes",
+  "Espera la señal y reacciona sin anticiparte. Mejora tu marca personal.": "Wait for the signal and react without anticipating. Improve your personal best.",
+  "Lógica deductiva": "Deductive logic",
+  "10. Código secreto": "10. Secret code",
+  "Usa pistas para descubrir combinaciones y resolver el código.": "Use clues to discover combinations and solve the code.",
+  "Atención y conteo": "Attention and counting",
+  "11. Cuenta y encuentra": "11. Count and find",
+  "Cuenta objetivos en tableros con más elementos y distractores.": "Count targets on boards with more items and distractors.",
+  "Atención dividida": "Divided attention",
+  "12. Doble misión": "12. Double mission",
+  "Atiende dos reglas al mismo tiempo y cambia de estrategia por ronda.": "Follow two rules at the same time and switch strategies each round.",
+  "Cada juego guarda tu nivel más alto en este dispositivo. Los retos son recreativos y sus resultados no constituyen diagnósticos ni pruebas neuropsicológicas validadas.": "Each game saves your highest level on this device. These challenges are recreational; their results are not diagnoses or validated neuropsychological tests.",
+  "Pausas que ayudan": "Helpful breaks",
+  "Actividades para tu día": "Daily activities",
+  "Pequeños ejercicios gratuitos para practicar enfoque, organización y autorregulación.": "Short free exercises to practice focus, organization, and self-regulation.",
+  "Respiración consciente": "Mindful breathing",
+  "Inhala suavemente durante 4 segundos, exhala durante 6. Repite cinco veces sin forzar la respiración.": "Breathe in gently for 4 seconds and out for 6. Repeat five times without forcing your breath.",
+  "Marcar como realizada": "Mark as completed",
+  "Divide una tarea": "Break down a task",
+  "Escribe una tarea pendiente y divídela en tres pasos pequeños y concretos. Empieza por el primero.": "Write down a pending task and divide it into three small, concrete steps. Start with the first.",
+  "Pausa de observación": "Observation break",
+  "Mira a tu alrededor y nombra mentalmente cinco cosas que ves, cuatro que sientes y tres que escuchas.": "Look around and mentally name five things you see, four you feel, and three you hear.",
+  "Enfoque de 10 minutos": "10-minute focus",
+  "Elige una sola tarea, elimina una distracción y trabaja en ella durante diez minutos.": "Choose one task, remove one distraction, and work on it for ten minutes.",
+  "Recuerdo del día": "Daily recall",
+  "Sin consultar el teléfono, recuerda tres cosas que aprendiste o hiciste hoy y en qué orden ocurrieron.": "Without checking your phone, recall three things you learned or did today and the order in which they happened.",
+  "Pausa de movimiento": "Movement break",
+  "Levántate, cambia de postura y camina suavemente unos minutos si tus condiciones lo permiten.": "Stand up, change posture, and walk gently for a few minutes if your circumstances allow.",
+  "Lectura con intención": "Intentional reading",
+  "Lee un párrafo corto. Después, explica con tus palabras tres ideas principales sin mirar el texto.": "Read a short paragraph. Then explain three main ideas in your own words without looking at the text.",
+  "Ordena tu espacio": "Organize your space",
+  "Dedica cinco minutos a organizar una pequeña zona de trabajo. Deja a la vista solo lo que necesitas.": "Spend five minutes organizing a small work area. Keep only what you need in view.",
+  "Cuenta hacia atrás": "Count backwards",
+  "Cuenta desde 50 hacia atrás de tres en tres. Hazlo a tu ritmo y vuelve a empezar si pierdes la cuenta.": "Count backwards from 50 in steps of three. Go at your own pace and start again if you lose track.",
+  "Plan de tres prioridades": "Three-priority plan",
+  "Elige tres tareas importantes para hoy. Marca cuál es la primera y estima cuánto tiempo necesitas.": "Choose three important tasks for today. Mark the first one and estimate how much time you need.",
+  "Escucha atenta": "Active listening",
+  "Escucha durante dos minutos un sonido o una canción. Identifica cinco detalles que normalmente pasarías por alto.": "Listen to a sound or song for two minutes. Identify five details you would normally overlook.",
+  "Diario de bienestar": "Well-being journal",
+  "Anota cómo te sientes, qué pudo influir en ese estado y una acción pequeña que te ayudaría ahora.": "Write down how you feel, what may have influenced it, and one small action that could help now.",
+  "Hábitos y bienestar": "Habits and well-being",
+  "Recomendaciones prácticas": "Practical recommendations",
+  "Ideas generales que puedes adaptar a tu rutina. No sustituyen una orientación profesional.": "General ideas you can adapt to your routine. They do not replace professional guidance.",
+  "1. Trabaja en bloques pequeños": "1. Work in small blocks",
+  "Elige una tarea, define un primer paso y dedica un periodo breve a completarlo. Haz una pausa antes de continuar.": "Choose a task, define a first step, and spend a short period completing it. Take a break before continuing.",
+  "2. Reduce las distracciones visibles": "2. Reduce visible distractions",
+  "Deja a mano solo lo que necesitas y silencia notificaciones que no sean importantes durante tu bloque de enfoque.": "Keep only what you need nearby and mute nonessential notifications during your focus block.",
+  "3. Usa recordatorios externos": "3. Use external reminders",
+  "Apóyate en listas, alarmas y calendarios. No necesitas depender únicamente de la memoria.": "Use lists, alarms, and calendars. You do not need to rely on memory alone.",
+  "4. Practica de forma breve y constante": "4. Practice briefly and consistently",
+  "Alterna juegos de memoria, búsqueda visual y actividades de organización. Observa cómo te sientes, sin convertir el puntaje en una etiqueta.": "Alternate memory games, visual search, and organizational activities. Notice how you feel without turning scores into labels.",
+  "5. Cuida el descanso y las pausas": "5. Look after rest and breaks",
+  "Procura horarios de sueño regulares y pausas de movimiento adecuadas a tus posibilidades.": "Aim for regular sleep times and movement breaks suited to your circumstances.",
+  "6. Convierte las metas en acciones observables": "6. Turn goals into observable actions",
+  "En lugar de proponerte “ser más organizado”, define una acción concreta: preparar los materiales antes de empezar.": "Instead of aiming to “be more organized,” define a concrete action: prepare materials before starting.",
+  "7. Usa una señal para comenzar": "7. Use a starting cue",
+  "Asocia el inicio de una tarea con una señal sencilla, como abrir tu agenda, poner un temporizador o despejar el escritorio.": "Link the start of a task to a simple cue, such as opening your planner, setting a timer, or clearing your desk.",
+  "8. Alterna esfuerzo y recuperación": "8. Alternate effort and recovery",
+  "Prueba bloques de trabajo adaptados a tu energía y realiza pausas breves entre ellos. Ajusta la duración según cómo te sientas.": "Try work blocks adapted to your energy and take short breaks between them. Adjust the duration to how you feel.",
+  "9. Repite la información de otra manera": "9. Repeat information in another way",
+  "Resume en voz alta, dibuja un esquema o escribe palabras clave. Cambiar de formato puede facilitar la comprensión.": "Summarize aloud, draw an outline, or write keywords. Changing the format can make information easier to understand.",
+  "10. Prepara el día siguiente": "10. Prepare for the next day",
+  "Antes de terminar, anota el primer paso de mañana y deja listo lo que puedas necesitar.": "Before finishing, write down tomorrow's first step and prepare what you may need.",
+  "11. Reconoce los avances pequeños": "11. Recognize small steps forward",
+  "Registra lo que sí lograste, incluso si fue un paso breve. Evita comparar tu ritmo con el de otras personas.": "Record what you achieved, even if it was a small step. Avoid comparing your pace with others.",
+  "12. Observa tus momentos de mayor energía": "12. Notice when your energy is highest",
+  "Identifica en qué momentos te resulta más sencillo concentrarte y reserva, cuando sea posible, las tareas exigentes para esos periodos.": "Identify when it is easiest for you to focus and, when possible, reserve demanding tasks for those periods.",
+  "13. Reduce la carga de memoria": "13. Reduce memory load",
+  "Deja notas visibles, utiliza listas de verificación y establece un lugar fijo para objetos importantes.": "Leave visible notes, use checklists, and establish a fixed place for important items.",
+  "14. Haz una cosa a la vez cuando sea posible": "14. Do one thing at a time when possible",
+  "Cierra pestañas innecesarias y termina un paso antes de cambiar de actividad. La multitarea puede aumentar los olvidos.": "Close unnecessary tabs and finish one step before switching activities. Multitasking can increase forgetfulness.",
+  "15. Pide apoyo de forma específica": "15. Ask for specific support",
+  "Si lo necesitas, explica qué tarea te cuesta y qué ayuda concreta te serviría: recordar una fecha, dividir un proyecto o revisar prioridades.": "If needed, explain which task is difficult and what specific help would be useful: remembering a date, breaking down a project, or reviewing priorities.",
+  "Si las dificultades de atención, memoria, impulsividad o estado de ánimo afectan tu vida diaria, consulta con un profesional cualificado.": "If difficulties with attention, memory, impulsivity, or mood affect your daily life, consult a qualified professional.",
+  "Tu recorrido": "Your journey",
+  "Resumen de los juegos y actividades completados en este dispositivo y cuenta.": "Summary of games and activities completed on this device and account.",
+  "Actualizar": "Refresh",
+  "Juegos completados": "Games completed",
+  "Actividades realizadas": "Activities completed",
+  "Mejor puntuación": "Best score",
+  "Actividad reciente": "Recent activity",
+  "Aún no hay actividades registradas. ¡Prueba tu primer juego!": "No activities recorded yet. Try your first game!",
+  "Mis evaluaciones": "My assessments",
+  "Historial de evaluaciones y acceso a tus informes.": "Assessment history and access to your reports.",
+  "Total de evaluaciones": "Total assessments",
+  "Pagadas": "Paid",
+  "Pendientes de pago": "Pending payment",
+  "Inicia sesión para consultar tus evaluaciones.": "Sign in to view your assessments.",
+  "El progreso de esta sección se guarda en el navegador de este dispositivo. Si borras los datos del navegador o cambias de dispositivo, el historial local puede perderse.": "Progress in this section is saved in this device's browser. If you clear browser data or change devices, local history may be lost.",
+  "Preferencias y seguridad": "Preferences and security",
+  "Administra opciones básicas de acceso y conoce cómo se utiliza tu cuenta.": "Manage basic access options and learn how your account is used.",
+  "Cuenta activa": "Active account",
+  "Seguridad de la cuenta": "Account security",
+  "Puedes iniciar el proceso de recuperación para establecer una contraseña nueva mediante el código enviado a tu correo.": "You can start the recovery process to set a new password using the code sent to your email.",
+  "Tus respuestas de evaluación se utilizan para generar el informe orientativo. Evita compartir tu contraseña y cierra sesión si utilizas un dispositivo compartido.": "Your assessment answers are used to generate the informational report. Do not share your password and sign out if you use a shared device.",
+  "Observación familiar · 4 a 17 años": "Family observation · Ages 4–17",
+  "Cuéntanos sobre el menor que observas": "Tell us about the child you are observing",
+  "Responde como padre, madre o cuidador. No hay respuestas correctas o incorrectas. La evaluación se refiere a conductas observadas durante los últimos seis meses, teniendo en cuenta la edad y las circunstancias. Ten en cuenta las diferencias esperables entre las etapas de 4–7, 8–12 y 13–17 años.": "Answer as a parent or caregiver. There are no right or wrong answers. This assessment concerns behaviors observed over the last six months, taking age and circumstances into account. Consider expected differences across ages 4–7, 8–12, and 13–17.",
+  "Nombre del familiar que responde": "Name of the responding family member",
+  "Edad del menor": "Child's age",
+  "Seleccionar edad": "Select age",
+  "¿Qué parentesco tienes con el menor?": "What is your relationship to the child?",
+  "Madre": "Mother",
+  "Padre": "Father",
+  "Tutor legal": "Legal guardian",
+  "Abuelo/a": "Grandparent",
+  "Otro familiar": "Other family member",
+  "Cuidador/a": "Caregiver",
+  "¿En qué entornos puedes observar su comportamiento? (Selecciona al menos uno)": "In which settings can you observe their behavior? (Select at least one)",
+  "Casa": "Home",
+  "Colegio": "School",
+  "Actividades sociales u otros espacios": "Social activities or other settings",
+  "Importante: esta herramienta no diagnostica ni descarta TDAH y no es una escala clínica validada. No escribas el nombre del menor, su colegio ni otros datos que permitan identificarlo. Si te preocupa su desarrollo o bienestar, consulta con pediatría o un profesional de salud infantil.": "Important: this tool does not diagnose or rule out ADHD and is not a validated clinical scale. Do not enter the child's name, school, or other identifying details. If you are concerned about their development or well-being, consult a pediatrician or child health professional.",
+  "Confirmo que soy su padre, madre, tutor o cuidador autorizado y que puedo proporcionar esta información para recibir orientación.": "I confirm that I am the child's parent, guardian, or authorized caregiver and may provide this information to receive guidance.",
+  "Continuar al cuestionario →": "Continue to questionnaire →",
+  "Volver al catálogo": "Back to catalog",
+  "Tu espacio de exploración": "Your exploration space",
+  "Vamos paso a paso.": "Let's take it step by step.",
+  "Responde según lo que observas habitualmente; no hay respuestas buenas ni malas.": "Answer based on what you usually observe; there are no right or wrong answers.",
+  "Atención y enfoque": "Attention and focus",
+  "Tu progreso": "Your progress",
+  "Selecciona la frecuencia que mejor describa tu experiencia.": "Select the frequency that best describes your experience.",
+  "Tómate tu tiempo. No hay respuestas correctas o incorrectas.": "Take your time. There are no right or wrong answers.",
+  "Evaluación completada": "Assessment completed",
+  "Tu informe está casi listo.": "Your report is almost ready.",
+  "Tu autorregistro fue recibido. Completa el pago para desbloquear el informe detallado y descargar tu PDF.": "Your self-report has been received. Complete payment to unlock the detailed report and download your PDF.",
+  "Pago único por informe": "One-time payment per report",
+  "¿Tienes un código promocional?": "Do you have a promo code?",
+  "Aplicar código": "Apply code",
+  "Resumen de dimensiones": "Dimension summary",
+  "Orientaciones personales": "Personal guidance",
+  "Informe descargable": "Downloadable report",
+  "Ya realicé el pago · Verificar estado": "I've paid · Verify status",
+  "El estado del pago se confirma en el servidor mediante la notificación de Wompi. El regreso desde la pasarela no constituye por sí solo una confirmación de pago.": "Payment status is confirmed on the server through a Wompi notification. Returning from the payment gateway alone does not confirm payment.",
+  "Tu informe personal": "Your personal report",
+  "Un espacio para comprenderte.": "A space to understand yourself.",
+  "Este resumen organiza tus respuestas y ofrece orientaciones generales para reflexionar sobre tu bienestar cognitivo.": "This summary organizes your answers and offers general guidance to help you reflect on your cognitive well-being.",
+  "Resultado del autorregistro": "Self-report result",
+  "Indicadores descriptivos calculados a partir de tus respuestas.": "Descriptive indicators calculated from your answers.",
+  "Mapa de dimensiones": "Dimensions map",
+  "Comparación visual de los indicadores del autorregistro. Los valores describen respuestas y no representan probabilidades ni un diagnóstico clínico.": "Visual comparison of self-report indicators. Values describe responses and do not represent probabilities or a clinical diagnosis.",
+  "Actividades interactivas de atención y memoria": "Interactive attention and memory activities",
+  "Aspectos que ayudan a interpretar las respuestas con cautela.": "Aspects that help interpret responses with caution.",
+  "Orientaciones personalizadas": "Personalized guidance",
+  "Estrategias relacionadas con las áreas que destacaron en tus respuestas.": "Strategies related to the areas that stood out in your responses.",
+  "Este informe no es un diagnóstico clínico ni una escala validada. Los porcentajes representan únicamente la distribución de respuestas de este cuestionario y no deben interpretarse como probabilidad de tener un trastorno. Si tienes inquietudes, consulta con un profesional cualificado.": "This report is not a clinical diagnosis or a validated scale. Percentages represent only the distribution of responses in this questionnaire and must not be interpreted as the probability of having a disorder. If you have concerns, consult a qualified professional.",
+  "↓ Descargar informe PDF": "↓ Download PDF report",
+  "Administración segura": "Secure administration",
+  "Centro de administración.": "Administration center.",
+  "Gestiona clientes, evaluaciones, pagos e informes desde un solo lugar.": "Manage clients, assessments, payments, and reports in one place.",
+  "📊 Resumen": "📊 Overview",
+  "👥 Clientes": "👥 Clients",
+  "🧠 Evaluaciones": "🧠 Assessments",
+  "💳 Pagos": "💳 Payments",
+  "📈 Analítica comercial": "📈 Business analytics",
+  "🌍 Alcance internacional": "🌍 International reach",
+  "🏷️ Precios y promociones": "🏷️ Pricing and promotions",
+  "⚙️ Configuración": "⚙️ Settings",
+  "🩺 Salud del sistema": "🩺 System health",
+  "🛡️ Colaboradores": "🛡️ Team members",
+  "🎧 Centro de soporte": "🎧 Support center",
+  "📋 Actividad": "📋 Activity",
+  "Clientes registrados": "Registered clients",
+  "Pendientes": "Pending",
+  "Fallidos": "Failed",
+  "Ingresos confirmados": "Confirmed revenue",
+  "Evolución de evaluaciones": "Assessment trends",
+  "Distribución mensual de los registros recientes disponibles": "Monthly distribution of available recent records",
+  "Tendencia": "Trend",
+  "Cargando datos…": "Loading data…",
+  "Evaluaciones registradas": "Assessments recorded",
+  "Muestra disponible": "Available sample",
+  "Estado de pagos": "Payment status",
+  "Proporción según los registros disponibles": "Proportion based on available records",
+  "Sin datos": "No data",
+  "Últimas evaluaciones recibidas.": "Latest assessments received.",
+  "Ver todas": "View all",
+  "↻ Actualizar": "↻ Refresh",
+  "Fecha": "Date",
+  "Cliente": "Client",
+  "Correo": "Email",
+  "Estado": "Status",
+  "Acciones": "Actions",
+  "Cargando...": "Loading...",
+  "Perfiles asociados a las cuentas de la plataforma.": "Profiles associated with platform accounts.",
+  "Registro": "Registration",
+  "UID": "UID",
+  "Se muestran hasta 100 perfiles registrados.": "Up to 100 registered profiles are shown.",
+  "Historial de evaluaciones": "Assessment history",
+  "Consulta estados, respuestas, resultados e informes.": "View statuses, answers, results, and reports.",
+  "Resultado": "Result",
+  "Pago": "Payment",
+  "Se muestran hasta las 100 evaluaciones más recientes. El detalle protegido incluye respuestas y resultados almacenados.": "Up to the 100 most recent assessments are shown. Protected details include stored answers and results.",
+  "Analítica comercial": "Business analytics",
+  "Indicadores calculados con los registros de evaluaciones y pagos guardados en Firestore.": "Indicators calculated from assessment and payment records stored in Firestore.",
+  "↻ Actualizar analítica": "↻ Refresh analytics",
+  "Cargando indicadores…": "Calculating indicators…",
+  "Ingresos confirmados · últimos 6 meses": "Confirmed revenue · last 6 months",
+  "Solo pagos con estado confirmado.": "Confirmed payments only.",
+  "Conversiones por mes": "Monthly conversions",
+  "Evaluaciones pagadas frente al total creado en cada mes.": "Paid assessments compared with the total created each month.",
+  "Rendimiento de promociones": "Promotion performance",
+  "Usos reservados por código y evaluaciones que lo tienen asociado. Un uso reservado no garantiza que el pago haya sido aprobado.": "Reserved uses by code and associated assessments. A reserved use does not guarantee payment approval.",
+  "Países resaltados cuando tienen grupos agregados de al menos 10 usuarios.": "Countries are highlighted when they have aggregated groups of at least 10 users.",
+  "Solo se resaltan países con al menos 10 perfiles y código reconocible. No se muestran ubicaciones individuales.": "Only countries with at least 10 profiles and a recognized code are highlighted. Individual locations are not shown.",
+  "Cartografía: Natural Earth, escala 1:110m. Datos de dominio público; límites esquemáticos, no oficiales.": "Cartography: Natural Earth, 1:110m scale. Public-domain data; schematic, non-official boundaries.",
+  "No se pudo cargar la cartografía mundial.": "The world map could not be loaded.",
+  "El archivo cartográfico no es válido.": "The map data file is invalid.",
+  "No se pudo calcular la analítica geográfica.": "Global geographic analytics could not be calculated.",
+  "No fue posible cargar las estadísticas:": "Could not load statistics:",
+  "No se pudo cargar el mapa mundial.": "The world map could not be loaded.",
+  "No se pudo cargar la lista de países:": "Could not load the country list:",
+  "No se pudo obtener la configuración de Firebase.": "Could not retrieve the Firebase configuration.",
+  "La configuración pública de Firebase está incompleta.": "The public Firebase configuration is incomplete.",
+  "Se requiere una edad adulta válida para continuar.": "A valid adult age is required to continue.",
+  "La edad debe estar entre 18 y 99 años.": "Age must be between 18 and 99.",
+  "Selecciona el objetivo de tu evaluación.": "Select the goal of your assessment.",
+  "Este correo está reservado para administración.": "This email address is reserved for administration.",
+  "Administración": "Administration",
+  "Error de sesión:": "Session error:",
+  "No se pudo validar la sesión.": "Could not validate the session.",
+  "Evaluación NeuroEval Pro": "NeuroEval Pro Assessment",
+  "Secuencia relámpago": "Flash sequence",
+  "Cazador de símbolos": "Symbol hunter",
+  "Completa el patrón": "Complete the pattern",
+  "Cálculo mental": "Mental math",
+  "Color bajo presión": "Color under pressure",
+  "Código secreto": "Secret code",
+  "Doble misión": "Double mission",
+  "¡Nivel ": "Level ",
+  " superado! ": " completed! ",
+  "No se superó el nivel ": "Level not passed ",
+  " dígitos. Luego escríbelos en el mismo orden.": " digits. Then enter them in the same order.",
+  " dígitos": " digits",
+  " estrellas. Hay más distractores y menos tiempo en cada nivel.": " stars. Each level has more distractors and less time.",
+  "Cuenta los círculos negros entre ": "Count the black circles among ",
+  " círculos.": " circles.",
+  "¡Cálculo correcto!": "Correct calculation!",
+  "Ese no era el símbolo diferente.": "That was not the odd symbol.",
+  "Después de ": "After ",
+  "Tu reacción: ": "Your reaction: ",
+  "¡Deducción correcta!": "Correct deduction!",
+  "¡Atendiste a las dos reglas!": "You followed both rules!",
+  "Había ": "There were ",
+  "No se pudo solicitar el código.": "Could not request the code.",
+  "El código debe tener seis dígitos.": "The code must contain six digits.",
+  "No se pudo cambiar la contraseña.": "Could not change the password.",
+  "No se pudo guardar tu evaluación: ": "Could not save your assessment: ",
+  "No se encontró la evaluación que deseas consultar.": "The assessment you want to view could not be found.",
+  "El servidor no entregó los datos necesarios para Wompi.": "The server did not provide the information required by Wompi.",
+  "Informe de observación familiar · ": "Family observation report · ",
+  " · Familiar: ": " · Relationship: ",
+  " · no especificado": " · not specified",
+  "Atención y seguimiento de tareas": "Attention and task follow-up",
+  "Atención sostenida y memoria cotidiana": "Sustained attention and everyday memory",
+  "Organización y funciones ejecutivas": "Organization and executive functions",
+  "Duración, entornos y observación externa": "Duration, settings, and external observation",
+  "Estrés, preocupación y descanso": "Stress, worry, and rest",
+  "Orientación": "Guidance",
+  "No hay evaluaciones que coincidan con la búsqueda.": "No assessments match your search.",
+  "Todavía no hay perfiles registrados.": "No profiles have been registered yet.",
+  "Exportación generada. ": "Export created. ",
+  "Exportación parcial: ": "Partial export: ",
+  " superó el límite de 500 documentos. No la uses como respaldo completo; solicita una copia administrada en Google Cloud.": " exceeded the 500-document limit. Do not use it as a complete backup; request a managed copy in Google Cloud.",
+  "Última comprobación: ": "Last checked: ",
+  "No fue posible ejecutar el diagnóstico: ": "Could not run the diagnostic: ",
+  "Precio por evaluación": "Price per assessment",
+  "Pagos de demostración": "Demo payments",
+  "Mapa mundial con países que tienen grupos agregados de usuarios": "World map showing countries with aggregated user groups",
+  "Aún no hay grupos de países que cumplan el umbral de privacidad": "No country groups meet the privacy threshold yet",
+  "No fue posible cargar el mapa mundial. Las estadísticas por país siguen disponibles abajo.": "The world map could not be loaded. Country statistics remain available below.",
+  "No fue posible cargar el mapa. Las estadísticas por país siguen disponibles abajo.": "The map could not be loaded. Country statistics remain available below.",
+  "No fue posible cargar las estadísticas: ": "Could not load statistics: ",
+  "No se pudo consultar la analítica.": "Could not retrieve analytics.",
+  "Conversión a pago": "Payment conversion",
+  "No se pudo cargar la analítica: ": "Could not load analytics: ",
+  "En gestión": "In progress",
+  "Evaluación": "Assessment",
+  "Escribe un mensaje para continuar la conversación…": "Write a message to continue the conversation…",
+  "Rectificación": "Correction",
+  "Revisión de eliminación": "Deletion review",
+  "Retiro de autorización de datos sensibles": "Withdrawal of sensitive-data consent",
+  "En revisión": "Under review",
+  "Marcar en revisión": "Mark as under review",
+  "No se pudo cargar la configuración comercial: ": "Could not load commercial settings: ",
+  "Código ": "Code ",
+  "¿Revocar definitivamente el acceso administrativo de ": "Permanently revoke administrative access for ",
+  "Último acceso": "Last access",
+  "La respuesta del servidor no contiene una evaluación válida.": "The server response does not contain a valid assessment.",
+  "Descripción": "Description",
+  "Dimensión": "Dimension",
+  "La autenticación todavía no está disponible.": "Authentication is not available yet.",
+  "Error al cerrar sesión:": "Sign-out error:",
+  "No se pudo cerrar la sesión. ": "Could not sign out. ",
+  "Inténtalo nuevamente.": "Please try again.",
+  "Preparando la exportación de tus datos…": "Preparing your data export…",
+  "Se preparó la copia de tus datos.": "Your data copy is ready.",
+  "Esto registra una solicitud de revisión de eliminación; no borra inmediatamente tu cuenta ni tus registros. ¿Continuar?": "This records a deletion-review request; it does not immediately delete your account or records. Continue?",
+  "Tu solicitud de privacidad quedó registrada para revisión.": "Your privacy request has been submitted for review.",
+  "No se pudo completar el acceso con Google. Código:": "Could not complete Google sign-in. Code:",
+  "No se pudo iniciar sesión con Google. Código:": "Could not sign in with Google. Code:",
+  " triángulos.": " triangles.",
+  "franja no especificada": "unspecified age band",
+  "Los valores describen respuestas del autorregistro; no son probabilidades ni un diagnóstico.": "The values describe self-report responses; they are not probabilities or a diagnosis.",
+  "Alcance internacional": "International reach",
+  "Distribución agregada por país, ciudad, edad, idioma y objetivo declarado.": "Aggregated distribution by country, city, age, language, and stated goal.",
+  "↻ Actualizar datos": "↻ Refresh data",
+  "Los grupos de menos de 10 usuarios se ocultan para proteger la privacidad.": "Groups with fewer than 10 users are hidden to protect privacy.",
+  "Mapa mundial de usuarios": "World map of users",
+  "Ubicaciones agregadas por país; cada punto representa un grupo, no una persona.": "Aggregated locations by country; each point represents a group, not an individual.",
+  "Vista global": "Global view",
+  "Cargando mapa mundial…": "Loading world map…",
+  "Solo se representan países con al menos 10 perfiles y código de país reconocible. No se muestran ubicaciones individuales.": "Only countries with at least 10 profiles and a recognized country code are shown. Individual locations are not displayed.",
+  "Usuarios por país": "Users by country",
+  "Usuarios por ciudad": "Users by city",
+  "Distribución por edades": "Age distribution",
+  "Idioma": "Language",
+  "No se muestran nombres, correos, identificadores, respuestas ni ubicaciones individuales. Los grupos inferiores a 10 se ocultan. La ciudad es voluntaria; no se usa GPS.": "Names, emails, identifiers, answers, and individual locations are not shown. Groups under 10 are hidden. City is optional; GPS is not used.",
+  "Pagos y transacciones Wompi": "Wompi payments and transactions",
+  "Seguimiento de referencias, identificadores y confirmaciones recibidas por webhook.": "Track references, identifiers, and confirmations received by webhook.",
+  "Valor": "Amount",
+  "Referencia": "Reference",
+  "ID transacción": "Transaction ID",
+  "Confirmación": "Confirmation",
+  "Precios de las evaluaciones": "Assessment pricing",
+  "Actualmente hay una evaluación de pago. Modifica su precio; las evaluaciones futuras adicionales podrán tener tarifas independientes cuando se incorporen al catálogo. Los registros ya creados conservan su precio original.": "There is currently one paid assessment. Change its price; future assessments may have separate rates when added to the catalog. Existing records keep their original price.",
+  "Evaluación integral (TDAH y concentración) · COP": "Comprehensive assessment (ADHD and focus) · COP",
+  "Guardar precio": "Save price",
+  "Crear código promocional": "Create promo code",
+  "Define descuentos porcentuales o por valor fijo, vigencia, límite de usos y condiciones para nuevos clientes. Cada uso se reserva cuando el cliente aplica el código y genera el pago.": "Set percentage or fixed-value discounts, validity, usage limits, and conditions for new clients. Each use is reserved when a client applies the code and creates a payment.",
+  "Código promocional": "Promo code",
+  "Tipo de descuento": "Discount type",
+  "Valor del descuento": "Discount amount",
+  "Máximo de usos (0 = ilimitado)": "Maximum uses (0 = unlimited)",
+  "Inicio (opcional)": "Start (optional)",
+  "Vencimiento (opcional)": "Expiration (optional)",
+  "Exclusivo para clientes que todavía no hayan pagado una evaluación.": "Only for clients who have not yet paid for an assessment.",
+  "Promociones y códigos": "Promotions and codes",
+  "Consulta los usos y activa o desactiva campañas.": "Review usage and activate or deactivate campaigns.",
+  "Salud del sistema": "System health",
+  "Colaboradores": "Team members",
+  "Actividad": "Activity",
+  "Algunas veces": "Sometimes",
+  "A menudo": "Often",
+  "Muy a menudo": "Very often",
+  "Atención": "Attention",
+  "Actividad e inquietud": "Activity and restlessness",
+  "Impulsividad": "Impulsivity",
+  "Contexto": "Context",
+  "Factores adicionales": "Additional factors",
+  "Informe de observación familiar": "Family observation report",
+  "Observación familiar": "Family observation",
+  "Una mirada a las conductas observadas.": "A closer look at the observed behaviors.",
+  "Este informe organiza tus observaciones y ofrece orientaciones generales para acompañar al menor.": "This report organizes your observations and offers general guidance to support the child.",
+  "Orientaciones para padres y cuidadores": "Guidance for parents and caregivers",
+  "Esta evaluación recoge observaciones del familiar; no incluye pruebas de rendimiento cognitivo ni actividades para el menor.": "This assessment collects family observations; it does not include cognitive performance tests or activities for the child.",
+  "Resumen orientativo": "Informational summary",
+  "Porcentaje descriptivo de las respuestas de esta dimensión; no equivale a una probabilidad clínica.": "Descriptive percentage of responses in this dimension; it is not a clinical probability.",
+  "Actividades interactivas:": "Interactive activities:",
+  "retos de selección correctos. Memoria:": "correct selection tasks. Memory:",
+  "búsqueda visual:": "visual search:",
+  "Otros factores que pueden influir": "Other factors that may influence",
+  "Historia y contextos": "History and settings",
+  "Se observan comportamientos que conviene explorar con un profesional": "Behaviors are observed that may warrant professional exploration",
+  "Observaciones para seguir registrando y contextualizando": "Observations to continue documenting and contextualizing",
+  "Varias conductas fueron descritas como frecuentes o muy frecuentes y se señalaron aspectos de impacto o presencia en distintos entornos. Esto no confirma TDAH: una valoración profesional debe considerar el desarrollo, la historia, otros posibles factores y distintas fuentes de información.": "Several behaviors were described as frequent or very frequent, with reported impact or presence across settings. This does not confirm ADHD: a professional assessment should consider development, history, other possible factors, and multiple sources of information.",
+  "Las respuestas ofrecen una descripción inicial, pero no permiten confirmar ni descartar TDAH. La frecuencia, la edad, las circunstancias y el impacto deben analizarse con más información y, cuando exista preocupación, con un profesional.": "The answers provide an initial description but cannot confirm or rule out ADHD. Frequency, age, circumstances, and impact should be considered with more information and, when there is concern, with a professional.",
+  "Patrones que merecen exploración:": "Patterns worth exploring:",
+  "Sin elevaciones marcadas en las áreas principales exploradas": "No marked elevations in the main areas explored",
+  "atención y memoria cotidiana": "attention and everyday memory",
+  "organización y gestión de tareas": "organization and task management",
+  "inquietud e impulsividad": "restlessness and impulsivity",
+  "regulación emocional": "emotional regulation",
+  "Reduce las distracciones visibles": "Reduce visible distractions",
+  "Apoya la memoria con señales externas": "Support memory with external cues",
+  "Convierte las tareas en primeros pasos": "Break tasks into first steps",
+  "Haz visible el tiempo": "Make time visible",
+  "Programa movimiento y pausas": "Schedule movement and breaks",
+  "Crea un intervalo para regular emociones": "Create a pause to regulate emotions",
+  "Revisa los factores que cambian tu concentración": "Review factors that affect your concentration",
+  "Considera una valoración profesional": "Consider a professional assessment",
+  "Conserva lo que ya te funciona": "Keep what already works for you",
+  "Registra ejemplos concretos": "Record concrete examples",
+  "Contrasta la observación con el colegio": "Compare observations with the school",
+  "Prueba apoyos cotidianos": "Try everyday supports",
+  "Revisa otros factores que pueden influir": "Review other factors that may influence behavior",
+  "Solicita una valoración profesional": "Request a professional assessment",
+  "Consulta si la preocupación continúa": "Seek guidance if concerns continue",
+  "Durante las próximas semanas anota qué ocurrió, cuándo, dónde, qué pasó antes y cómo afectó al menor. Evita etiquetas como perezoso, desobediente o problemático.": "Over the next few weeks, note what happened, when, where, what came before, and how it affected the child. Avoid labels such as lazy, disobedient, or problematic.",
+  "Solicita al docente ejemplos específicos sobre atención, seguimiento de instrucciones, movimiento, turnos y finalización de tareas.": "Ask the teacher for specific examples of attention, following instructions, movement, turn-taking, and task completion.",
+  "Da instrucciones breves de una en una, utiliza rutinas visuales, divide las tareas en pasos pequeños y reconoce el esfuerzo.": "Give brief instructions one at a time, use visual routines, break tasks into small steps, and acknowledge effort.",
+  "El sueño, el estrés, los cambios familiares, la salud o las dificultades de aprendizaje pueden modificar la conducta y la atención. Coméntalos con un profesional sin asumir una causa única.": "Sleep, stress, family changes, health, or learning difficulties may affect behavior and attention. Discuss them with a professional without assuming a single cause.",
+  "Las respuestas describen conductas frecuentes junto con señales de impacto o presencia en distintos contextos. Conviene comentarlo con pediatría o un profesional de salud mental infantil; lleva ejemplos y, si es posible, información del colegio.": "The answers describe frequent behaviors alongside signs of impact or presence across settings. Consider discussing this with a pediatrician or child mental health professional; bring examples and, if possible, information from school.",
+  "Aunque este cuestionario no muestre un patrón destacado, si algo te preocupa o afecta al menor, puedes solicitar orientación profesional. Este resultado no descarta TDAH ni otras dificultades.": "Even if this questionnaire does not show a prominent pattern, seek professional guidance if something concerns you or affects the child. This result does not rule out ADHD or other difficulties.",
+  "Se mencionan factores adicionales que también podrían influir y conviene explorar": "Additional factors that may also influence behavior are mentioned and are worth exploring",
+  "No se señalaron con frecuencia factores adicionales en esta respuesta": "No additional factors were frequently reported in this response",
+  "Se refiere impacto en actividades cotidianas": "Impact on everyday activities is reported",
+  "No se señaló impacto frecuente en esta respuesta": "No frequent impact was reported in this response",
+  "Se refiere una duración aproximada de seis meses o más": "A duration of approximately six months or more is reported",
+  "La duración requiere mayor observación": "Duration requires further observation",
+  "Se señalan antecedentes desde etapas anteriores del desarrollo": "History from earlier developmental stages is reported",
+  "Conviene contrastar otros entornos": "Other settings should be compared",
+  "Otro cuidador o docente también expresa preocupación": "Another caregiver or teacher also expresses concern",
+  "Se observan varios entornos": "Several settings are observed",
+  "Fecha no disponible": "Date unavailable",
+  "Consultando tus evaluaciones...": "Checking your assessments...",
+  "Pago confirmado. Preparando tu informe.": "Payment confirmed. Preparing your report.",
+  "El pago aún no aparece confirmado.": "Payment has not yet been confirmed.",
+  "Completa el pago para desbloquear tu informe.": "Complete payment to unlock your report.",
+  "Guardando respuestas...": "Saving answers...",
+  "No fue posible cargar las estadísticas:": "Could not load statistics:",
+  "NeuroEval": "NeuroEval",
+  "Pro": "Pro",
+  "🌐 English": "🌐 English",
+  "🛡️   Panel de administración": "🛡️   Admin dashboard",
+  "👤   Perfil": "👤   Profile",
+  "🧠   Pruebas": "🧠   Assessments",
+  "↪   Cerrar sesión": "↪   Sign out",
+  "15 preguntas": "15 questions",
+  "Concentración y organización": "Focus and organization",
+  "Estrés, fatiga y sobrecarga": "Stress, fatigue, and overload",
+  "Español": "Spanish",
+  "4 años": "4 years",
+  "5 años": "5 years",
+  "6 años": "6 years",
+  "7 años": "7 years",
+  "8 años": "8 years",
+  "9 años": "9 years",
+  "10 años": "10 years",
+  "11 años": "11 years",
+  "12 años": "12 years",
+  "13 años": "13 years",
+  "14 años": "14 years",
+  "15 años": "15 years",
+  "16 años": "16 years",
+  "17 años": "17 years",
+  "Pregunta 1 de 24": "Question 1 of 24",
+  "¿Te cuesta mantener la atención?": "Do you find it difficult to maintain attention?",
+  "COP": "COP",
+  "Dimensiones exploradas": "Dimensions explored",
+  "Contexto e impacto cotidiano": "Everyday context and impact",
+  "$0 COP": "COP 0",
+  "Cargando…": "Loading…",
+  "Porcentaje (%)": "Percentage (%)",
+  "Valor fijo (COP)": "Fixed amount (COP)",
+  "Cargando promociones…": "Loading promotions…",
+  "Centro de salud de NeuroEval Pro": "NeuroEval Pro system health center",
+  "Conectividad y recursos del servidor. No muestra claves ni secretos.": "Server connectivity and resources. No keys or secrets are displayed.",
+  "↻ Ejecutar diagnóstico": "↻ Run diagnostics",
+  "Ejecuta el diagnóstico para consultar los servicios.": "Run diagnostics to check services.",
+  "Respaldo manual de datos": "Manual data backup",
+  "Exporta registros seleccionados de Firestore en JSON. Solo disponible para el administrador principal; no reemplaza los respaldos automáticos de Google Cloud.": "Export selected Firestore records as JSON. Available only to the primary administrator; it does not replace automatic Google Cloud backups.",
+  "⬇️ Exportar respaldo": "⬇️ Export backup",
+  "Incluye hasta 500 documentos por colección. Si el archivo indica que está incompleto, algunos registros superan ese límite.": "Includes up to 500 documents per collection. If the file indicates it is incomplete, some records exceed that limit.",
+  "Perfil administrador": "Administrator profile",
+  "Cuenta autenticada y permisos activos.": "Authenticated account and active permissions.",
+  "Rol": "Role",
+  "Administrador": "Administrator",
+  "Ver perfil de cuenta": "View account profile",
+  "Estado de servicios": "Service status",
+  "Consulta el estado de los servicios conectados.": "Check the status of connected services.",
+  "Esta vista muestra estados de conexión, nunca claves privadas ni secretos de integración.": "This view shows connection statuses, never private keys or integration secrets.",
+  "Agregar administrador secundario": "Add secondary administrator",
+  "La persona debe tener una cuenta creada en NeuroEval Pro con el correo que registres aquí. Tu cuenta principal conserva el control exclusivo de este módulo.": "The person must have a NeuroEval Pro account using the email entered here. Your primary account retains exclusive control of this module.",
+  "Correo electrónico del colaborador": "Team member email",
+  "Permisos que deseas conceder": "Permissions to grant",
+  "Ver resumen general": "View general overview",
+  "Consultar clientes": "View clients",
+  "Consultar evaluaciones": "View assessments",
+  "Ver respuestas y resultados privados": "View private answers and results",
+  "Descargar informes PDF": "Download PDF reports",
+  "Consultar pagos e ingresos": "View payments and revenue",
+  "Consultar estado técnico": "View technical status",
+  "Administrar precios y promociones": "Manage pricing and promotions",
+  "Consultar historial administrativo": "View admin activity log",
+  "Consultar solicitudes de soporte": "View support requests",
+  "Responder y gestionar soporte": "Respond to and manage support",
+  "Agregar colaborador": "Add team member",
+  "Administradores secundarios": "Secondary administrators",
+  "Modifica permisos, suspende o revoca accesos cuando quieras.": "Change permissions, suspend, or revoke access at any time.",
+  "Cargando colaboradores…": "Loading team members…",
+  "Solicitudes de clientes, conversación, prioridad y seguimiento.": "Customer requests, conversations, priority, and follow-up.",
+  "Cargando solicitudes…": "Loading requests…",
+  "Actividad administrativa": "Administrative activity",
+  "Registro de altas, cambios y revocaciones de permisos.": "Log of permission grants, changes, and revocations.",
+  "Cargando historial…": "Loading history…",
+  "Detalle de evaluación": "Assessment details",
+  "Cerrar ✕": "Close ✕",
+  "NeuroEval Pro · Una herramienta de autorregistro orientativo.": "NeuroEval Pro · An informational self-report tool.",
+  "4–7 años": "Ages 4–7",
+  "8–12 años": "Ages 8–12",
+  "13–17 años": "Ages 13–17",
+  "casa": "home",
+  "colegio": "school",
+  "social": "social",
+  "Explora la facilidad para mantener el foco, seguir conversaciones, recordar instrucciones y evitar distracciones.": "Explores the ability to maintain focus, follow conversations, remember instructions, and avoid distractions.",
+  "Explora la planificación, el inicio y finalización de tareas, la gestión del tiempo y la capacidad de retomar actividades.": "Explores planning, starting and completing tasks, time management, and the ability to resume activities.",
+  "Explora la necesidad de movimiento, la espera, la tendencia a interrumpir y la pausa antes de actuar.": "Explores the need for movement, waiting, interrupting, and pausing before acting.",
+  "Explora la intensidad de las respuestas emocionales y la recuperación ante frustraciones o cambios.": "Explores the intensity of emotional responses and recovery after frustration or change.",
+  "Explora factores contextuales que pueden influir en la concentración, como el sueño, la tensión y la sobrecarga.": "Explores contextual factors that may affect concentration, such as sleep, tension, and overload.",
+  "Explora si las experiencias descritas generan dificultades funcionales y si son observadas por otras personas.": "Explores whether the described experiences cause functional difficulties and are noticed by other people.",
+  "Explora si las experiencias parecen remontarse a la infancia y si ocurren en más de un contexto.": "Explores whether the experiences may date back to childhood and occur in more than one setting.",
+  "Frecuencia descriptiva de las conductas observadas por el familiar; no equivale a una probabilidad clínica.": "Descriptive frequency of behaviors observed by the family member; it is not a clinical probability.",
+  "Señala circunstancias que también podrían influir en la conducta; no son síntomas de TDAH ni aumentan una puntuación de síntomas.": "Indicates circumstances that may also affect behavior; they are not ADHD symptoms and do not increase a symptom score.",
+  "LUNA   ·   LLAVE   ·   RÍO": "MOON   ·   KEY   ·   RIVER",
+  "Selecciona las cuatro palabras que aparecieron juntas.": "Select the four words that appeared together.",
+  "Firebase no proporcionó detalles adicionales.": "Firebase did not provide additional details.",
+  "Ese correo ya tiene una cuenta.": "An account already exists with this email.",
+  "El correo electrónico no es válido.": "The email address is invalid.",
+  "La contraseña debe tener al menos 8 caracteres.": "The password must contain at least 8 characters.",
+  "Correo o contraseña incorrectos.": "Incorrect email or password.",
+  "No encontramos una cuenta con ese correo.": "We could not find an account with that email.",
+  "La contraseña es incorrecta.": "The password is incorrect.",
+  "No se pudo conectar. Verifica tu internet.": "Could not connect. Check your internet connection.",
+  "No se pudo completar la operación.": "The operation could not be completed.",
+  "Creando tu cuenta...": "Creating your account...",
+  "Esta sección requiere permisos administrativos.": "This section requires administrative permissions.",
+  "¿Comete errores por descuido en tareas, deberes o actividades que sabe realizar?": "Does the child make careless mistakes in tasks, homework, or activities they know how to do?",
+  "Por ejemplo, omite partes de una instrucción o no revisa lo que hizo.": "For example, they miss parts of an instruction or do not review their work.",
+  "¿Le cuesta mantener la atención durante juegos, lecturas, conversaciones o tareas apropiadas para su edad?": "Does the child find it difficult to maintain attention during age-appropriate games, reading, conversations, or tasks?",
+  "Piensa en actividades que normalmente disfruta y que requieren continuidad.": "Think about activities the child usually enjoys and that require sustained attention.",
+  "¿Parece no escuchar cuando un adulto le habla directamente, aunque no haya una distracción evidente?": "Does the child seem not to listen when an adult speaks directly to them, even when there is no obvious distraction?",
+  "Por ejemplo, hay que repetirle varias veces una indicación sencilla.": "For example, a simple instruction may need to be repeated several times.",
+  "¿Empieza instrucciones o tareas, pero deja pasos sin completar aunque haya entendido qué debe hacer?": "Does the child start instructions or tasks but leave steps unfinished even when they understand what to do?",
+  "Considera rutinas, deberes y pequeñas responsabilidades.": "Consider routines, homework, and small responsibilities.",
+  "¿Tiene dificultad para organizar sus tareas, materiales o actividades diarias?": "Does the child have difficulty organizing tasks, materials, or daily activities?",
+  "Por ejemplo, no sabe por dónde empezar o pierde el orden de los pasos.": "For example, they do not know where to start or lose track of the steps.",
+  "¿Evita o demora actividades que requieren concentración sostenida?": "Does the child avoid or delay activities that require sustained concentration?",
+  "Por ejemplo, deberes, lectura o tareas que exigen esfuerzo mental continuo.": "For example, homework, reading, or tasks requiring continuous mental effort.",
+  "¿Pierde con frecuencia objetos necesarios para sus actividades?": "Does the child frequently lose items needed for activities?",
+  "Por ejemplo, útiles escolares, juguetes, libros, prendas o materiales.": "For example, school supplies, toys, books, clothing, or materials.",
+  "¿Se distrae fácilmente con ruidos, movimientos, conversaciones u otros estímulos del entorno?": "Is the child easily distracted by noises, movement, conversations, or other environmental stimuli?",
+  "Observa si le cuesta retomar lo que estaba haciendo.": "Notice whether the child finds it difficult to return to what they were doing.",
+  "¿Olvida con frecuencia actividades o responsabilidades habituales para su edad?": "Does the child frequently forget activities or responsibilities that are usual for their age?",
+  "Por ejemplo, llevar materiales, terminar una rutina o recordar una indicación.": "For example, bringing materials, finishing a routine, or remembering an instruction.",
+  "¿Mueve constantemente manos o pies, se retuerce en la silla o cambia de postura cuando se espera que permanezca sentado?": "Does the child constantly move their hands or feet, squirm in their chair, or change position when expected to remain seated?",
+  "Ten en cuenta lo esperable para su edad y la situación.": "Consider what is typical for the child's age and the situation.",
+  "¿Se levanta de su asiento en momentos en los que normalmente se espera que permanezca sentado?": "Does the child get up from their seat when they are usually expected to remain seated?",
+  "Por ejemplo, durante comidas, clase o actividades tranquilas.": "For example, during meals, class, or quiet activities.",
+  "¿Corre, trepa o se mueve en situaciones en las que no resulta apropiado?": "Does the child run, climb, or move around in situations where it is not appropriate?",
+  "En adolescentes, puede manifestarse como inquietud interna o dificultad para estar quieto.": "In adolescents, this may appear as inner restlessness or difficulty staying still.",
+  "¿Le cuesta jugar o realizar actividades tranquilas sin hacer mucho ruido o movimiento?": "Does the child find it difficult to play or do quiet activities without making a lot of noise or moving around?",
+  "Compara con otros niños de edad y contexto similares.": "Compare with other children of a similar age and context.",
+  "¿Parece estar constantemente en movimiento, como si le costara bajar el ritmo?": "Does the child seem to be constantly on the move, as if it were difficult to slow down?",
+  "Observa si ocurre incluso cuando la actividad requiere calma.": "Notice whether this happens even when the activity requires calm.",
+  "¿Habla mucho más de lo esperado para la situación y le cuesta detenerse?": "Does the child talk much more than expected for the situation and find it difficult to stop?",
+  "Considera conversaciones, clase y reuniones familiares.": "Consider conversations, class, and family gatherings.",
+  "¿Responde antes de que terminen de hacerle una pregunta o interrumpe para contestar?": "Does the child answer before a question is finished or interrupt to respond?",
+  "Observa si puede esperar a escuchar la pregunta completa.": "Notice whether the child can wait to hear the whole question.",
+  "¿Le cuesta esperar su turno en juegos, filas o conversaciones?": "Does the child find it difficult to wait their turn in games, lines, or conversations?",
+  "Piensa en situaciones cotidianas repetidas.": "Think about recurring everyday situations.",
+  "¿Interrumpe conversaciones, juegos o actividades de otras personas sin advertirlo?": "Does the child interrupt other people's conversations, games, or activities without noticing?",
+  "Por ejemplo, se incorpora a una actividad o toma la palabra de forma repentina.": "For example, they join an activity or suddenly start speaking.",
+  "¿Las conductas que has señalado se presentan desde hace aproximadamente seis meses o más?": "Have the behaviors you identified been present for approximately six months or longer?",
+  "Si comenzaron hace poco, anota cuándo aparecieron.": "If they began recently, note when they appeared.",
+  "¿Recuerdas que algunas de estas conductas ya estaban presentes en etapas anteriores de su desarrollo?": "Do you remember some of these behaviors being present at earlier stages of the child's development?",
+  "Piensa en informes escolares, recuerdos familiares o comentarios de docentes.": "Think about school reports, family memories, or teachers' comments.",
+  "¿Has observado estas conductas en al menos dos entornos, como casa y colegio?": "Have you observed these behaviors in at least two settings, such as home and school?",
+  "También pueden ser actividades extracurriculares u otros espacios.": "These may also include extracurricular activities or other settings.",
+  "¿Estas conductas afectan de forma clara su aprendizaje, convivencia, amistades o rutinas?": "Do these behaviors clearly affect the child's learning, relationships, friendships, or routines?",
+  "Describe consecuencias concretas, no solo que el comportamiento resulte molesto.": "Describe concrete consequences, not only that the behavior is bothersome.",
+  "¿Un docente u otro cuidador ha expresado preocupaciones similares?": "Has a teacher or another caregiver expressed similar concerns?",
+  "Si es posible, contrasta lo observado con alguien que lo conozca en otro entorno.": "If possible, compare your observations with someone who knows the child in another setting.",
+  "¿Hay factores recientes que podrían influir, como cambios familiares, sueño insuficiente, estrés, dificultades de aprendizaje o problemas de salud?": "Are there recent factors that could have an influence, such as family changes, insufficient sleep, stress, learning difficulties, or health problems?",
+  "No atribuyas automáticamente estas conductas al TDAH.": "Do not automatically attribute these behaviors to ADHD.",
+  "Esta orientación está diseñada para edades de 4 a 17 años.": "This guidance is designed for ages 4–17.",
+  "Indica tu parentesco y al menos un entorno de observación.": "Enter your relationship to the child and at least one observation setting.",
+  "Confirma que tienes autorización para proporcionar esta información.": "Confirm that you are authorized to provide this information.",
+  "Considera responsabilidades, actividades académicas y relaciones propias de la adolescencia.": "Consider responsibilities, academic activities, and relationships typical of adolescence.",
+  "Observación familiar · 24 preguntas": "Family observation · 24 questions",
+  "Inicia sesión para comenzar una evaluación.": "Sign in to begin an assessment.",
+  "Consultando el estado de tu evaluación...": "Checking your assessment status...",
+  "No se encontró una evaluación pendiente.": "No pending assessment was found.",
+  "¡Pago confirmado! Cargando informe.": "Payment confirmed! Loading report.",
+  "Aún no recibimos la confirmación del pago. Si acabas de pagar, espera unos segundos.": "We have not received payment confirmation yet. If you just paid, please wait a few seconds.",
+  "Esta acción está reservada al administrador principal.": "This action is reserved for the primary administrator.",
+  "Preparando exportación segura…": "Preparing secure export…",
+  "No se pudo consultar el diagnóstico.": "Could not retrieve diagnostics.",
+  "Diagnóstico completado. No se detectaron errores en las comprobaciones ejecutadas.": "Diagnostics completed. No errors were detected in the checks performed.",
+  "Calculando estadísticas agregadas…": "Calculating aggregate statistics…",
+  "No se pudo consultar la analítica internacional.": "Could not retrieve international analytics.",
+  "Todavía no hay grupos con suficientes usuarios para mostrarlos.": "There are not yet enough users in any group to display them.",
+  "Usuarios agrupados por país": "Users grouped by country",
+  "Aún no hay grupos de países que puedan ubicarse": "There are no mappable country groups yet.",
+  " años": " years",
+  "⚙️   Configuración": "⚙️   Settings",
+  "Información sobre privacidad y uso de datos": "Privacy and data use information",
+  "NeuroEval Pro es una herramienta de autorregistro orientativo para personas adultas. No diagnostica ni sustituye la valoración de profesionales.": "NeuroEval Pro is an informational self-report tool for adults. It does not diagnose or replace professional assessment.",
+  "Se procesan datos de cuenta, edad adulta, idioma, respuestas y resultados para prestar el servicio, generar informes, gestionar pagos y proteger la plataforma.": "Account details, adult age, language, answers, and results are processed to provide the service, generate reports, manage payments, and protect the platform.",
+  "País y ciudad son opcionales. No se solicita GPS. Los datos geográficos y demográficos se muestran al equipo autorizado únicamente de forma agregada y con un mínimo de 10 personas por grupo.": "Country and city are optional. GPS is not requested. Geographic and demographic data are shown to authorized staff only in aggregate, with at least 10 people per group.",
+  "La observación de menores debe realizarla un adulto autorizado. No escribas nombres, colegios ni otros datos que identifiquen al menor; el sistema conserva una franja de edad, no su edad exacta.": "Observation of minors must be completed by an authorized adult. Do not enter names, schools, or other identifying details; the system stores an age band, not the child's exact age.",
+  "Puedes solicitar acceso, rectificación o revisión de eliminación desde los canales de privacidad. Algunos registros pueden conservarse cuando existan obligaciones legales, contables o relacionadas con pagos. Consulta la política de privacidad completa antes del lanzamiento internacional.": "You may request access, correction, or review of deletion through the privacy channels. Some records may be retained where legal, accounting, or payment obligations apply. Consult the full privacy policy before the international launch.",
+  "Versión del aviso: 2026-11-11.": "Notice version: 2026-11-11.",
+  "Tus datos y privacidad": "Your data and privacy",
+  "Puedes descargar una copia de los datos asociados a tu cuenta o registrar una solicitud de acceso, rectificación o revisión de eliminación.": "You can download a copy of the data associated with your account or submit a request for access, correction, or deletion review.",
+  "Descargar mis datos": "Download my data",
+  "Acceso a mis datos": "Access my data",
+  "Rectificar mis datos": "Correct my data",
+  "Solicitar revisión de eliminación": "Request deletion review",
+  "La solicitud queda registrada para revisión; no elimina datos automáticamente. Algunos registros pueden estar sujetos a obligaciones legales o de pago.": "The request is recorded for review; it does not automatically delete data. Some records may be subject to legal or payment obligations.",
+  "Solicitudes de privacidad": "Privacy requests",
+  "Bandeja restringida al administrador principal. Revisar no implica borrar automáticamente datos.": "Inbox restricted to the primary administrator. Reviewing a request does not automatically delete data.",
+  "Leer el aviso completo (ES)": "Read the full notice (Spanish)",
+  "Read full notice (EN)": "Read full notice (English)",
+  "Aviso completo (ES)": "Full notice (Spanish)",
+  "Full notice (EN)": "Full notice (English)",
+  "No se pudo guardar tu evaluación:": "Could not save your assessment:",
+  "Este enlace de evaluación no pertenece a esta cuenta o ya no está disponible. Puedes iniciar una evaluación nueva desde tu panel.": "This assessment link does not belong to this account or is no longer available. You can start a new assessment from your dashboard.",
+  "No se encontró el identificador de la evaluación.": "The assessment identifier could not be found.",
+  "No tienes permisos para consultar esta sección.": "You do not have permission to view this section.",
+  "No tienes permisos para consultar esta información.": "You do not have permission to view this information.",
+  "No se pudo cerrar la sesión.": "Could not sign out.",
+  "¿Revocar definitivamente el acceso administrativo de": "Permanently revoke administrative access for",
+  "¡Bien hecho! Registramos esta actividad en tu progreso.": "Well done! This activity has been added to your progress.",
+  "Si la cuenta existe, recibirás un código. Revisa también la carpeta de spam.": "If the account exists, you will receive a code. Please also check your spam folder.",
+  "Tu contraseña se actualizó correctamente.": "Your password was updated successfully.",
+  "Pasarela de pago cargada. Continúa con el botón de Wompi.": "Payment gateway loaded. Continue using the Wompi button.",
+  "No se pudo cargar Wompi. Recarga la página o intenta más tarde.": "Wompi could not be loaded. Refresh the page or try again later.",
+  "Responde según las conductas que has observado en el menor durante los últimos seis meses. Elige la frecuencia que mejor describa lo que ocurre.": "Answer based on the behaviors you have observed in the child over the last six months. Choose the frequency that best describes what happens.",
+  "Todavía no tienes evaluaciones registradas.": "You do not have any assessments yet.",
+  "Puedes retomar esta evaluación.": "You can resume this assessment.",
+  "No se superó el nivel": "Level not completed:",
+  "Cuenta los círculos negros entre": "Count the black circles among",
+  "Descubre la regla y elige el siguiente número.": "Discover the rule and choose the next number.",
+  "¿Qué palabra estaba en la lista?": "Which word was on the list?",
+  "Toca el único símbolo diferente. Los distractores se parecen cada vez más.": "Tap the only different symbol. The distractors become increasingly similar.",
+  "Imagina que la flecha gira 90° a la derecha en cada giro. ¿Hacia dónde apunta?": "Imagine the arrow rotates 90° clockwise each turn. Which direction is it pointing?",
+  "Espera la señal…": "Wait for the signal…",
+  "Cuando el panel cambie a VERDE, pulsa lo más rápido posible. No te anticipes.": "When the panel turns GREEN, click as quickly as possible. Do not anticipate it.",
+  "🟢 ¡AHORA!": "🟢 NOW!",
+  "Usa las pistas para resolver el código lógico.": "Use the clues to solve the logic code.",
+  "Doble misión: cuenta las estrellas y los triángulos. Debes acertar ambas cantidades.": "Double task: count the stars and triangles. You must get both numbers right.",
+  "Responde según tus propias experiencias de atención, organización e impulsividad. No hay respuestas buenas ni malas.": "Answer based on your own experiences with attention, organization and impulsivity. There are no right or wrong answers.",
+  "Ejecutando diagnóstico…": "Running diagnostics…",
+  "Última comprobación:": "Final check:",
+  "No fue posible ejecutar el diagnóstico:": "Could not run diagnostics:",
+  "Tu rol no permite consultar estadísticas de evaluaciones.": "Your role does not allow you to view assessment statistics.",
+  "No hay registros suficientes para construir esta gráfica.": "There are not enough records to build this chart.",
+  "Todavía no hay promociones registradas.": "There are no promotions yet.",
+  "No se pudo cargar la analítica:": "Could not load analytics:",
+  "Todavía no tienes solicitudes. Si necesitas ayuda, puedes crear la primera desde el formulario.": "You do not have any requests yet. If you need help, you can create your first one using the form.",
+  "Esta solicitud está cerrada. Si necesitas más ayuda, crea una nueva solicitud.": "This request is closed. If you need further help, create a new request.",
+  "Tu solicitud fue enviada. Podrás seguir aquí las respuestas del equipo.": "Your request has been submitted. You can follow the team's replies here.",
+  "Guardar gestión": "Save changes",
+  "No se pudo cargar la configuración comercial:": "Could not load commercial settings:",
+  "Todavía no has creado códigos promocionales.": "You have not created any promo codes yet.",
+  "El precio está fijado en $4.000 COP por evaluación. Puedes gestionar códigos promocionales, pero no modificar el precio base.": "The price is fixed at COP 4,000 per assessment. You can manage promo codes, but you cannot change the base price.",
+  "Creando código…": "Creating code…",
+  "Todavía no has agregado administradores secundarios.": "You have not added any secondary administrators yet.",
+  "Colaborador agregado. Ya puede iniciar sesión con su cuenta.": "Team member added. They can now sign in with their account.",
+  "Todavía no hay movimientos administrativos registrados.": "There are no administrative activity records yet.",
+  "Este cliente todavía no tiene evaluaciones.": "This client does not have any assessments yet.",
+  "Este expediente muestra datos de perfil y metadatos de evaluaciones. Las respuestas clínicas y los informes completos mantienen sus permisos independientes.": "This record shows profile data and assessment metadata. Assessment answers and full reports have separate access permissions.",
+  "Cargando información protegida…": "Loading protected information…",
+  "Por ejemplo: mueves manos o pies, cambias de postura o te levantas.": "For example: you move your hands or feet, change posture, or stand up.",  "Puede ocurrir al hablar, comprar, decidir o reaccionar.": "It may happen when speaking, shopping, making decisions or reacting.",
+  "NUBE   ·   PAN   ·   RELOJ   ·   FLOR": "CLOUD   ·   BREAD   ·   CLOCK   ·   FLOWER",
+  "Piensa en actividades que normalmente disfruta y requieren continuidad.": "Think about activities the child normally enjoys and that require sustained attention.",
+  "En adolescentes puede manifestarse como inquietud interna.": "In teenagers, it may appear as inner restlessness.",
+  "Por ejemplo, se incorpora a una actividad o toma la palabra repentinamente.": "For example, they join an activity or suddenly start speaking.",
+  "Piensa en informes escolares, recuerdos familiares o comentarios docentes.": "Think about school reports, family memories or teachers' comments.",
+  "LUNA · LLAVE · RÍO": "MOON · KEY · RIVER",
+  "LUNA · LIBRO · RÍO": "MOON · BOOK · RIVER",
+  "LLAVE · RÍO · ROSA": "KEY · RIVER · ROSE",
+  "LUNA · LLAVE · SOL": "MOON · KEY · SUN",
+  "NUBE · PAN · RELOJ · FLOR": "CLOUD · BREAD · CLOCK · FLOWER",
+  "NUBE · PAN · RELOJ · LUNA": "CLOUD · BREAD · CLOCK · MOON",
+  "NUBE · LIBRO · RELOJ · FLOR": "CLOUD · BOOK · CLOCK · FLOWER",
+  "PAN · RELOJ · FLOR · ROSA": "BREAD · CLOCK · FLOWER · ROSE",
+  "Autorizo expresamente el tratamiento de mis respuestas, que pueden revelar datos sensibles relacionados con salud, atención y bienestar cognitivo, para generar mi autorregistro e informe. Entiendo que puedo no aceptar y no iniciar la evaluación.": "I explicitly authorize the processing of my answers, which may reveal sensitive data about health, attention and cognitive well-being, to generate my self-report and report. I understand that I may decline and not start the assessment.",
+  "Autorizo expresamente el tratamiento de esta información del menor, que puede revelar datos sensibles relacionados con su salud y bienestar, únicamente para generar esta orientación. Entiendo que puedo no autorizarlo y no continuar.": "I explicitly authorize the processing of this minor's information, which may reveal sensitive data about health and well-being, solely to generate this guidance. I understand that I may decline and not continue.",
+  "Debes autorizar expresamente el tratamiento de los datos sensibles del menor para continuar.": "You must explicitly authorize the processing of the minor's sensitive data to continue.",
+  "Esta orientación no es un diagnóstico ni sustituye la valoración de profesionales.": "This guidance is not a diagnosis and does not replace professional assessment.",
+  "Autorización expresa para datos sensibles": "Explicit authorization for sensitive data",
+  "Datos sensibles relacionados con salud, atención y bienestar cognitivo": "Sensitive data related to health, attention and cognitive well-being",
+  "Retirar autorización de datos sensibles": "Withdraw sensitive-data consent",
+  "Retirar autorización de datos sensibles.": "Withdraw sensitive-data consent.",
+
+  "El cobro se realiza en COP. Si tu tarjeta está en otra moneda, tu banco o emisor puede aplicar conversión y cargos adicionales.": "The charge is made in COP. If your card is in another currency, your bank or card issuer may apply conversion and additional fees.",
+};
+
+
+const reverseUiTranslations = Object.fromEntries(Object.entries(uiTranslations).map(([es,en]) => [en,es]));
+const UI_TRANSLATION_ENTRIES = Object.entries(uiTranslations).sort((a,b)=>b[0].length-a[0].length);
+const UI_REVERSE_ENTRIES = Object.entries(reverseUiTranslations).sort((a,b)=>b[0].length-a[0].length);
+function translateUiText(value) {
+  const source = String(value ?? ""), trimmed = source.trim();
+  if (!trimmed) return source;
+  const map = currentLanguage === "en" ? uiTranslations : reverseUiTranslations;
+  let translated = map[trimmed] || trimmed;
+  if (translated === trimmed) {
+    const entries = currentLanguage === "en" ? UI_TRANSLATION_ENTRIES : UI_REVERSE_ENTRIES;
+    entries.forEach(([from,to]) => { if (from.length >= 5 && translated.includes(from)) translated = translated.split(from).join(to); });
+  }
+  if (translated === trimmed) return source;
+  const leading = source.match(/^\\s*/)?.[0] || "", trailing = source.match(/\\s*$/)?.[0] || "";
+  return leading + translated + trailing;
+}
+const nativeAlert = window.alert.bind(window);
+const nativeConfirm = window.confirm.bind(window);
+const nativePrompt = window.prompt.bind(window);
+window.alert = message => nativeAlert(translateUiText(message));
+window.confirm = message => nativeConfirm(translateUiText(message));
+window.prompt = (message, defaultValue) => nativePrompt(translateUiText(message), defaultValue);
+function setLanguage(language, options = {}) {
+  currentLanguage = language === "en" ? "en" : "es";
+  try { localStorage.setItem("neuroeval-language", currentLanguage); } catch (_) {}
+  document.documentElement.lang = currentLanguage;
+  document.title = currentLanguage === "en" ? "NeuroEval Pro | Understand how your mind works" : "NeuroEval Pro | Conoce cómo funciona tu mente";
+  const selector = $("global-language");
+  if (selector) selector.value = currentLanguage;
+  document.querySelectorAll("[data-legal-link]").forEach(link => {
+    const kind = link.getAttribute("data-legal-link");
+    if (kind === "privacy") link.href = currentLanguage === "en" ? "/legal/privacy-en.html" : "/legal/privacy-es.html";
+    if (kind === "terms") link.href = currentLanguage === "en" ? "/legal/terms-en.html" : "/legal/terms-es.html";
+  });
+  applyLanguageToDom();
+  const globalPanel = $("admin-panel-global");
+  if (currentIsAdmin && globalPanel && !globalPanel.classList.contains("hidden")) loadAdminGlobalAnalytics();
+  if (options.persist && currentUser && !currentIsAdmin) {
+    profileData = { ...(profileData || {}), language: currentLanguage };
+    api("/api/profile", { method: "POST", body: JSON.stringify({ ...(profileData || {}), language: currentLanguage }) })
+      .catch(error => console.warn("No se pudo sincronizar el idioma del perfil:", error));
+  }
+}
+function preferredLanguage(profileLanguage) {
+  if (profileLanguage === "en" || profileLanguage === "es") return profileLanguage;
+  try {
+    const saved = localStorage.getItem("neuroeval-language");
+    if (saved === "en" || saved === "es") return saved;
+  } catch (_) {}
+  return (navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es";
+}
+
+function applyLanguageToDom(root = document.body) {
+  if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || ["SCRIPT","STYLE","NOSCRIPT","TEXTAREA"].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const translated = translateUiText(node.nodeValue);
+    if (translated !== node.nodeValue) node.nodeValue = translated;
+  });
+  root.querySelectorAll?.("input[placeholder],textarea[placeholder]").forEach(element => {
+    const translated = translateUiText(element.getAttribute("placeholder"));
+    if (translated !== element.getAttribute("placeholder")) element.setAttribute("placeholder", translated);
+  });
+  root.querySelectorAll?.("input[type=button][value],input[type=submit][value],input[type=reset][value]").forEach(element => {
+    const translated = translateUiText(element.getAttribute("value"));
+    if (translated !== element.getAttribute("value")) element.setAttribute("value", translated);
+  });
+  root.querySelectorAll?.("[title],[aria-label],[alt]").forEach(element => {
+    ["title","aria-label","alt"].forEach(attribute => {
+      const original = element.getAttribute(attribute);
+      const translated = translateUiText(original);
+      if (original && translated !== original) element.setAttribute(attribute, translated);
+    });
+  });
+  root.querySelectorAll?.("option").forEach(element => {
+    const translated = translateUiText(element.textContent);
+    if (translated !== element.textContent) element.textContent = translated;
+  });
+}
+
+let languageDomObserver = null;
+function startLanguageObserver() {
+  if (languageDomObserver || !document.body) return;
+  languageDomObserver = new MutationObserver(records => {
+    records.forEach(record => {
+      if (record.type === "characterData") {
+        const translated = translateUiText(record.target.nodeValue);
+        if (translated !== record.target.nodeValue) record.target.nodeValue = translated;
+      } else if (record.type === "attributes") {
+        const attribute = record.attributeName;
+        const target = record.target;
+        const original = target.getAttribute(attribute);
+        if (attribute === "value" && !["button", "submit", "reset"].includes(target.type)) return;
+        const translated = translateUiText(original);
+        if (original && translated !== original) target.setAttribute(attribute, translated);
+      }
+      record.addedNodes?.forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const translated = translateUiText(node.nodeValue);
+          if (translated !== node.nodeValue) node.nodeValue = translated;
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          applyLanguageToDom(node);
+        }
+      });
+    });
+  });
+  languageDomObserver.observe(document.body, { childList: true, characterData: true, attributes: true, attributeFilter: ["placeholder", "title", "aria-label", "alt", "value"], subtree: true });
+}
+
+
 
 const EVALUATION_PRICE_COP = 4000; // Valor de respaldo visual; el servidor determina el importe real.
 // Solo bloquea el registro público de la cuenta reservada; no concede permisos.
@@ -414,7 +1500,8 @@ function show(viewId) {
     "payment-view",
     "result-view",
     "admin-view",
-    "parent-intro-view"
+    "parent-intro-view",
+    "sensitive-consent-view"
   ];
 
   views.forEach((id) => {
@@ -567,7 +1654,7 @@ async function registerWithEmail(event) {
 
     showMessage("auth-message", "Creando tu cuenta...");
 
-    profileData = { name, age, goal };
+    profileData = { name, age, goal, language: currentLanguage, country: "", city: "", regionalAnalyticsConsent: false, sensitiveDataConsent: false };
 
     const credential = await createUserWithEmailAndPassword(
       auth,
@@ -579,7 +1666,7 @@ async function registerWithEmail(event) {
 
     await api("/api/profile", {
       method: "POST",
-      body: JSON.stringify({ name, age, goal })
+      body: JSON.stringify(profileData)
     });
 
     // La pantalla de evaluación se inicia desde el observador de sesión.
@@ -680,13 +1767,24 @@ async function handleAuthState(user) {
       profileData = {
         name: savedProfile.name || user.displayName || user.email,
         age: savedProfile.age ?? null,
-        goal: savedProfile.goal || "Autoconocimiento"
+        goal: savedProfile.goal || "Autoconocimiento",
+        country: savedProfile.country || "",
+        city: savedProfile.city || "",
+        language: savedProfile.language || "es",
+        regionalAnalyticsConsent: savedProfile.regionalAnalyticsConsent === true,
+        sensitiveDataConsent: savedProfile.sensitiveDataConsent === true,
+        sensitiveDataConsentVersion: savedProfile.sensitiveDataConsentVersion || ""
       };
     } else {
       profileData = {
         name: user.displayName || user.email,
         age: null,
-        goal: "Autoconocimiento"
+        goal: "Autoconocimiento",
+        country: "",
+        city: "",
+        language: preferredLanguage(),
+        regionalAnalyticsConsent: false,
+        sensitiveDataConsent: false
       };
 
       await api("/api/profile", {
@@ -694,6 +1792,8 @@ async function handleAuthState(user) {
         body: JSON.stringify(profileData)
       });
     }
+
+    setLanguage(preferredLanguage(profileData?.language));
 
     // Si la pasarela devolvió al usuario a la plataforma, consultar primero
     // si existe una evaluación pendiente de pago.
@@ -765,6 +1865,7 @@ function setAdminTab(tab) {
     evaluations: hasAdminPermission("evaluations.view"),
     payments: hasAdminPermission("payments.view"),
     analytics: hasAdminPermission("payments.view"),
+    global: hasAdminPermission("dashboard.view"),
     pricing: hasAdminPermission("pricing.manage"),
     settings: hasAdminPermission("settings.view"),
     health: hasAdminPermission("settings.view"),
@@ -785,12 +1886,13 @@ function setAdminTab(tab) {
     button.setAttribute("aria-selected", String(active));
   });
   if (selected === "analytics") loadAdminCommercialAnalytics();
+  if (selected === "global") loadAdminGlobalAnalytics();
   if (selected === "pricing") loadAdminPricing();
   if (selected === "administrators") loadAdminAdministrators();
   if (selected === "audit") loadAdminAudit();
   if (selected === "settings") loadAdminHealth();
   if (selected === "health") loadAdminHealthDetails();
-  if (selected === "support") loadAdminSupportTickets();
+  if (selected === "support") { loadAdminSupportTickets(); if (currentIsPrimaryAdmin) loadAdminPrivacyRequests(); }
 }
 
 function showProfile() {
@@ -799,8 +1901,145 @@ function showProfile() {
   $("profile-email").textContent = currentUser.email || "No disponible";
   $("profile-age").textContent = profileData?.age == null ? "No registrada" : String(profileData.age) + " años";
   $("profile-goal").textContent = profileData?.goal || "Autoconocimiento";
+  $("profile-country-input").value = profileData?.country || "";
+  $("profile-city-input").value = profileData?.city || "";
+  $("profile-language-input").value = profileData?.language || currentLanguage;
+  $("profile-regional-consent").checked = profileData?.regionalAnalyticsConsent === true;
   closeAccountMenu();
   show("profile-view");
+}
+
+async function acceptSensitiveDataConsent(event) {
+  event.preventDefault();
+  const status = $("sensitive-consent-message");
+  if (!$("sensitive-consent-checkbox").checked) {
+    status.textContent = "Debes marcar la autorización expresa para continuar.";
+    return;
+  }
+  status.textContent = "Guardando autorización…";
+  try {
+    const response = await api("/api/privacy/consent", { method: "POST", body: JSON.stringify({ consent: true }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudo guardar la autorización.");
+    profileData = { ...(profileData || {}), sensitiveDataConsent: true, sensitiveDataConsentVersion: data.version || "2026-11-11-v2" };
+    startQuiz(profileData.name || currentUser?.displayName || currentUser?.email, profileData.age ?? null, profileData.goal || "Autoconocimiento");
+  } catch (error) { status.textContent = error.message; }
+}
+
+async function exportMyData() {
+  const button = $("settings-export-data"); button.disabled = true;
+  try {
+    const response = await api("/api/my-data/export");
+    if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.error || "No se pudo preparar la copia de tus datos."); }
+    const exported = await response.json();
+    exported.localProgress = readProgress();
+    downloadBlob(new Blob([JSON.stringify(exported, null, 2)], { type: "application/json" }), "neuroeval-pro-mis-datos.json");
+  } catch (error) { $("privacy-request-status").textContent = error.message; }
+  finally { button.disabled = false; }
+}
+
+async function loadPrivacyRequests() {
+  const target = $("privacy-request-list");
+  if (!target || !currentUser) return;
+  target.textContent = "Cargando solicitudes…";
+  try {
+    const response = await api("/api/privacy/requests"); const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudieron consultar tus solicitudes.");
+    target.replaceChildren();
+    const labels = { access: "Acceso / consulta", correction: "Rectificación", withdraw_consent: "Retiro de consentimiento", deletion: "Supresión de datos / cuenta" };
+    const requests = Array.isArray(data.requests) ? data.requests : [];
+    if (!requests.length) { const empty = document.createElement("p"); empty.className = "muted-text"; empty.textContent = "Todavía no tienes solicitudes de privacidad."; target.appendChild(empty); return; }
+    requests.forEach(item => {
+      const row = document.createElement("div"); row.className = "rounded-xl border border-slate-200 p-3";
+      const title = document.createElement("strong"); title.textContent = labels[item.requestType] || item.requestType;
+      const meta = document.createElement("p"); meta.className = "muted-text text-xs"; const statusLabels = { pending: currentLanguage === "en" ? "Pending" : "Pendiente", in_review: currentLanguage === "en" ? "Under review" : "En revisión", approved: currentLanguage === "en" ? "Approved" : "Aprobada", completed: currentLanguage === "en" ? "Completed" : "Completada", rejected: currentLanguage === "en" ? "Rejected" : "Rechazada" }; meta.textContent = (statusLabels[item.status] || item.status || "pending") + " · " + formatAdminDate(item.createdAt);
+      row.append(title, meta); target.appendChild(row);
+    });
+  } catch (error) { target.textContent = error.message; }
+}
+
+async function submitPrivacyRequest(event) {
+  event.preventDefault();
+  const button = $("privacy-request-submit"), status = $("privacy-request-status");
+  button.disabled = true; status.textContent = "Enviando solicitud…";
+  try {
+    const response = await api("/api/privacy/requests", { method: "POST", body: JSON.stringify({ requestType: $("privacy-request-type").value, details: $("privacy-request-details").value.trim() }) });
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || "No se pudo registrar la solicitud.");
+    $("privacy-request-details").value = ""; status.textContent = "Solicitud registrada. Podrás consultar su estado aquí.";
+    await loadPrivacyRequests();
+  } catch (error) { status.textContent = error.message; }
+  finally { button.disabled = false; }
+}
+
+function clearLocalProgress() {
+  if (!confirm("¿Borrar el progreso guardado en este dispositivo? Esta acción no elimina evaluaciones ni informes de tu cuenta.")) return;
+  try {
+    localStorage.removeItem(progressKey());
+    renderProgress();
+    $("privacy-request-status").textContent = "Se borró el progreso local de este dispositivo.";
+  } catch (error) {
+    $("privacy-request-status").textContent = "No se pudo borrar el progreso local.";
+  }
+}
+
+async function revokeSensitiveDataConsent() {
+  if (!confirm("¿Retirar tu autorización para futuras evaluaciones que traten datos sensibles? Esto no elimina automáticamente los registros anteriores.")) return;
+  const button = $("settings-revoke-sensitive"); button.disabled = true;
+  try {
+    const response = await api("/api/privacy/consent", { method: "POST", body: JSON.stringify({ consent: false }) });
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || "No se pudo retirar la autorización.");
+    profileData = { ...(profileData || {}), sensitiveDataConsent: false };
+    $("privacy-request-status").textContent = "Autorización retirada para evaluaciones futuras.";
+  } catch (error) { $("privacy-request-status").textContent = error.message; }
+  finally { button.disabled = false; }
+}
+
+async function loadAdminPrivacyRequests() {
+  const target = $("admin-privacy-list"); if (!target || !currentIsPrimaryAdmin) return;
+  target.textContent = "Cargando solicitudes…";
+  try {
+    const response = await api("/api/admin/privacy/requests"); const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudieron consultar las solicitudes.");
+    renderAdminPrivacyRequests(Array.isArray(data.requests) ? data.requests : []);
+  } catch (error) { target.textContent = error.message; }
+}
+
+function renderAdminPrivacyRequests(requests) {
+  const target = $("admin-privacy-list"); target.replaceChildren();
+  if (!requests.length) { const empty = document.createElement("p"); empty.className = "muted-text"; empty.textContent = "No hay solicitudes de privacidad."; target.appendChild(empty); return; }
+  const labels = currentLanguage === "en" ? { access: "Access", correction: "Correction", withdraw_consent: "Withdraw consent", deletion: "Deletion" } : { access: "Acceso", correction: "Rectificación", withdraw_consent: "Retiro de consentimiento", deletion: "Supresión" };
+  requests.forEach(item => {
+    const card = document.createElement("article"); card.className = "card space-y-2";
+    const title = document.createElement("strong"); title.textContent = (labels[item.requestType] || item.requestType) + " · " + (item.email || "Cuenta no disponible");
+    const meta = document.createElement("p"); meta.className = "muted-text text-xs"; const statusLabels = { pending: currentLanguage === "en" ? "Pending" : "Pendiente", in_review: currentLanguage === "en" ? "Under review" : "En revisión", approved: currentLanguage === "en" ? "Approved" : "Aprobada", completed: currentLanguage === "en" ? "Completed" : "Completada", rejected: currentLanguage === "en" ? "Rejected" : "Rechazada" }; meta.textContent = (statusLabels[item.status] || item.status || "pending") + " · " + formatAdminDate(item.createdAt);
+    const details = document.createElement("p"); details.className = "text-sm"; details.textContent = item.details || "Sin detalle adicional.";
+    const actions = document.createElement("div"); actions.className = "flex flex-wrap gap-2";
+    const addAction = (label, action) => { const button = document.createElement("button"); button.type = "button"; button.className = "btn outline"; button.textContent = label; button.addEventListener("click", action); actions.appendChild(button); };
+    if (item.status === "pending") addAction("En revisión", () => updateAdminPrivacyRequest(item.id, "in_review"));
+    if (["pending","in_review"].includes(item.status)) addAction("Rechazar", () => updateAdminPrivacyRequest(item.id, "rejected"));
+    if (item.requestType === "deletion" && item.status === "in_review") addAction("Aprobar supresión", () => updateAdminPrivacyRequest(item.id, "approved"));
+    if (item.requestType !== "deletion" && ["pending","in_review"].includes(item.status)) addAction("Marcar completada", () => updateAdminPrivacyRequest(item.id, "completed"));
+    if (item.requestType === "deletion" && item.status === "approved") addAction("Completar supresión", () => completeAdminPrivacyDeletion(item.id));
+    card.append(title, meta, details, actions); target.appendChild(card);
+  });
+}
+
+async function updateAdminPrivacyRequest(id, status) {
+  try {
+    const response = await api("/api/admin/privacy/requests/" + encodeURIComponent(id), { method: "PATCH", body: JSON.stringify({ status }) });
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || "No se pudo actualizar la solicitud.");
+    await loadAdminPrivacyRequests();
+  } catch (error) { alert(error.message); }
+}
+
+async function completeAdminPrivacyDeletion(id) {
+  if (!confirm("Esta acción es irreversible. Se eliminarán la cuenta, respuestas, resultados y tickets. Solo se conservarán referencias mínimas de pagos Wompi que estén pendientes o confirmados. ¿Confirmas que la solicitud fue verificada y aprobada?")) return;
+  try {
+    const response = await api("/api/admin/privacy/requests/" + encodeURIComponent(id) + "/complete-deletion", { method: "POST" });
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || "No se pudo completar la supresión.");
+    alert("Supresión completada. Evaluaciones eliminadas: " + data.deletedEvaluations + ". Registros mínimos de pago conservados: " + data.retainedPaymentRecords + ".");
+    await loadAdminPrivacyRequests();
+  } catch (error) { alert(error.message); }
 }
 
 function showSettings() {
@@ -808,6 +2047,7 @@ function showSettings() {
   $("settings-email").textContent = currentUser.email || "No disponible";
   closeAccountMenu();
   show("settings-view");
+  loadPrivacyRequests();
 }
 
 function closeAccountMenu() {
@@ -859,6 +2099,8 @@ function openParentEvaluation() {
   $("parent-setting-school").checked = false;
   $("parent-setting-social").checked = false;
   $("parent-guardian-consent").checked = false;
+  $("parent-sensitive-consent").checked = false;
+  $("parent-child-informed-consent").checked = false;
   showMessage("parent-intro-message", "");
   show("parent-intro-view");
 }
@@ -881,8 +2123,14 @@ function startParentEvaluation(event) {
   if (!$("parent-guardian-consent").checked) {
     return showMessage("parent-intro-message", "Confirma que tienes autorización para proporcionar esta información.", true);
   }
+  if (!$("parent-sensitive-consent").checked) {
+    return showMessage("parent-intro-message", "Debes autorizar expresamente el tratamiento de los datos sensibles del menor para continuar.", true);
+  }
+  if (!$("parent-child-informed-consent").checked) {
+    return showMessage("parent-intro-message", "Confirma que explicaste la actividad al menor y escuchaste su opinión de acuerdo con su edad y madurez.", true);
+  }
   currentEvaluationType = "parent_observation";
-  parentEvaluationContext = { childAge, relationship, settings, consent: true };
+  parentEvaluationContext = { childAge, relationship, settings, consent: true, sensitiveDataConsent: true, minorHeard: true, consentAt: new Date().toISOString(), consentVersion: "2026-11-11-v2" };
   profileData = { ...(profileData || {}), name: profileData?.name || currentUser.displayName || currentUser.email, goal: "Observación familiar de indicadores asociados al TDAH" };
   questions = parentQuestionBank.map(([category, question, dimension, icon, example]) => {
     const ageExample = childAge <= 7
@@ -907,7 +2155,12 @@ function startAdhdEvaluation() {
     showMessage("auth-message", "Inicia sesión para comenzar una evaluación.", true);
     return;
   }
-
+  if (profileData?.sensitiveDataConsent !== true || profileData?.sensitiveDataConsentVersion !== "2026-11-11-v2") {
+    $("sensitive-consent-checkbox").checked = false;
+    showMessage("sensitive-consent-message", "");
+    show("sensitive-consent-view");
+    return;
+  }
   startQuiz(
     profileData?.name || currentUser.displayName || currentUser.email,
     profileData?.age ?? null,
@@ -976,7 +2229,7 @@ function formatProgressEvaluationDate(value) {
     if (Number.isFinite(seconds)) dateValue = seconds * 1000;
   }
   const date = new Date(dateValue);
-  return Number.isNaN(date.getTime()) ? "Fecha no disponible" : date.toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" });
+  return Number.isNaN(date.getTime()) ? "Fecha no disponible" : date.toLocaleString(currentLanguage === "en" ? "en-US" : "es-CO", { dateStyle: "medium", timeStyle: "short" });
 }
 
 async function loadEvaluationHistory() {
@@ -1176,7 +2429,7 @@ function openGame(game) {
       choices([answer,answer+2,Math.max(0,answer-3),answer+5].sort(()=>Math.random()-.5),answer,"¡Cálculo correcto!",Math.max(5,15-Math.floor(level/2)));
     }
     if(game==="words"){
-      const bank=["NUBE","LÁPIZ","RÍO","TAZA","LUNA","FLOR","RELOJ","PAN","LLAVE","MONTAÑA","LIBRO","VENTANA","CAMINO","NARANJA","ESTRELLA","JARDÍN","MÚSICA","TREN"];
+      const bank=currentLanguage==="en"?["CLOUD","PENCIL","RIVER","CUP","MOON","FLOWER","CLOCK","BREAD","KEY","MOUNTAIN","BOOK","WINDOW","ROAD","ORANGE","STAR","GARDEN","MUSIC","TRAIN"]:["NUBE","LÁPIZ","RÍO","TAZA","LUNA","FLOR","RELOJ","PAN","LLAVE","MONTAÑA","LIBRO","VENTANA","CAMINO","NARANJA","ESTRELLA","JARDÍN","MÚSICA","TREN"];
       const len=Math.min(3+Math.floor(level/2),16),selected=bank.slice().sort(()=>Math.random()-.5).slice(0,len);
       const display=document.createElement("div");display.className="game-sequence";display.textContent=selected.join(" · ");intro.textContent="Memoriza estas "+len+" palabras y después reconoce una.";content.appendChild(display);
       content.appendChild(gameButton("Ocultar y jugar",()=>{
@@ -1355,7 +2608,7 @@ async function startQuiz(name, age, goal) {
   currentEvaluationType = "self_report";
   parentEvaluationContext = null;
   activeChoices = choices;
-  profileData = { name, age, goal };
+  profileData = { ...(profileData || {}), name, age, goal };
   // Orden temático fijo para que la experiencia tenga una progresión comprensible.
   questions = [...bank];
   answers = new Array(questions.length).fill(null);
@@ -1488,7 +2741,7 @@ async function finishEvaluation() {
 
     lastEvaluationId = data.id;
     paymentReference = data.reference || null;
-    if ($("payment-price")) $("payment-price").textContent = "$" + Number(data.amountCop || 4000).toLocaleString("es-CO") + " COP";
+    if ($("payment-price")) $("payment-price").textContent = "$" + Number(data.amountCop || 4000).toLocaleString(currentLanguage === "en" ? "en-US" : "es-CO") + " COP";
 
     await showPaymentForExistingEvaluation();
 
@@ -1569,7 +2822,7 @@ async function createWompiCheckout(promoCode = "") {
     if (Number(data.amountInCents) !== Number(data.amountCop) * 100) {
       throw new Error("El valor de pago recibido no coincide con el precio configurado.");
     }
-    const money = amount => "$" + Number(amount || 0).toLocaleString("es-CO") + " COP";
+    const money = amount => "$" + Number(amount || 0).toLocaleString(currentLanguage === "en" ? "en-US" : "es-CO") + " COP";
     $("payment-price").textContent = money(data.amountCop);
     $("payment-discount").textContent = Number(data.discountCop) > 0
       ? "Precio original: " + money(data.originalAmountCop) + " · Descuento " + (data.promoCode || "") + ": −" + money(data.discountCop)
@@ -1802,8 +3055,8 @@ async function loadOwnResult(evaluationId) {
 async function downloadEvaluationPdf(evaluationId) {
   if (!evaluationId) { alert("No se encontró el identificador de la evaluación."); return; }
   try {
-    const response = await api("/api/my-evaluations/" + encodeURIComponent(evaluationId) + "/pdf");
-    downloadBlob(await response.blob(), "NeuroEval-Pro-informe.pdf");
+    const response = await api("/api/my-evaluations/" + encodeURIComponent(evaluationId) + "/pdf?language=" + encodeURIComponent(currentLanguage));
+    downloadBlob(await response.blob(), currentLanguage === "en" ? "NeuroEval-Pro-report.pdf" : "NeuroEval-Pro-informe.pdf");
   } catch (error) { alert(error.message); }
 }
 
@@ -1815,8 +3068,8 @@ async function downloadOwnPdf() {
 ========================================================= */
 
 let adminOverviewCache = null;
-function formatAdminDate(value) { if (!value) return "—"; const d = new Date(value); return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString("es-CO"); }
-function formatCop(value) { return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(value||0)); }
+function formatAdminDate(value) { if (!value) return "—"; const d = new Date(value); return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString(currentLanguage === "en" ? "en-US" : "es-CO"); }
+function formatCop(value) { return new Intl.NumberFormat(currentLanguage === "en" ? "en-US" : "es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(value||0)); }
 function adminCell(row,value) { const cell=document.createElement("td"); cell.textContent=value===null||value===undefined||value===""?"—":String(value); row.appendChild(cell); return cell; }
 function adminEmptyRow(tbody,colspan,message) { tbody.replaceChildren(); const row=document.createElement("tr"),cell=document.createElement("td"); cell.colSpan=colspan; cell.className="muted-text"; cell.textContent=message; row.appendChild(cell); tbody.appendChild(row); }
 function renderAdminEvaluations(records,targetId="admin-rows") {
@@ -1914,7 +3167,7 @@ async function loadAdminHealthDetails() {
     [["Tiempo activo",Math.floor(data.uptimeSeconds/3600)+" h"],["Respuesta",data.responseMs+" ms"],["Memoria RAM",data.memory.rssMb+" MB"],["Motor Node.js",data.runtime]].forEach(([label,value])=>{
       const card=document.createElement("div");card.className="card";const title=document.createElement("p");title.className="muted-text text-xs";title.textContent=label;const amount=document.createElement("strong");amount.className="text-lg";amount.textContent=value;card.append(title,amount);runtime.appendChild(card);
     });
-    $("admin-health-checked-at").textContent="Última comprobación: "+new Date(data.checkedAt).toLocaleString("es-CO");
+    $("admin-health-checked-at").textContent="Última comprobación: "+new Date(data.checkedAt).toLocaleString(currentLanguage === "en" ? "en-US" : "es-CO");
   } catch(error) { summary.textContent="No fue posible ejecutar el diagnóstico: "+error.message; }
 }
 
@@ -1941,7 +3194,7 @@ function renderAdminDashboardCharts(records) {
     const now=new Date(), buckets=[];
   for(let offset=5;offset>=0;offset--){
     const date=new Date(now.getFullYear(),now.getMonth()-offset,1);
-    buckets.push({key:date.getFullYear()+"-"+date.getMonth(),label:date.toLocaleDateString("es-CO",{month:"short"}).replace(".",""),count:0});
+    buckets.push({key:date.getFullYear()+"-"+date.getMonth(),label:date.toLocaleDateString(currentLanguage === "en" ? "en-US" : "es-CO",{month:"short"}).replace(".",""),count:0});
   }
   records.forEach(record=>{
     const date=new Date(record.createdAt);
@@ -2010,6 +3263,7 @@ async function loadAdmin() {
     renderAdminPayments(records.filter(record=>record.paymentProvider==="wompi"||record.paymentReference||record.wompiTransactionId));
     renderAdminDashboardCharts(records);
     setAdminTab("overview");
+    if (currentIsPrimaryAdmin) loadAdminPrivacyRequests();
   }catch(error){console.error("Panel administrativo:",error);alert("No se pudo cargar el panel: "+error.message);}
 }
 const ADMIN_PERMISSION_LABELS = {
@@ -2037,7 +3291,7 @@ async function loadAdminCommercialAnalytics() {
     if (!response.ok) throw new Error(data.error || "No se pudo consultar la analítica.");
     const totals = data.totals || {};
     summary.replaceChildren();
-    [["Ingresos confirmados",formatCop(totals.revenueCop)],["Conversión a pago",Number(totals.conversionPercent||0).toLocaleString("es-CO")+"%"],["Ticket promedio",formatCop(totals.averageTicketCop)],["Evaluaciones pagadas",totals.paid||0],["Pagos pendientes",totals.pending||0],["Descuentos aplicados",formatCop(totals.discountsCop)]].forEach(([label,value])=>{
+    [["Ingresos confirmados",formatCop(totals.revenueCop)],["Conversión a pago",Number(totals.conversionPercent||0).toLocaleString(currentLanguage === "en" ? "en-US" : "es-CO")+"%"],["Ticket promedio",formatCop(totals.averageTicketCop)],["Evaluaciones pagadas",totals.paid||0],["Pagos pendientes",totals.pending||0],["Descuentos aplicados",formatCop(totals.discountsCop)]].forEach(([label,value])=>{
       const card=document.createElement("div");card.className="card";const title=document.createElement("p");title.className="muted-text";title.textContent=label;
       const amount=document.createElement("p");amount.className="text-2xl font-extrabold mt-2";amount.textContent=value;card.append(title,amount);summary.appendChild(card);
     });
@@ -2072,9 +3326,219 @@ async function loadAdminCommercialAnalytics() {
       const detail=document.createElement("p");detail.className="muted-text text-sm";detail.textContent="Evaluaciones asociadas: "+item.evaluationsUsingCode+" · Límite: "+(item.maxUses>0?item.maxUses:"Sin límite");
       left.append(name,detail);const count=document.createElement("span");count.className="font-bold";count.textContent="Usos reservados: "+item.uses;row.append(left,count);promos.appendChild(row);
     });
-    $("admin-analytics-updated").textContent="Actualizado: "+new Date(data.generatedAt||Date.now()).toLocaleString("es-CO")+" · Fuente: registros almacenados.";
+    $("admin-analytics-updated").textContent="Actualizado: "+new Date(data.generatedAt||Date.now()).toLocaleString(currentLanguage === "en" ? "en-US" : "es-CO")+" · Fuente: registros almacenados.";
   }catch(error){summary.textContent="No se pudo cargar la analítica: "+error.message;revenue.textContent="—";conversion.textContent="—";promos.textContent="—";}
 }
+
+let worldMapGeometryPromise;
+async function renderWorldMap(rows = []) {
+  const host = $("admin-world-map");
+  if (!host) return;
+  host.replaceChildren();
+  const isEnglish = currentLanguage === "en";
+  const mapLabel = isEnglish
+    ? "World country map with aggregated user groups highlighted"
+    : "Mapa mundial con países que tienen grupos agregados de usuarios";
+  host.setAttribute("aria-label", mapLabel);
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 900 440");
+  svg.setAttribute("role", "group");
+  svg.setAttribute("aria-label", mapLabel);
+
+  const project = (lon, lat) => ({
+    x: (lon + 180) / 360 * 900,
+    y: (90 - Math.max(-85, Math.min(85, lat))) / 180 * 440
+  });
+
+  // Natural Earth representa algunos polígonos a ambos lados del meridiano 180°.
+  // Desenrollamos sus longitudes y recortamos cada anillo al marco del mapa para
+  // evitar líneas que atraviesen visualmente todo el planeta.
+  const clipAtLongitude = (points, boundary, keepGreater) => {
+    if (!points.length) return [];
+    const output = [];
+    let previous = points[points.length - 1];
+    let previousInside = keepGreater ? previous.lon >= boundary : previous.lon <= boundary;
+    for (const current of points) {
+      const currentInside = keepGreater ? current.lon >= boundary : current.lon <= boundary;
+      if (currentInside !== previousInside) {
+        const denominator = current.lon - previous.lon;
+        if (denominator !== 0) {
+          const ratio = (boundary - previous.lon) / denominator;
+          output.push({
+            lon: boundary,
+            lat: previous.lat + (current.lat - previous.lat) * ratio
+          });
+        }
+      }
+      if (currentInside) output.push(current);
+      previous = current;
+      previousInside = currentInside;
+    }
+    return output;
+  };
+
+  const ringPaths = ring => {
+    if (!Array.isArray(ring) || ring.length < 4) return [];
+    const source = ring.slice(0, -1)
+      .filter(point => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])))
+      .map(point => ({ lon: Number(point[0]), lat: Number(point[1]) }));
+    if (source.length < 3) return [];
+
+    const unwrapped = [source[0]];
+    for (let index = 1; index < source.length; index++) {
+      let lon = source[index].lon;
+      const previous = unwrapped[index - 1].lon;
+      while (lon - previous > 180) lon -= 360;
+      while (lon - previous < -180) lon += 360;
+      unwrapped.push({ lon, lat: source[index].lat });
+    }
+    let closingLon = source[0].lon;
+    const lastLon = unwrapped[unwrapped.length - 1].lon;
+    while (closingLon - lastLon > 180) closingLon -= 360;
+    while (closingLon - lastLon < -180) closingLon += 360;
+    unwrapped.push({ lon: closingLon, lat: source[0].lat });
+
+    const paths = [];
+    for (const shift of [-360, 0, 360]) {
+      let clipped = unwrapped.map(point => ({ lon: point.lon + shift, lat: point.lat }));
+      clipped = clipAtLongitude(clipped, -180, true);
+      clipped = clipAtLongitude(clipped, 180, false);
+      if (clipped.length < 3) continue;
+      const commands = clipped.map((point, index) => {
+        const projected = project(point.lon, point.lat);
+        return (index === 0 ? "M" : "L") + projected.x.toFixed(2) + " " + projected.y.toFixed(2);
+      });
+      paths.push(commands.join(" ") + " Z");
+    }
+    return paths;
+  };
+
+  const geometryPath = geometry => {
+    if (!geometry) return "";
+    const polygons = geometry.type === "Polygon"
+      ? [geometry.coordinates]
+      : geometry.type === "MultiPolygon" ? geometry.coordinates : [];
+    return polygons.flatMap(polygon =>
+      polygon.flatMap(ringPaths)
+    ).join(" ");
+  };
+
+  try {
+    if (!worldMapGeometryPromise) {
+      worldMapGeometryPromise = fetch("/data/world-countries-110m.geojson", { cache: "force-cache" })
+        .then(response => {
+          if (!response.ok) throw new Error("No se pudo cargar la cartografía mundial.");
+          return response.json();
+        })
+        .then(data => {
+          if (data.type !== "FeatureCollection" || !Array.isArray(data.features)) {
+            throw new Error("El archivo cartográfico no es válido.");
+          }
+          return data;
+        })
+        .catch(error => {
+          worldMapGeometryPromise = null;
+          throw error;
+        });
+    }
+
+    const world = await worldMapGeometryPromise;
+    const counts = new Map((Array.isArray(rows) ? rows : [])
+      .filter(row => row.code)
+      .map(row => [String(row.code).toUpperCase(), Number(row.count) || 0]));
+
+    world.features.forEach(feature => {
+      const code = String(feature.properties?.iso_a2 || "").toUpperCase();
+      const name = String(
+        (isEnglish ? feature.properties?.name_en : feature.properties?.name_es)
+        || feature.properties?.name_en || code || ""
+      );
+      const count = counts.get(code) || 0;
+      const pathData = geometryPath(feature.geometry);
+      if (!pathData) return;
+
+      const path = document.createElementNS(NS, "path");
+      path.setAttribute("data-country-code", code);
+      path.setAttribute("d", pathData);
+      path.setAttribute("class", "land" + (count >= 10 ? " has-users" : ""));
+      path.setAttribute("fill-rule", "evenodd");
+      path.setAttribute("tabindex", count >= 10 ? "0" : "-1");
+
+      if (count >= 10) {
+        const formatted = count.toLocaleString(isEnglish ? "en-US" : "es-CO");
+        const description = name + ": " + formatted + (isEnglish ? " users" : " usuarios");
+        path.setAttribute("aria-label", description);
+        path.setAttribute("role", "button");
+        const title = document.createElementNS(NS, "title");
+        title.textContent = description;
+        path.appendChild(title);
+        const announce = () => {
+          const status = $("admin-global-status");
+          if (status) status.textContent = description;
+        };
+        path.addEventListener("click", announce);
+        path.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            announce();
+          }
+        });
+      }
+      svg.appendChild(path);
+    });
+
+    if (!counts.size || ![...counts.values()].some(count => count >= 10)) {
+      const note = document.createElementNS(NS, "text");
+      note.setAttribute("x", "450");
+      note.setAttribute("y", "220");
+      note.setAttribute("text-anchor", "middle");
+      note.setAttribute("class", "map-point-label");
+      note.textContent = isEnglish
+        ? "No country groups meet the privacy threshold yet"
+        : "Aún no hay grupos de países que cumplan el umbral de privacidad";
+      svg.appendChild(note);
+    }
+    host.appendChild(svg);
+  } catch (error) {
+    host.textContent = isEnglish
+      ? "The world map could not be loaded. Country statistics remain available below."
+      : "No fue posible cargar el mapa mundial. Las estadísticas por país siguen disponibles abajo.";
+    const status = $("admin-global-status");
+    if (status) status.textContent = isEnglish
+      ? "The map could not be loaded. Country statistics remain available below."
+      : "No fue posible cargar el mapa. Las estadísticas por país siguen disponibles abajo.";
+  }
+}
+
+async function loadAdminGlobalAnalytics() {
+  const ids={countries:"admin-global-countries",cities:"admin-global-cities",ages:"admin-global-ages",languages:"admin-global-languages"};
+  const status=$("admin-global-status"); if(!status||!hasAdminPermission("dashboard.view"))return;
+  status.textContent="Calculando estadísticas agregadas…";
+  Object.values(ids).forEach(id=>{const node=$(id);if(node)node.textContent="Cargando…";});
+  try {
+    const response=await api("/api/admin/analytics/global"); const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"No se pudo consultar la analítica internacional.");
+    await renderWorldMap(data.countries || []);
+    Object.entries(ids).forEach(([key,id])=>{
+      const host=$(id);if(!host)return;host.replaceChildren();
+      const rows=Array.isArray(data[key])?data[key]:[];
+      if(!rows.length){host.textContent="Todavía no hay grupos con suficientes usuarios para mostrarlos.";return;}
+      const max=Math.max(1,...rows.map(row=>Number(row.count||0)));
+      rows.forEach(row=>{
+        const item=document.createElement("div");item.className="space-y-1";
+        const line=document.createElement("div");line.className="flex justify-between gap-3 text-sm";
+        const label=document.createElement("span");label.textContent=currentLanguage==="en"?(row.labelEn||row.label):row.label;
+        const count=document.createElement("strong");count.textContent=Number(row.count).toLocaleString((currentLanguage === "en" ? "en-US" : "es-CO"));line.append(label,count);
+        const track=document.createElement("div");track.className="h-2 rounded-full bg-slate-100 overflow-hidden";
+        const bar=document.createElement("div");bar.className="h-full rounded-full";bar.style.width=(Number(row.count)/max*100)+"%";bar.style.background="linear-gradient(90deg,#7467f0,#6ce4dc)";
+        track.appendChild(bar);item.append(line,track);host.appendChild(item);
+      });
+    });
+    status.textContent=(currentLanguage==="en"?"Updated: ":"Actualizado: ")+new Date(data.generatedAt).toLocaleString(currentLanguage==="en"?"en-US":(currentLanguage === "en" ? "en-US" : "es-CO"))+" · "+Number(data.users||0).toLocaleString(currentLanguage==="en"?"en-US":(currentLanguage === "en" ? "en-US" : "es-CO"))+(currentLanguage==="en"?" profiles analyzed":" perfiles analizados")+(data.truncated?(currentLanguage==="en"?" · limited to the first 50,000 profiles":" · limitado a los primeros 50.000 perfiles"):"")+(currentLanguage==="en"?". Groups under 10 are hidden.":". Se ocultan grupos menores de 10.");
+  } catch(error) {status.textContent=(currentLanguage==="en"?"Could not load statistics: ":"No fue posible cargar las estadísticas: ")+error.message;}
+}
+
 
 async function loadCustomerSupportTickets() {
   const target = $("customer-support-list");
@@ -2332,7 +3796,7 @@ function renderAdminPromos(items) {
     const detail = document.createElement("p");
     detail.className = "muted-text text-sm mt-1";
     detail.textContent = "Usos: " + item.uses + (Number(item.maxUses) > 0 ? " / " + item.maxUses : " · Sin límite") +
-      (item.expiresAt ? " · Vence: " + new Date(item.expiresAt).toLocaleDateString("es-CO") : " · Sin vencimiento") +
+      (item.expiresAt ? " · Vence: " + new Date(item.expiresAt).toLocaleDateString(currentLanguage === "en" ? "en-US" : "es-CO") : " · Sin vencimiento") +
       (item.newCustomersOnly ? " · Solo nuevos clientes" : "");
     const status = document.createElement("span");
     status.className = "text-xs font-bold " + (item.active ? "text-emerald-500" : "text-amber-500");
@@ -2632,7 +4096,7 @@ async function viewAdminEvaluation(id) {
     appendAdminDetailLine(content, "Objetivo", evaluation.goal);
     appendAdminDetailLine(content, "Estado del pago", evaluation.paymentStatus);
     appendAdminDetailLine(content, "Fecha", evaluation.createdAt
-      ? new Date(evaluation.createdAt).toLocaleString("es-CO") : "—");
+      ? new Date(evaluation.createdAt).toLocaleString(currentLanguage === "en" ? "en-US" : "es-CO") : "—");
 
     const resultHeading = document.createElement("h3");
     resultHeading.className = "text-lg font-extrabold mt-6 mb-2";
@@ -2710,7 +4174,7 @@ function closeAdminDetail() {
 async function downloadAdminPdf(id) {
   try {
     const response = await api(
-      `/api/admin/evaluations/${encodeURIComponent(id)}/pdf`
+      `/api/admin/evaluations/${encodeURIComponent(id)}/pdf?language=${encodeURIComponent(currentLanguage)}`
     );
 
     downloadBlob(await response.blob(), `NeuroEval-Pro-${id}.pdf`);
@@ -2748,6 +4212,14 @@ async function logout() {
 ========================================================= */
 
 function registerEventListeners() {
+  const languageSelect = $("global-language");
+  if (languageSelect) {
+    languageSelect.value = preferredLanguage();
+    setLanguage(languageSelect.value);
+    languageSelect.addEventListener("change", () => setLanguage(languageSelect.value, { persist: true }));
+  }
+  startLanguageObserver();
+
   $("show-login").addEventListener("click", () => switchAuth("login"));
   $("show-register").addEventListener("click", () => switchAuth("register"));
 
@@ -2764,6 +4236,21 @@ function registerEventListeners() {
   $("request-code-form").addEventListener("submit", requestPasswordCode);
   $("confirm-reset-form").addEventListener("submit", confirmPasswordReset);
 
+  $("profile-locale-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = $("profile-locale-message");
+    status.textContent = currentLanguage === "en" ? "Saving preferences…" : "Guardando preferencias…";
+    try {
+      const regionalAnalyticsConsent = $("profile-regional-consent").checked;
+      const next = { ...(profileData || {}), country: regionalAnalyticsConsent ? $("profile-country-input").value.trim() : "", city: regionalAnalyticsConsent ? $("profile-city-input").value.trim() : "", language: $("profile-language-input").value, regionalAnalyticsConsent };
+      const response = await api("/api/profile", { method: "POST", body: JSON.stringify(next) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No se pudieron guardar las preferencias.");
+      profileData = { ...next, ...(result.profile || {}) };
+      setLanguage(next.language);
+      status.textContent = currentLanguage === "en" ? "Regional preferences saved." : "Preferencias regionales guardadas.";
+    } catch (error) { status.textContent = error.message; }
+  });
   $("account-menu-toggle").addEventListener("click", toggleAccountMenu);
   $("menu-profile").addEventListener("click", showProfile);
   $("menu-tests").addEventListener("click", () => {
@@ -2785,6 +4272,13 @@ function registerEventListeners() {
     closeAccountMenu();
     openForgotPassword(currentUser?.email || "");
   });
+  $("sensitive-consent-form").addEventListener("submit", acceptSensitiveDataConsent);
+  $("sensitive-consent-cancel").addEventListener("click", () => showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email));
+  $("settings-export-data").addEventListener("click", exportMyData);
+  $("privacy-request-form").addEventListener("submit", submitPrivacyRequest);
+  $("settings-revoke-sensitive").addEventListener("click", revokeSensitiveDataConsent);
+  $("settings-clear-local-progress").addEventListener("click", clearLocalProgress);
+  $("admin-privacy-refresh").addEventListener("click", loadAdminPrivacyRequests);
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".account-menu-wrap")) closeAccountMenu();
   });
@@ -2839,6 +4333,7 @@ function registerEventListeners() {
   $("admin-evaluation-search").addEventListener("input", filterAdminTables);
   $("admin-health-refresh").addEventListener("click", loadAdminHealth);
   $("admin-analytics-refresh").addEventListener("click", loadAdminCommercialAnalytics);
+  $("admin-global-refresh").addEventListener("click", loadAdminGlobalAnalytics);
   $("admin-health-details-refresh").addEventListener("click", loadAdminHealthDetails);
   $("admin-backup-export").addEventListener("click", exportAdminBackup);
   $("admin-support-refresh").addEventListener("click", loadAdminSupportTickets);
@@ -2858,4 +4353,5 @@ function registerEventListeners() {
    16. ARRANQUE
 ========================================================= */
 
+setLanguage(preferredLanguage());
 initializeFirebase();

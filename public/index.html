@@ -299,6 +299,12 @@
     .admin-sidebar .admin-tab:hover:not(.primary) { background:#25274b;border-color:#42436d;color:#f0eaff; }
     .admin-content { min-width:0; }
     .admin-content .admin-panel { min-width:0; }
+    .world-map-shell { width:100%; overflow:hidden; border:1px solid rgba(148,163,184,.22); border-radius:16px; background:linear-gradient(180deg,#101a35,#172543); min-height:240px; }
+    .world-map-shell svg { display:block; width:100%; height:auto; }
+    .world-map-shell .land { fill:#344765; stroke:#607493; stroke-width:.65; opacity:.88; transition:fill .15s ease,opacity .15s ease; }
+    .world-map-shell .land.has-users { fill:#2dd4bf; stroke:#d7fffa; opacity:1; cursor:pointer; }
+    .world-map-shell .land.has-users:focus { outline:none; stroke:#fff; stroke-width:2.5; }
+    .world-map-shell .map-point-label { fill:#f8fafc; font:12px sans-serif; }
     @media(max-width:850px) {
       .admin-workspace { grid-template-columns:1fr; }
       .admin-sidebar { position:static;flex-direction:row;overflow-x:auto;align-items:center; }
@@ -323,6 +329,8 @@
   <header class="topbar">
     <div class="brand"><span class="brand-mark">✳</span><span>NeuroEval <span style="color:#a16bff">Pro</span></span></div>
     <div class="topbar-right">
+      <label for="global-language" class="sr-only">Idioma / Language</label>
+      <select id="global-language" class="field" aria-label="Language" style="width:auto;min-width:112px;padding:8px 10px;font-size:12px"><option value="es">🌐 Español</option><option value="en">🌐 English</option></select>
       <span><i class="status-dot"></i>Plataforma segura</span>
       <div class="account-menu-wrap">
         <button id="account-menu-toggle" class="account-menu-toggle hidden" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="account-menu">
@@ -399,7 +407,7 @@
               <div><label class="field-label" for="reg-age">Edad</label><input class="field" id="reg-age" type="number" min="18" max="99" placeholder="Edad" required></div>
               <div><label class="field-label" for="reg-goal">Objetivo</label><select class="field" id="reg-goal" required><option value="">Seleccionar</option><option value="TDAH">Explorar atención</option><option value="concentración y organización">Concentración</option><option value="fatiga o ansiedad laboral">Estrés y fatiga</option><option value="autoconocimiento">Autoconocimiento</option></select></div>
             </div>
-            <label class="flex gap-2 items-start text-xs text-slate-500 mt-4"><input id="consent" type="checkbox" class="mt-1" required><span>He leído y acepto el aviso de privacidad y el tratamiento de mis datos para esta experiencia.</span></label>
+            <label class="flex gap-2 items-start text-xs text-slate-500 mt-4"><input id="consent" type="checkbox" class="mt-1" required><span>He leído el <a href="/legal/privacy-es.html" data-legal-link="privacy" target="_blank" rel="noopener">aviso de privacidad</a> y acepto los <a href="/legal/terms-es.html" data-legal-link="terms" target="_blank" rel="noopener">términos de uso</a>.</span></label>
             <button class="btn primary w-full mt-5" type="submit">Crear cuenta y comenzar →</button>
           </form>
 
@@ -620,6 +628,14 @@
           <div class="profile-row"><span>Edad</span><strong id="profile-age">—</strong></div>
           <div class="profile-row"><span>Objetivo</span><strong id="profile-goal">—</strong></div>
         </div>
+        <form id="profile-locale-form" class="grid md:grid-cols-2 gap-3 mt-5">
+          <div><label class="field-label" for="profile-country-input">País (opcional)</label><input class="field" id="profile-country-input" maxlength="80" autocomplete="country-name" placeholder="Ej. Colombia"></div>
+          <div><label class="field-label" for="profile-city-input">Ciudad (opcional)</label><input class="field" id="profile-city-input" maxlength="100" autocomplete="address-level2" placeholder="Ej. Medellín"></div>
+          <div class="md:col-span-2"><label class="field-label" for="profile-language-input">Idioma preferido</label><select class="field" id="profile-language-input"><option value="es">Español</option><option value="en">English</option></select></div>
+          <div class="md:col-span-2"><label class="flex items-start gap-3 text-sm leading-6"><input id="profile-regional-consent" type="checkbox" class="mt-1"><span>Acepto compartir voluntariamente mi país, ciudad, rango de edad e idioma para estadísticas agregadas. Solo se muestran grupos de 10 o más perfiles.</span></label></div>
+          <div class="md:col-span-2"><button class="btn outline" type="submit">Guardar preferencias regionales</button><p id="profile-locale-message" class="message" role="status"></p></div>
+        </form>
+        <p class="muted-text text-xs mt-3">El consentimiento es voluntario. Si lo aceptas, tu país, ciudad, rango de edad e idioma se usan solo en estadísticas agregadas; nunca se muestra tu ubicación individual ni se registra GPS.</p>
         <button id="profile-back" class="btn primary mt-6" type="button">Volver a mis pruebas</button>
       </div>
     </section>
@@ -637,6 +653,24 @@
           <button id="settings-password" class="btn outline mt-4" type="button">Cambiar contraseña</button>
         </div>
         <div class="notice mt-5">Tus respuestas de evaluación se utilizan para generar el informe orientativo. Evita compartir tu contraseña y cierra sesión si utilizas un dispositivo compartido.</div>
+        <div class="mt-5 rounded-xl border border-slate-200 p-4">
+          <h2 class="font-bold">Tus datos y privacidad</h2>
+          <p class="muted-text mt-1">Consulta la política, descarga una copia de tus datos o presenta una solicitud de privacidad.</p>
+          <div class="flex flex-wrap gap-2 mt-3"><a class="btn outline" href="/legal/privacy-es.html" data-legal-link="privacy" target="_blank" rel="noopener">Política de privacidad</a><a class="btn outline" href="/legal/terms-es.html" data-legal-link="terms" target="_blank" rel="noopener">Términos de uso</a><button id="settings-export-data" class="btn outline" type="button">Descargar mis datos</button></div>
+          <form id="privacy-request-form" class="mt-4 space-y-3">
+            <label class="block text-sm font-bold">Tipo de solicitud
+              <select id="privacy-request-type" class="field mt-1"><option value="access">Acceso / consulta</option><option value="correction">Rectificación</option><option value="withdraw_consent">Retirar consentimiento</option><option value="deletion">Supresión de datos / cuenta</option></select>
+            </label>
+            <label class="block text-sm font-bold">Detalle (opcional)
+              <textarea id="privacy-request-details" class="field mt-1" rows="3" maxlength="1500" placeholder="Describe brevemente lo que necesitas. No incluyas contraseñas ni datos sensibles innecesarios."></textarea>
+            </label>
+            <button id="privacy-request-submit" class="btn outline" type="submit">Enviar solicitud</button>
+            <p id="privacy-request-status" class="message" role="status" aria-live="polite"></p>
+          </form>
+          <div class="flex flex-wrap items-center gap-2 mt-3"><button id="settings-revoke-sensitive" class="btn outline" type="button">Retirar autorización de datos sensibles</button><button id="settings-clear-local-progress" class="btn outline" type="button">Borrar progreso de este dispositivo</button></div>
+          <div id="privacy-request-list" class="mt-4 space-y-2"><p class="muted-text">Tus solicitudes aparecerán aquí.</p></div>
+          <p class="muted-text text-xs mt-3">Enviar una solicitud no borra datos automáticamente. Algunos registros de pago o contabilidad pueden conservarse cuando exista una obligación legal. La revocatoria impide nuevas evaluaciones que requieran ese consentimiento.</p>
+        </div>
         <button id="settings-back" class="btn primary mt-6" type="button">Volver a mis pruebas</button>
       </div>
     </section>
@@ -656,8 +690,24 @@
             <div class="flex flex-wrap gap-4 mt-2 text-sm"><label><input id="parent-setting-home" type="checkbox" checked> Casa</label><label><input id="parent-setting-school" type="checkbox"> Colegio</label><label><input id="parent-setting-social" type="checkbox"> Actividades sociales u otros espacios</label></div>
           </fieldset>
           <div class="md:col-span-2 notice">Importante: esta herramienta no diagnostica ni descarta TDAH y no es una escala clínica validada. No escribas el nombre del menor, su colegio ni otros datos que permitan identificarlo. Si te preocupa su desarrollo o bienestar, consulta con pediatría o un profesional de salud infantil.</div>
-          <label class="md:col-span-2 flex items-start gap-2 text-sm"><input id="parent-guardian-consent" type="checkbox" required class="mt-1"><span>Confirmo que soy su padre, madre, tutor o cuidador autorizado y que puedo proporcionar esta información para recibir orientación.</span></label>
+          <label class="md:col-span-2 flex items-start gap-2 text-sm"><input id="parent-guardian-consent" type="checkbox" class="mt-1"><span>Confirmo que soy su padre, madre, tutor o cuidador autorizado y que puedo proporcionar esta información para recibir orientación.</span></label>
+          <label class="md:col-span-2 flex items-start gap-2 text-sm"><input id="parent-sensitive-consent" type="checkbox" class="mt-1"><span>Autorizo expresamente el tratamiento de las respuestas y resultados sensibles del menor para generar esta orientación. He leído la <a href="/legal/privacy-es.html" data-legal-link="privacy" target="_blank" rel="noopener">política de privacidad</a>. Entiendo que es una orientación no diagnóstica.</span></label>
+          <label class="md:col-span-2 flex items-start gap-2 text-sm"><input id="parent-child-informed-consent" type="checkbox" class="mt-1"><span>Confirmo que expliqué al menor, de manera adecuada a su edad y madurez, el propósito de esta observación y escuché su opinión antes de continuar, respetando su interés superior.</span></label>
           <div class="md:col-span-2"><p id="parent-intro-message" class="message" role="status" aria-live="polite"></p><button class="btn primary w-full mt-3" type="submit">Continuar al cuestionario →</button><button class="btn outline w-full mt-2" type="button" onclick="document.getElementById('dashboard-view').classList.remove('hidden');document.getElementById('parent-intro-view').classList.add('hidden')">Volver al catálogo</button></div>
+        </form>
+      </div>
+    </section>
+
+<section id="sensitive-consent-view" class="hidden fade-in">
+      <div class="card max-w-2xl mx-auto">
+        <div class="eyebrow">Autorización independiente</div>
+        <h2 class="text-2xl font-extrabold mt-2">Tratamiento de datos sensibles</h2>
+        <p class="muted-text mt-3">Las respuestas y resultados de esta evaluación pueden revelar información relacionada con tu salud, atención y bienestar, y por ello pueden ser datos sensibles. Su entrega es voluntaria. Puedes usar tu cuenta y las funciones que no requieren esta información sin autorizar este tratamiento.</p>
+        <p class="muted-text mt-3">Si continúas, autorizas de manera previa, expresa e informada a JUAN MANUEL ZAMORA ZAPATA, responsable de NeuroEval Pro, a tratar tus respuestas y resultados para procesar la evaluación, generar tu informe y permitirte consultarlo. Consulta la <a href="/legal/privacy-es.html" data-legal-link="privacy" target="_blank" rel="noopener">política de tratamiento de datos</a>.</p>
+        <form id="sensitive-consent-form" class="mt-5 space-y-4">
+          <label class="flex gap-3 items-start text-sm"><input id="sensitive-consent-checkbox" type="checkbox" class="mt-1"><span>Autorizo expresamente el tratamiento de mis datos sensibles para esta evaluación. Entiendo que puedo retirar esta autorización para evaluaciones futuras y solicitar la supresión de mis datos, sujeto a obligaciones legales de conservación.</span></label>
+          <p id="sensitive-consent-message" class="message" role="status" aria-live="polite"></p>
+          <div class="flex flex-wrap gap-2"><button class="btn primary" type="submit">Autorizo y continuar</button><button id="sensitive-consent-cancel" class="btn outline" type="button">Ahora no</button></div>
         </form>
       </div>
     </section>
@@ -752,7 +802,7 @@
       <div class="hero mb-7" style="min-height:190px"><div class="hero-copy"><div class="eyebrow">Administración segura</div><h1 style="font-size:clamp(29px,4vw,42px)">Centro de administración.</h1><p>Gestiona clientes, evaluaciones, pagos e informes desde un solo lugar.</p></div><div class="hero-art"><span>🛡️</span></div></div>
       <div class="admin-workspace">
       <div class="admin-sidebar" role="tablist" aria-label="Opciones administrativas">
-        <button class="btn primary admin-tab" data-admin-tab="overview" type="button">📊 Resumen</button><button class="btn outline admin-tab" data-admin-tab="clients" type="button">👥 Clientes</button><button class="btn outline admin-tab" data-admin-tab="evaluations" type="button">🧠 Evaluaciones</button><button class="btn outline admin-tab" data-admin-tab="payments" type="button">💳 Pagos</button><button class="btn outline admin-tab" data-admin-tab="analytics" type="button">📈 Analítica comercial</button><button class="btn outline admin-tab" data-admin-tab="pricing" type="button">🏷️ Precios y promociones</button><button class="btn outline admin-tab" data-admin-tab="settings" type="button">⚙️ Configuración</button><button class="btn outline admin-tab" data-admin-tab="health" type="button">🩺 Salud del sistema</button><button class="btn outline admin-tab" data-admin-tab="administrators" type="button">🛡️ Colaboradores</button><button class="btn outline admin-tab" data-admin-tab="support" type="button">🎧 Centro de soporte</button><button class="btn outline admin-tab" data-admin-tab="audit" type="button">📋 Actividad</button>
+        <button class="btn primary admin-tab" data-admin-tab="overview" type="button">📊 Resumen</button><button class="btn outline admin-tab" data-admin-tab="clients" type="button">👥 Clientes</button><button class="btn outline admin-tab" data-admin-tab="evaluations" type="button">🧠 Evaluaciones</button><button class="btn outline admin-tab" data-admin-tab="payments" type="button">💳 Pagos</button><button class="btn outline admin-tab" data-admin-tab="analytics" type="button">📈 Analítica comercial</button><button class="btn outline admin-tab" data-admin-tab="global" type="button">🌍 Alcance internacional</button><button class="btn outline admin-tab" data-admin-tab="pricing" type="button">🏷️ Precios y promociones</button><button class="btn outline admin-tab" data-admin-tab="settings" type="button">⚙️ Configuración</button><button class="btn outline admin-tab" data-admin-tab="health" type="button">🩺 Salud del sistema</button><button class="btn outline admin-tab" data-admin-tab="administrators" type="button">🛡️ Colaboradores</button><button class="btn outline admin-tab" data-admin-tab="support" type="button">🎧 Centro de soporte</button><button class="btn outline admin-tab" data-admin-tab="audit" type="button">📋 Actividad</button>
       </div>
       <div class="admin-content">
       <div id="admin-panel-overview" class="admin-panel space-y-5">
@@ -776,6 +826,28 @@
         </div>
         <div class="card"><h3 class="text-xl font-extrabold mb-2">Rendimiento de promociones</h3><p class="muted-text mb-4">Usos reservados por código y evaluaciones que lo tienen asociado. Un uso reservado no garantiza que el pago haya sido aprobado.</p><div id="admin-analytics-promos" class="space-y-3"><p class="muted-text">Cargando…</p></div></div>
         <p id="admin-analytics-updated" class="muted-text text-xs"></p>
+      </div>
+      <div id="admin-panel-global" class="admin-panel hidden space-y-5">
+        <div class="flex flex-wrap justify-between items-center gap-3"><div><h2 class="text-xl font-extrabold">Alcance internacional</h2><p class="muted-text">Distribución agregada por país, ciudad, edad, idioma y objetivo declarado.</p></div><button id="admin-global-refresh" class="btn outline" type="button">↻ Actualizar datos</button></div>
+        <div id="admin-global-status" class="notice">Los grupos de menos de 10 usuarios se ocultan para proteger la privacidad.</div>
+        <div class="chart-card">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div><h3 class="chart-title">Mapa mundial de usuarios</h3><p class="chart-subtitle">Países resaltados cuando tienen grupos agregados de al menos 10 usuarios.</p></div>
+            <span class="pill">Vista global</span>
+          </div>
+          <div id="admin-world-map" class="world-map-shell" role="group" aria-label="Mapa mundial de usuarios agrupados por país">
+            <p class="muted-text">Cargando mapa mundial…</p>
+          </div>
+          <p class="muted-text text-xs mt-2">Solo se resaltan países con al menos 10 perfiles y código reconocible. No se muestran ubicaciones individuales.</p>
+          <p class="muted-text text-xs mt-1">Cartografía: Natural Earth, escala 1:110m. Datos de dominio público; límites esquemáticos, no oficiales.</p>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="chart-card"><h3 class="chart-title">Usuarios por país</h3><div id="admin-global-countries" class="space-y-3 mt-4"></div></div>
+          <div class="chart-card"><h3 class="chart-title">Usuarios por ciudad</h3><div id="admin-global-cities" class="space-y-3 mt-4"></div></div>
+          <div class="chart-card"><h3 class="chart-title">Distribución por edades</h3><div id="admin-global-ages" class="space-y-3 mt-4"></div></div>
+          <div class="chart-card"><h3 class="chart-title">Idioma</h3><div id="admin-global-languages" class="space-y-3 mt-4"></div></div>
+        </div>
+        <p class="muted-text text-xs">No se muestran nombres, correos, identificadores, respuestas ni ubicaciones individuales. Los grupos inferiores a 10 se ocultan. La ciudad es voluntaria; no se usa GPS.</p>
       </div>
       <div id="admin-panel-payments" class="admin-panel hidden"><div class="card"><div class="mb-5"><h2 class="text-xl font-extrabold">Pagos y transacciones Wompi</h2><p class="muted-text">Seguimiento de referencias, identificadores y confirmaciones recibidas por webhook.</p></div><div class="admin-table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Valor</th><th>Estado</th><th>Referencia</th><th>ID transacción</th><th>Confirmación</th></tr></thead><tbody id="admin-payment-rows"><tr><td colspan="7">Cargando...</td></tr></tbody></table></div></div></div>
       <div id="admin-panel-pricing" class="admin-panel hidden space-y-5">
@@ -815,6 +887,10 @@
             <button id="admin-support-refresh" class="btn outline" type="button">↻ Actualizar solicitudes</button>
           </div>
           <div id="admin-support-list" class="space-y-4"><p class="muted-text">Cargando solicitudes…</p></div>
+          <div class="border-t border-slate-200 mt-6 pt-5">
+            <div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="font-extrabold">Solicitudes de privacidad</h3><p class="muted-text">Bandeja restringida al administrador principal. La supresión requiere revisión previa.</p></div><button id="admin-privacy-refresh" class="btn outline" type="button">Actualizar solicitudes</button></div>
+            <div id="admin-privacy-list" class="space-y-3 mt-4"><p class="muted-text">Cargando solicitudes…</p></div>
+          </div>
         </div>
       </div>
       <div id="admin-panel-audit" class="admin-panel hidden"><div class="card"><div class="flex flex-wrap justify-between items-center gap-3 mb-4"><div><h2 class="text-xl font-extrabold">Actividad administrativa</h2><p class="muted-text">Registro de altas, cambios y revocaciones de permisos.</p></div><button id="admin-audit-refresh" class="btn outline" type="button">Actualizar</button></div><div id="admin-audit-list" class="space-y-3"><p class="muted-text">Cargando historial…</p></div></div></div>
@@ -824,7 +900,7 @@
     </section>
   </main>
 
-  <footer class="footer">© <span id="year"></span> NeuroEval Pro · Una herramienta de autorregistro orientativo.</footer>
+  <footer class="footer">© <span id="year"></span> NeuroEval Pro · Una herramienta de autorregistro orientativo.<div class="flex flex-wrap justify-center gap-4 mt-3 text-xs"><a href="/legal/privacy-es.html">Privacidad</a><a href="/legal/terms-es.html">Términos</a><a href="/legal/privacy-en.html">Privacy</a><a href="/legal/terms-en.html">Terms</a></div></footer>
 </div>
 
 <script>document.getElementById("year").textContent=new Date().getFullYear();</script>
