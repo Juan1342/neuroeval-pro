@@ -10,7 +10,8 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const { getApps, initializeApp, cert, applicationDefault } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
-const { getFirestore, FieldValue, AggregateField } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue, FieldPath, AggregateField } = require("firebase-admin/firestore");
+const { aggregateProfiles } = require("./lib/global-analytics");
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const https = require("https");
@@ -877,7 +878,10 @@ app.post("/api/profile", requireUser, async (req, res) => {
   try {
     const name = cleanText(req.body.name, 120);
     const goal = cleanText(req.body.goal, 120);
-
+    const country = cleanText(req.body.country, 80);
+    const city = cleanText(req.body.city, 100);
+    const requestedLanguage = String(req.body.language || "").trim().toLowerCase();
+    const language = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : "es";
     const age =
       req.body.age === null || req.body.age === undefined
         ? null
@@ -897,12 +901,20 @@ app.post("/api/profile", requireUser, async (req, res) => {
     const userRef = db.collection("users").doc(req.user.uid);
     const existing = await userRef.get();
 
+    const previous = existing.exists ? existing.data() || {} : {};
+    const proxyCountry = String(req.headers["cf-ipcountry"] || req.headers["x-vercel-ip-country"] || "").trim().toUpperCase();
+    const validProxyCountry = /^[A-Z]{2}$/.test(proxyCountry) && proxyCountry !== "XX" ? proxyCountry : "";
     const profile = {
       uid: req.user.uid,
       name,
       email: String(req.user.email || "").toLowerCase(),
       age,
       goal: goal || "Autoconocimiento",
+      country: country || previous.country || "",
+      city: city || previous.city || "",
+      countrySource: country ? "user" : (previous.country ? previous.countrySource || "user" : (validProxyCountry ? "proxy_country" : "unknown")),
+      detectedCountryCode: validProxyCountry || previous.detectedCountryCode || "",
+      language,
       updatedAt: FieldValue.serverTimestamp()
     };
 
@@ -2331,6 +2343,99 @@ app.get(
     }
   }
 );
+
+let globalAnalyticsCache = null;
+const GLOBAL_ANALYTICS_CACHE_TTL_MS = 5 * 60 * 1000;
+const GLOBAL_ANALYTICS_PAGE_SIZE = 1000;
+const GLOBAL_ANALYTICS_MAX_USERS = 50000;
+
+/*
+ * Lee únicamente los campos necesarios para analítica agregada.
+ * Paginación por document ID evita el límite silencioso de 10.000 perfiles.
+ * El límite de seguridad evita una lectura ilimitada en una sola petición.
+ */
+app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard.view"), async (req, res) => {
+  try {
+    if (globalAnalyticsCache && Date.now() - globalAnalyticsCache.cachedAt < GLOBAL_ANALYTICS_CACHE_TTL_MS) {
+      return res.json({ ...globalAnalyticsCache.payload, cached: true });
+    }
+
+    const sharedCacheRef = db.collection("systemCache").doc("globalAnalytics");
+    const sharedCacheSnapshot = await sharedCacheRef.get();
+    if (sharedCacheSnapshot.exists) {
+      const shared = sharedCacheSnapshot.data() || {};
+      const expiresAt = shared.expiresAt?.toDate?.() || new Date(shared.expiresAt || 0);
+      if (shared.payload && Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() > Date.now()) {
+        globalAnalyticsCache = { cachedAt: Date.now(), payload: shared.payload };
+        return res.json({ ...shared.payload, cached: true });
+      }
+    }
+
+    const profiles = [];
+    const usersCollection = db.collection("users");
+    let cursor = null;
+    let hasMore = false;
+
+    while (profiles.length < GLOBAL_ANALYTICS_MAX_USERS) {
+      let query = usersCollection
+        .orderBy(FieldPath.documentId())
+        .select("country", "city", "detectedCountryCode", "age", "language")
+        .limit(Math.min(GLOBAL_ANALYTICS_PAGE_SIZE, GLOBAL_ANALYTICS_MAX_USERS - profiles.length));
+      if (cursor) query = query.startAfter(cursor);
+      const page = await query.get();
+      if (page.empty) {
+        hasMore = false;
+        break;
+      }
+      profiles.push(...page.docs.map(document => document.data() || {}));
+      cursor = page.docs[page.docs.length - 1];
+      if (page.size < GLOBAL_ANALYTICS_PAGE_SIZE) {
+        hasMore = false;
+        break;
+      }
+      hasMore = profiles.length >= GLOBAL_ANALYTICS_MAX_USERS;
+    }
+
+    if (profiles.length >= GLOBAL_ANALYTICS_MAX_USERS && cursor) {
+      const next = await usersCollection
+        .orderBy(FieldPath.documentId())
+        .select("country")
+        .startAfter(cursor)
+        .limit(1)
+        .get();
+      hasMore = !next.empty;
+    }
+
+    const aggregates = aggregateProfiles(profiles, 10);
+    const payload = {
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      users: profiles.length,
+      scannedUsers: profiles.length,
+      truncated: hasMore,
+      aggregationMode: "paginated_profile_scan",
+      privacyThreshold: 10,
+      countries: aggregates.countries,
+      cities: aggregates.cities,
+      ages: aggregates.ages,
+      languages: aggregates.languages,
+      cached: false
+    };
+    globalAnalyticsCache = { cachedAt: Date.now(), payload };
+    await sharedCacheRef.set({
+      payload,
+      expiresAt: new Date(Date.now() + GLOBAL_ANALYTICS_CACHE_TTL_MS),
+      updatedAt: FieldValue.serverTimestamp()
+    }).catch(error => {
+      console.warn("No se pudo guardar la caché global compartida:", error.message);
+    });
+    return res.json(payload);
+  } catch (error) {
+    console.error("Analítica global:", error);
+    return sendError(res, 500, "No se pudo calcular la analítica geográfica.");
+  }
+});
+
 
 /* Analítica comercial consolidada: acceso exclusivo a personal con permiso de pagos. */
 app.get("/api/admin/analytics/commercial", requireUser, requireStaffAdmin("payments.view"), async (req, res) => {
