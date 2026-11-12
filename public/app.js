@@ -2205,7 +2205,7 @@ function openGame(game) {
       choices([answer,answer+2,Math.max(0,answer-3),answer+5].sort(()=>Math.random()-.5),answer,"¡Cálculo correcto!",Math.max(5,15-Math.floor(level/2)));
     }
     if(game==="words"){
-      const bank=["NUBE","LÁPIZ","RÍO","TAZA","LUNA","FLOR","RELOJ","PAN","LLAVE","MONTAÑA","LIBRO","VENTANA","CAMINO","NARANJA","ESTRELLA","JARDÍN","MÚSICA","TREN"];
+      const bank=currentLanguage==="en"?["CLOUD","PENCIL","RIVER","CUP","MOON","FLOWER","CLOCK","BREAD","KEY","MOUNTAIN","BOOK","WINDOW","ROAD","ORANGE","STAR","GARDEN","MUSIC","TRAIN"]:["NUBE","LÁPIZ","RÍO","TAZA","LUNA","FLOR","RELOJ","PAN","LLAVE","MONTAÑA","LIBRO","VENTANA","CAMINO","NARANJA","ESTRELLA","JARDÍN","MÚSICA","TREN"];
       const len=Math.min(3+Math.floor(level/2),16),selected=bank.slice().sort(()=>Math.random()-.5).slice(0,len);
       const display=document.createElement("div");display.className="game-sequence";display.textContent=selected.join(" · ");intro.textContent="Memoriza estas "+len+" palabras y después reconoce una.";content.appendChild(display);
       content.appendChild(gameButton("Ocultar y jugar",()=>{
