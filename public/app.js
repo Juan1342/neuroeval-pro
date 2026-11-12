@@ -2081,6 +2081,7 @@ function openParentEvaluation() {
   $("parent-setting-school").checked = false;
   $("parent-setting-social").checked = false;
   $("parent-guardian-consent").checked = false;
+  $("parent-sensitive-consent").checked = false;
   showMessage("parent-intro-message", "");
   show("parent-intro-view");
 }
