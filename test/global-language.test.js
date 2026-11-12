@@ -60,3 +60,16 @@ test("country map is localized, privacy-thresholded and does not request individ
 test("the English word-memory game uses English prompts and answer values", () => {
   assert.match(app, /const bank=currentLanguage==="en"\?\["CLOUD","PENCIL","RIVER","CUP","MOON","FLOWER","CLOCK","BREAD","KEY","MOUNTAIN","BOOK","WINDOW","ROAD","ORANGE","STAR","GARDEN","MUSIC","TRAIN"\]/);
 });
+
+test("personal PDF and password reset email follow the selected account language", () => {
+  const server = require("node:fs").readFileSync("server.js", "utf8");
+  assert.match(server, /function translateReportText\(value, language = "es"\)/);
+  assert.match(server, /const reportLanguage = \["es", "en"\]/);
+  assert.match(server, /buildEvaluationPdf\(result\.data, \{ language: reportLanguage \}\)/);
+  assert.match(server, /const resetLanguage = userProfileSnapshot\.exists[\s\S]{0,180}\? "en" : "es"/);
+  assert.match(server, /subject: "Password reset code · NeuroEval Pro"/);
+  assert.match(server, /Your verification code is:/);
+  assert.match(server, /Tu código de verificación es:/);
+  const app = require("node:fs").readFileSync("public/app.js", "utf8");
+  assert.match(app, /\/pdf\?language=" \+ encodeURIComponent\(currentLanguage\)/);
+});
