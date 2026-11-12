@@ -1141,11 +1141,15 @@ app.post("/api/admin/privacy/requests/:id/complete-deletion", requireUser, requi
       return sendError(res, 409, "La solicitud debe ser de supresión, estar aprobada y conservar su vínculo de verificación.");
     }
     const targetUid = String(requestData.uid);
-    const targetAccount = await firebaseAuth.getUser(targetUid).catch(error => {
-      if (error.code === "auth/user-not-found") return null;
-      throw error;
-    });
-    if (targetAccount?.email?.toLowerCase() === ADMIN_EMAIL) {
+    const [targetAccount, targetProfileSnapshot] = await Promise.all([
+      firebaseAuth.getUser(targetUid).catch(error => {
+        if (error.code === "auth/user-not-found") return null;
+        throw error;
+      }),
+      db.collection("users").doc(targetUid).get()
+    ]);
+    const targetEmail = String(targetAccount?.email || (targetProfileSnapshot.exists ? targetProfileSnapshot.data()?.email : "") || "").toLowerCase();
+    if (targetEmail === ADMIN_EMAIL) {
       return sendError(res, 409, "No se puede eliminar la cuenta administradora principal.");
     }
     const roleSnapshot = await db.collection("adminRoles").doc(targetUid).get();
