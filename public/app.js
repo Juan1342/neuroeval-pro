@@ -3071,7 +3071,7 @@ async function renderWorldMap(rows = []) {
   const NS = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(NS,"svg");
   svg.setAttribute("viewBox","0 0 900 440");
-  svg.setAttribute("role","img");
+  svg.setAttribute("role","group");
   svg.setAttribute("aria-label",currentLanguage==="en"?"World country map with aggregated user groups highlighted":"Mapa mundial con países que tienen grupos agregados de usuarios");
   const project=(lon,lat)=>({x:(lon+180)/360*900,y:(90-Math.max(-85,Math.min(85,lat)))/180*440});
   const ringPath=ring=>{
@@ -3114,7 +3114,7 @@ async function renderWorldMap(rows = []) {
         const formatted=count.toLocaleString(currentLanguage==="en"?"en-US":"es-CO");
         const description=label+": "+formatted+(currentLanguage==="en"?" users":" usuarios");
         path.setAttribute("aria-label",description);
-        path.setAttribute("role","img");
+        path.setAttribute("role","button");
         const title=document.createElementNS(NS,"title");
         title.textContent=description;
         path.appendChild(title);
