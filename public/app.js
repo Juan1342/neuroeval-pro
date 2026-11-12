@@ -114,6 +114,7 @@ const uiTranslations = {
   "No hay solicitudes de privacidad.": "There are no privacy requests.",
   "En revisión": "Under review",
   "Aprobar supresión": "Approve deletion",
+  "Rechazar": "Reject",
   "Marcar completada": "Mark completed",
   "Completar supresión": "Complete deletion",
   "Esta acción es irreversible. Se eliminarán la cuenta, respuestas, resultados y tickets. Solo se conservarán referencias mínimas de pagos Wompi que estén pendientes o confirmados. ¿Confirmas que la solicitud fue verificada y aprobada?": "This action is irreversible. The account, answers, results and support tickets will be deleted. Only minimal references for pending or confirmed Wompi payments will be retained. Confirm that the request has been verified and approved?",
@@ -1951,7 +1952,7 @@ async function loadPrivacyRequests() {
     requests.forEach(item => {
       const row = document.createElement("div"); row.className = "rounded-xl border border-slate-200 p-3";
       const title = document.createElement("strong"); title.textContent = labels[item.requestType] || item.requestType;
-      const meta = document.createElement("p"); meta.className = "muted-text text-xs"; meta.textContent = (item.status || "pending") + " · " + formatAdminDate(item.createdAt);
+      const meta = document.createElement("p"); meta.className = "muted-text text-xs"; const statusLabels = { pending: currentLanguage === "en" ? "Pending" : "Pendiente", in_review: currentLanguage === "en" ? "Under review" : "En revisión", approved: currentLanguage === "en" ? "Approved" : "Aprobada", completed: currentLanguage === "en" ? "Completed" : "Completada", rejected: currentLanguage === "en" ? "Rejected" : "Rechazada" }; meta.textContent = (statusLabels[item.status] || item.status || "pending") + " · " + formatAdminDate(item.createdAt);
       row.append(title, meta); target.appendChild(row);
     });
   } catch (error) { target.textContent = error.message; }
@@ -2010,7 +2011,7 @@ function renderAdminPrivacyRequests(requests) {
   requests.forEach(item => {
     const card = document.createElement("article"); card.className = "card space-y-2";
     const title = document.createElement("strong"); title.textContent = (labels[item.requestType] || item.requestType) + " · " + (item.email || "Cuenta no disponible");
-    const meta = document.createElement("p"); meta.className = "muted-text text-xs"; meta.textContent = (item.status || "pending") + " · " + formatAdminDate(item.createdAt);
+    const meta = document.createElement("p"); meta.className = "muted-text text-xs"; const statusLabels = { pending: "Pendiente", in_review: "En revisión", approved: "Aprobada", completed: "Completada", rejected: "Rechazada" }; meta.textContent = (statusLabels[item.status] || item.status || "pending") + " · " + formatAdminDate(item.createdAt);
     const details = document.createElement("p"); details.className = "text-sm"; details.textContent = item.details || "Sin detalle adicional.";
     const actions = document.createElement("div"); actions.className = "flex flex-wrap gap-2";
     const addAction = (label, action) => { const button = document.createElement("button"); button.type = "button"; button.className = "btn outline"; button.textContent = label; button.addEventListener("click", action); actions.appendChild(button); };
