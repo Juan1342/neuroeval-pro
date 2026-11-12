@@ -13,6 +13,9 @@ const dictionary = app.slice(dictionaryStart, dictionaryEnd);
 
 test("the language selector offers Spanish and English and updates document metadata", () => {
   assert.match(html, /<select id="global-language"/);
+  assert.match(html, /id="profile-regional-consent" type="checkbox"/);
+  assert.match(app, /regionalAnalyticsConsent: savedProfile\.regionalAnalyticsConsent === true/);
+  assert.match(app, /regionalAnalyticsConsent = \$\("profile-regional-consent"\)\.checked/);
   assert.match(html, /<option value="es">🌐 Español<\/option>/);
   assert.match(html, /<option value="en">🌐 English<\/option>/);
   assert.match(app, /document\.documentElement\.lang = currentLanguage/);
