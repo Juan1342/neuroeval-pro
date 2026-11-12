@@ -50,16 +50,18 @@ test("registration links privacy and terms and provides separate sensitive conse
   assert.match(html, /href="\/legal\/terms-es\.html"/);
   assert.match(html, /id="sensitive-consent-checkbox"/);
   assert.match(html, /id="parent-sensitive-consent"/);
+  assert.match(html, /id="parent-child-informed-consent"/);
   assert.match(app, /function acceptSensitiveDataConsent/);
   assert.match(app, /sensitiveDataConsentVersion/);
 });
 
 test("server requires versioned express consent before self-report and guardian consent for minor observations", () => {
-  assert.match(server, /const PRIVACY_NOTICE_VERSION = "2026-11-11-v1"/);
+  assert.match(server, /const PRIVACY_NOTICE_VERSION = "2026-11-11-v2"/);
   assert.match(server, /consentProfile\.sensitiveDataConsent !== true/);
   assert.match(server, /consentProfile\.sensitiveDataConsentVersion !== PRIVACY_NOTICE_VERSION/);
   assert.match(server, /parentContext\.sensitiveDataConsent !== true/);
   assert.match(server, /parentContext\.consentVersion !== PRIVACY_NOTICE_VERSION/);
+  assert.match(server, /parentContext\.minorHeard !== true/);
   assert.match(server, /guardianConsent: true, sensitiveDataConsent: true/);
 });
 
