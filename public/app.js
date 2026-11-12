@@ -476,6 +476,14 @@ const uiTranslations = {
   "Evaluaciones pagadas frente al total creado en cada mes.": "Paid assessments compared with the total created each month.",
   "Rendimiento de promociones": "Promotion performance",
   "Usos reservados por código y evaluaciones que lo tienen asociado. Un uso reservado no garantiza que el pago haya sido aprobado.": "Reserved uses by code and associated assessments. A reserved use does not guarantee payment approval.",
+  "Países resaltados cuando tienen grupos agregados de al menos 10 usuarios.": "Countries are highlighted when they have aggregated groups of at least 10 users.",
+  "Solo se resaltan países con al menos 10 perfiles y código reconocible. No se muestran ubicaciones individuales.": "Only countries with at least 10 profiles and a recognized code are highlighted. Individual locations are not shown.",
+  "Cartografía: Natural Earth, escala 1:110m. Datos de dominio público; límites esquemáticos, no oficiales.": "Cartography: Natural Earth, 1:110m scale. Public-domain data; schematic, non-official boundaries.",
+  "No se pudo cargar la cartografía mundial.": "The world map could not be loaded.",
+  "El archivo cartográfico no es válido.": "The map data file is invalid.",
+  "No se pudo calcular la analítica geográfica.": "Global geographic analytics could not be calculated.",
+  "No fue posible cargar las estadísticas:": "Could not load statistics:",
+  "No se pudo cargar el mapa mundial.": "The world map could not be loaded.",
   "Alcance internacional": "International reach",
   "Distribución agregada por país, ciudad, edad, idioma y objetivo declarado.": "Aggregated distribution by country, city, age, language, and stated goal.",
   "↻ Actualizar datos": "↻ Refresh data",
@@ -3072,71 +3080,178 @@ async function renderWorldMap(rows = []) {
   const host = $("admin-world-map");
   if (!host) return;
   host.replaceChildren();
+  const isEnglish = currentLanguage === "en";
+  const mapLabel = isEnglish
+    ? "World country map with aggregated user groups highlighted"
+    : "Mapa mundial con países que tienen grupos agregados de usuarios";
+  host.setAttribute("aria-label", mapLabel);
   const NS = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(NS,"svg");
-  svg.setAttribute("viewBox","0 0 900 440");
-  svg.setAttribute("role","group");
-  svg.setAttribute("aria-label",currentLanguage==="en"?"World country map with aggregated user groups highlighted":"Mapa mundial con países que tienen grupos agregados de usuarios");
-  const project=(lon,lat)=>({x:(lon+180)/360*900,y:(90-Math.max(-85,Math.min(85,lat)))/180*440});
-  const ringPath=ring=>{
-    if(!Array.isArray(ring)||ring.length<4)return "";
-    return ring.map((point,index)=>{
-      const p=project(Number(point[0]),Number(point[1]));
-      return (index===0?"M":"L")+p.x.toFixed(2)+" "+p.y.toFixed(2);
-    }).join(" ")+" Z";
-  };
-  const geometryPath=geometry=>{
-    if(!geometry)return "";
-    const polygons=geometry.type==="Polygon"?[geometry.coordinates]:geometry.type==="MultiPolygon"?geometry.coordinates:[];
-    return polygons.map(polygon=>polygon.map(ringPath).filter(Boolean).join(" ")).filter(Boolean).join(" ");
-  };
-  try {
-    if(!worldMapGeometryPromise){
-      worldMapGeometryPromise=fetch("/data/world-countries-110m.geojson",{cache:"force-cache"}).then(response=>{
-        if(!response.ok)throw new Error("No se pudo cargar la cartografía mundial.");
-        return response.json();
-      }).then(data=>{
-        if(data.type!=="FeatureCollection"||!Array.isArray(data.features))throw new Error("El archivo cartográfico no es válido.");
-        return data;
-      }).catch(error=>{worldMapGeometryPromise=null;throw error;});
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 900 440");
+  svg.setAttribute("role", "group");
+  svg.setAttribute("aria-label", mapLabel);
+
+  const project = (lon, lat) => ({
+    x: (lon + 180) / 360 * 900,
+    y: (90 - Math.max(-85, Math.min(85, lat))) / 180 * 440
+  });
+
+  // Natural Earth representa algunos polígonos a ambos lados del meridiano 180°.
+  // Desenrollamos sus longitudes y recortamos cada anillo al marco del mapa para
+  // evitar líneas que atraviesen visualmente todo el planeta.
+  const clipAtLongitude = (points, boundary, keepGreater) => {
+    if (!points.length) return [];
+    const output = [];
+    let previous = points[points.length - 1];
+    let previousInside = keepGreater ? previous.lon >= boundary : previous.lon <= boundary;
+    for (const current of points) {
+      const currentInside = keepGreater ? current.lon >= boundary : current.lon <= boundary;
+      if (currentInside !== previousInside) {
+        const denominator = current.lon - previous.lon;
+        if (denominator !== 0) {
+          const ratio = (boundary - previous.lon) / denominator;
+          output.push({
+            lon: boundary,
+            lat: previous.lat + (current.lat - previous.lat) * ratio
+          });
+        }
+      }
+      if (currentInside) output.push(current);
+      previous = current;
+      previousInside = currentInside;
     }
-    const world=await worldMapGeometryPromise;
-    const counts=new Map((Array.isArray(rows)?rows:[]).filter(row=>row.code).map(row=>[String(row.code).toUpperCase(),Number(row.count)||0]));
-    world.features.forEach(feature=>{
-      const code=String(feature.properties?.iso_a2||"").toUpperCase();
-      const name=String((currentLanguage==="en"?feature.properties?.name_en:feature.properties?.name_es)||feature.properties?.name_en||code||"");
-      const count=counts.get(code)||0;
-      const pathData=geometryPath(feature.geometry);
-      if(!pathData)return;
-      const path=document.createElementNS(NS,"path");
-      path.setAttribute("d",pathData);
-      path.setAttribute("class","land"+(count>=10?" has-users":""));
-      path.setAttribute("fill-rule","evenodd");
-      path.setAttribute("tabindex",count>=10?"0":"-1");
-      if(count>=10){
-        const label=currentLanguage==="en"?name:name;
-        const formatted=count.toLocaleString(currentLanguage==="en"?"en-US":"es-CO");
-        const description=label+": "+formatted+(currentLanguage==="en"?" users":" usuarios");
-        path.setAttribute("aria-label",description);
-        path.setAttribute("role","button");
-        const title=document.createElementNS(NS,"title");
-        title.textContent=description;
+    return output;
+  };
+
+  const ringPaths = ring => {
+    if (!Array.isArray(ring) || ring.length < 4) return [];
+    const source = ring.slice(0, -1)
+      .filter(point => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])))
+      .map(point => ({ lon: Number(point[0]), lat: Number(point[1]) }));
+    if (source.length < 3) return [];
+
+    const unwrapped = [source[0]];
+    for (let index = 1; index < source.length; index++) {
+      let lon = source[index].lon;
+      const previous = unwrapped[index - 1].lon;
+      while (lon - previous > 180) lon -= 360;
+      while (lon - previous < -180) lon += 360;
+      unwrapped.push({ lon, lat: source[index].lat });
+    }
+    let closingLon = source[0].lon;
+    const lastLon = unwrapped[unwrapped.length - 1].lon;
+    while (closingLon - lastLon > 180) closingLon -= 360;
+    while (closingLon - lastLon < -180) closingLon += 360;
+    unwrapped.push({ lon: closingLon, lat: source[0].lat });
+
+    const paths = [];
+    for (const shift of [-360, 0, 360]) {
+      let clipped = unwrapped.map(point => ({ lon: point.lon + shift, lat: point.lat }));
+      clipped = clipAtLongitude(clipped, -180, true);
+      clipped = clipAtLongitude(clipped, 180, false);
+      if (clipped.length < 3) continue;
+      const commands = clipped.map((point, index) => {
+        const projected = project(point.lon, point.lat);
+        return (index === 0 ? "M" : "L") + projected.x.toFixed(2) + " " + projected.y.toFixed(2);
+      });
+      paths.push(commands.join(" ") + " Z");
+    }
+    return paths;
+  };
+
+  const geometryPath = geometry => {
+    if (!geometry) return "";
+    const polygons = geometry.type === "Polygon"
+      ? [geometry.coordinates]
+      : geometry.type === "MultiPolygon" ? geometry.coordinates : [];
+    return polygons.flatMap(polygon =>
+      polygon.flatMap(ringPaths)
+    ).join(" ");
+  };
+
+  try {
+    if (!worldMapGeometryPromise) {
+      worldMapGeometryPromise = fetch("/data/world-countries-110m.geojson", { cache: "force-cache" })
+        .then(response => {
+          if (!response.ok) throw new Error("No se pudo cargar la cartografía mundial.");
+          return response.json();
+        })
+        .then(data => {
+          if (data.type !== "FeatureCollection" || !Array.isArray(data.features)) {
+            throw new Error("El archivo cartográfico no es válido.");
+          }
+          return data;
+        })
+        .catch(error => {
+          worldMapGeometryPromise = null;
+          throw error;
+        });
+    }
+
+    const world = await worldMapGeometryPromise;
+    const counts = new Map((Array.isArray(rows) ? rows : [])
+      .filter(row => row.code)
+      .map(row => [String(row.code).toUpperCase(), Number(row.count) || 0]));
+
+    world.features.forEach(feature => {
+      const code = String(feature.properties?.iso_a2 || "").toUpperCase();
+      const name = String(
+        (isEnglish ? feature.properties?.name_en : feature.properties?.name_es)
+        || feature.properties?.name_en || code || ""
+      );
+      const count = counts.get(code) || 0;
+      const pathData = geometryPath(feature.geometry);
+      if (!pathData) return;
+
+      const path = document.createElementNS(NS, "path");
+      path.setAttribute("d", pathData);
+      path.setAttribute("class", "land" + (count >= 10 ? " has-users" : ""));
+      path.setAttribute("fill-rule", "evenodd");
+      path.setAttribute("tabindex", count >= 10 ? "0" : "-1");
+
+      if (count >= 10) {
+        const formatted = count.toLocaleString(isEnglish ? "en-US" : "es-CO");
+        const description = name + ": " + formatted + (isEnglish ? " users" : " usuarios");
+        path.setAttribute("aria-label", description);
+        path.setAttribute("role", "button");
+        const title = document.createElementNS(NS, "title");
+        title.textContent = description;
         path.appendChild(title);
-        path.addEventListener("click",()=>{const status=$("admin-global-status");if(status)status.textContent=description;});
-        path.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();const status=$("admin-global-status");if(status)status.textContent=description;}});
+        const announce = () => {
+          const status = $("admin-global-status");
+          if (status) status.textContent = description;
+        };
+        path.addEventListener("click", announce);
+        path.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            announce();
+          }
+        });
       }
       svg.appendChild(path);
     });
-    if(!counts.size||![...counts.values()].some(count=>count>=10)){
-      const note=document.createElementNS(NS,"text");
-      note.setAttribute("x","450");note.setAttribute("y","220");note.setAttribute("text-anchor","middle");note.setAttribute("class","map-point-label");
-      note.textContent=currentLanguage==="en"?"No country groups meet the privacy threshold yet":"Aún no hay grupos de países que cumplan el umbral de privacidad";
+
+    if (!counts.size || ![...counts.values()].some(count => count >= 10)) {
+      const note = document.createElementNS(NS, "text");
+      note.setAttribute("x", "450");
+      note.setAttribute("y", "220");
+      note.setAttribute("text-anchor", "middle");
+      note.setAttribute("class", "map-point-label");
+      note.textContent = isEnglish
+        ? "No country groups meet the privacy threshold yet"
+        : "Aún no hay grupos de países que cumplan el umbral de privacidad";
       svg.appendChild(note);
     }
     host.appendChild(svg);
-  } catch(error) {
-    host.textContent=currentLanguage==="en"?"The world map could not be loaded. Country statistics remain available below.":"No fue posible cargar el mapa mundial. Las estadísticas por país siguen disponibles abajo.";
-    const status=$("admin-global-status");if(status)status.textContent=error.message;
+  } catch (error) {
+    host.textContent = isEnglish
+      ? "The world map could not be loaded. Country statistics remain available below."
+      : "No fue posible cargar el mapa mundial. Las estadísticas por país siguen disponibles abajo.";
+    const status = $("admin-global-status");
+    if (status) status.textContent = isEnglish
+      ? "The map could not be loaded. Country statistics remain available below."
+      : "No fue posible cargar el mapa. Las estadísticas por país siguen disponibles abajo.";
   }
 }
 
@@ -3165,7 +3280,7 @@ async function loadAdminGlobalAnalytics() {
       });
     });
     status.textContent=(currentLanguage==="en"?"Updated: ":"Actualizado: ")+new Date(data.generatedAt).toLocaleString(currentLanguage==="en"?"en-US":(currentLanguage === "en" ? "en-US" : "es-CO"))+" · "+Number(data.users||0).toLocaleString(currentLanguage==="en"?"en-US":(currentLanguage === "en" ? "en-US" : "es-CO"))+(currentLanguage==="en"?" profiles analyzed":" perfiles analizados")+(data.truncated?(currentLanguage==="en"?" · limited to the first 50,000 profiles":" · limitado a los primeros 50.000 perfiles"):"")+(currentLanguage==="en"?". Groups under 10 are hidden.":". Se ocultan grupos menores de 10.");
-  } catch(error) {status.textContent="No fue posible cargar las estadísticas: "+error.message;}
+  } catch(error) {status.textContent=(currentLanguage==="en"?"Could not load statistics: ":"No fue posible cargar las estadísticas: ")+error.message;}
 }
 
 async function loadAdminCommercialAnalytics() {
