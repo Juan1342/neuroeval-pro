@@ -79,3 +79,35 @@ test("highlighted map countries expose keyboard interaction and localized labels
   assert.equal(prevented, true);
   assert.match(status.textContent, /Colombia: 15 users/);
 });
+
+
+test("world map clips antimeridian-crossing geometry instead of drawing across the whole map", async () => {
+  const { context, host } = createMapContext("en");
+  await context.renderWorldMap([{ code: "FJ", count: 12 }]);
+  const svg = host.children[0];
+  const fiji = svg.children.find(node => node.tagName === "path" && node.attributes["data-country-code"] === "FJ");
+  assert.ok(fiji, "Fiji must be present in the world map");
+  assert.match(fiji.attributes["aria-label"], /^Fiji: 12 users$/);
+
+  const subpaths = fiji.attributes.d.split(/\\s+Z\\s*/).filter(Boolean);
+  for (const subpath of subpaths) {
+    const points = [...subpath.matchAll(/[ML](-?\\d+(?:\\.\\d+)?) (-?\\d+(?:\\.\\d+)?)/g)]
+      .map(match => Number(match[1]));
+    for (let index = 1; index < points.length; index++) {
+      assert.ok(Math.abs(points[index] - points[index - 1]) <= 450,
+        "a map segment must not jump across most of the world");
+    }
+  }
+});
+
+test("world map host and SVG expose localized accessible names", async () => {
+  const english = createMapContext("en");
+  await english.context.renderWorldMap([{ code: "CO", count: 10 }]);
+  assert.match(english.host.attributes["aria-label"], /^World country map/);
+  assert.match(english.host.children[0].attributes["aria-label"], /^World country map/);
+
+  const spanish = createMapContext("es");
+  await spanish.context.renderWorldMap([{ code: "CO", count: 10 }]);
+  assert.match(spanish.host.attributes["aria-label"], /^Mapa mundial/);
+  assert.match(spanish.host.children[0].attributes["aria-label"], /^Mapa mundial/);
+});
