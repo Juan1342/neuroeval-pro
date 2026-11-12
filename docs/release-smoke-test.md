@@ -88,9 +88,10 @@ No usar una tarjeta real en este bloque.
 
 - [x] Comprobar que la página principal ya no solicita Google Fonts ni Tailwind CDN y que enlaza la hoja de estilos local.
 - [x] Comprobar que las clases de utilidad usadas en el HTML y en el marcado generado por JavaScript tienen selectores CSS locales.
-- [x] Ejecutar el renderizador del mapa mundial con un DOM simulado: verifica paths SVG, umbral de 10 perfiles, etiquetas ES/EN y activación por teclado.
+- [x] Ejecutar el renderizador del mapa mundial con un DOM simulado: verifica paths SVG, umbral de 10 perfiles, etiquetas ES/EN, accesibilidad por teclado y recorte del meridiano 180°.
+- [x] Añadir pruebas automatizadas de selector ES/EN, persistencia de idioma, metadatos del documento, textos dinámicos, atributos accesibles y palabras del juego de memoria en inglés.
 - [x] Mantener pruebas unitarias de la consulta autenticada de transacciones Wompi y validación de prefijos de llaves.
-- [ ] Inspección visual del mapa y la interfaz en un navegador real; el DOM simulado no valida diseño, responsive ni errores de consola del navegador.
+- [ ] Inspección visual del mapa y la interfaz en un navegador real; las pruebas simuladas no validan diseño, responsive ni errores de consola del navegador.
 - [x] Pruebas de transacciones aprobadas/rechazadas y webhooks repetidos en Wompi Sandbox confirmadas por el titular. Las pruebas de alteración de referencia, ausencia de llave y timeout de API siguen pendientes si no se han ejecutado.
 
 ## Alcance de pruebas ya automatizadas
