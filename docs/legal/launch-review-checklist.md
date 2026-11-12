@@ -7,7 +7,7 @@
 - [ ] Confirmar región de Firestore, región de Render, copias de respaldo y ciclo real de eliminación.
 - [ ] Verificar que el consentimiento sensible sea separado, expreso, versionado y revocable.
 - [ ] Verificar autorización del representante legal y que el menor haya sido informado y escuchado según edad, madurez y autonomía.
-- [ ] Obtener concepto jurídico sobre la regla del Decreto 1074 de 2015, art. 2.2.2.25.2.3: ninguna actividad puede condicionarse a entregar datos sensibles; confirmar la excepción/base legal aplicable a una evaluación cuyo propósito requiere respuestas sensibles antes de habilitarla.
+- [ ] Obtener concepto jurídico sobre la regla del Decreto 1074 de 2015, art. 2.2.2.25.2.3: ninguna actividad puede condicionarse a entregar datos sensibles; confirmar si la evaluación puede operar bajo una excepción del art. 6 de la Ley 1581 de 2012. La autorización expresa por sí sola no basta. No habilitar el flujo hasta recibir el concepto.
 - [ ] Verificar exportación de datos, consulta, rectificación, revocatoria y solicitud de supresión.
 - [ ] Verificar que la supresión no elimine comprobantes que deban conservarse y que retire los datos sensibles de evaluaciones pagadas.
 - [ ] Completar pruebas automatizadas, navegador, pago sandbox, correos y permisos administrativos.
