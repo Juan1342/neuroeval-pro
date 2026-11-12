@@ -1,6 +1,6 @@
 # NeuroEval Pro — plan de pruebas integrales y salida controlada
 
-**Estado:** plan preparado; pruebas de navegador, Firebase real y Wompi no ejecutadas desde esta rama.  
+**Estado:** plan de salida controlada. El titular confirmó pruebas de Wompi Sandbox aprobadas/rechazadas y webhooks repetidos; las pruebas visuales de navegador y las verificaciones de Firebase/producción siguen pendientes.  
 **Regla:** no hacer merge ni despliegue hasta aprobar los controles de este documento.
 
 ## 1. Antes de desplegar
@@ -43,9 +43,9 @@ Usar cuentas de prueba propias; no utilizar datos clínicos de clientes reales.
 No usar una tarjeta real en este bloque.
 
 - [ ] Configurar llaves de Sandbox y URL de eventos de Sandbox.
-- [ ] Ejecutar una transacción de prueba aprobada.
-- [ ] Ejecutar una transacción de prueba rechazada.
-- [ ] Reenviar la misma notificación para verificar idempotencia.
+- [x] El titular confirmó la ejecución de una transacción de prueba aprobada.
+- [x] El titular confirmó la ejecución de una transacción de prueba rechazada.
+- [x] El titular confirmó el reenvío de webhooks repetidos y su comprobación de idempotencia.
 - [ ] Modificar una copia de prueba del campo `reference` del webhook manteniendo el checksum original; el servidor no debe desbloquear otra evaluación porque consulta la referencia auténtica en la API de Wompi.
 - [ ] Simular que falta `WOMPI_PRIVATE_KEY`; el webhook debe responder sin marcar el pago como aprobado.
 - [ ] Simular error/timeout de la API de Wompi; el webhook debe responder para permitir reintento.
@@ -91,8 +91,8 @@ No usar una tarjeta real en este bloque.
 - [x] Ejecutar el renderizador del mapa mundial con un DOM simulado: verifica paths SVG, umbral de 10 perfiles, etiquetas ES/EN y activación por teclado.
 - [x] Mantener pruebas unitarias de la consulta autenticada de transacciones Wompi y validación de prefijos de llaves.
 - [ ] Inspección visual del mapa y la interfaz en un navegador real; el DOM simulado no valida diseño, responsive ni errores de consola del navegador.
-- [ ] Ejecutar transacciones aprobadas/rechazadas y webhooks repetidos en Wompi Sandbox con las credenciales del comercio.
+- [x] Pruebas de transacciones aprobadas/rechazadas y webhooks repetidos en Wompi Sandbox confirmadas por el titular. Las pruebas de alteración de referencia, ausencia de llave y timeout de API siguen pendientes si no se han ejecutado.
 
 ## Alcance de pruebas ya automatizadas
 
-GitHub Actions ejecuta Node.js 22, instala dependencias y corre pruebas unitarias/regresiones. Esto no reemplaza pruebas reales en navegador, Firebase conectado ni Wompi Sandbox. Esas verificaciones siguen pendientes.
+GitHub Actions ejecuta Node.js 22, instala dependencias y corre pruebas unitarias/regresiones. Esto no reemplaza pruebas reales en navegador ni Firebase conectado. Las pruebas básicas de Wompi Sandbox indicadas arriba fueron confirmadas por el titular; los casos negativos adicionales siguen pendientes.
