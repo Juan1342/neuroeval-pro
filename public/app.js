@@ -953,6 +953,11 @@ function setLanguage(language, options = {}) {
   document.title = currentLanguage === "en" ? "NeuroEval Pro | Understand how your mind works" : "NeuroEval Pro | Conoce cómo funciona tu mente";
   const selector = $("global-language");
   if (selector) selector.value = currentLanguage;
+  document.querySelectorAll("[data-legal-link]").forEach(link => {
+    const kind = link.getAttribute("data-legal-link");
+    if (kind === "privacy") link.href = currentLanguage === "en" ? "/legal/privacy-en.html" : "/legal/privacy-es.html";
+    if (kind === "terms") link.href = currentLanguage === "en" ? "/legal/terms-en.html" : "/legal/terms-es.html";
+  });
   applyLanguageToDom();
   const globalPanel = $("admin-panel-global");
   if (currentIsAdmin && globalPanel && !globalPanel.classList.contains("hidden")) loadAdminGlobalAnalytics();
@@ -1431,7 +1436,8 @@ function show(viewId) {
     "payment-view",
     "result-view",
     "admin-view",
-    "parent-intro-view"
+    "parent-intro-view",
+    "sensitive-consent-view"
   ];
 
   views.forEach((id) => {
@@ -1584,7 +1590,7 @@ async function registerWithEmail(event) {
 
     showMessage("auth-message", "Creando tu cuenta...");
 
-    profileData = { name, age, goal, language: currentLanguage, country: "", city: "", regionalAnalyticsConsent: false };
+    profileData = { name, age, goal, language: currentLanguage, country: "", city: "", regionalAnalyticsConsent: false, sensitiveDataConsent: false };
 
     const credential = await createUserWithEmailAndPassword(
       auth,
@@ -1701,7 +1707,9 @@ async function handleAuthState(user) {
         country: savedProfile.country || "",
         city: savedProfile.city || "",
         language: savedProfile.language || "es",
-        regionalAnalyticsConsent: savedProfile.regionalAnalyticsConsent === true
+        regionalAnalyticsConsent: savedProfile.regionalAnalyticsConsent === true,
+        sensitiveDataConsent: savedProfile.sensitiveDataConsent === true,
+        sensitiveDataConsentVersion: savedProfile.sensitiveDataConsentVersion || ""
       };
     } else {
       profileData = {
@@ -1711,7 +1719,8 @@ async function handleAuthState(user) {
         country: "",
         city: "",
         language: preferredLanguage(),
-        regionalAnalyticsConsent: false
+        regionalAnalyticsConsent: false,
+        sensitiveDataConsent: false
       };
 
       await api("/api/profile", {
@@ -1819,7 +1828,7 @@ function setAdminTab(tab) {
   if (selected === "audit") loadAdminAudit();
   if (selected === "settings") loadAdminHealth();
   if (selected === "health") loadAdminHealthDetails();
-  if (selected === "support") loadAdminSupportTickets();
+  if (selected === "support") { loadAdminSupportTickets(); if (currentIsPrimaryAdmin) loadAdminPrivacyRequests(); }
 }
 
 function showProfile() {
@@ -1836,11 +1845,131 @@ function showProfile() {
   show("profile-view");
 }
 
+async function acceptSensitiveDataConsent(event) {
+  event.preventDefault();
+  const status = $("sensitive-consent-message");
+  if (!$("sensitive-consent-checkbox").checked) {
+    status.textContent = "Debes marcar la autorización expresa para continuar.";
+    return;
+  }
+  status.textContent = "Guardando autorización…";
+  try {
+    const response = await api("/api/privacy/consent", { method: "POST", body: JSON.stringify({ consent: true }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudo guardar la autorización.");
+    profileData = { ...(profileData || {}), sensitiveDataConsent: true, sensitiveDataConsentVersion: data.version || "2026-11-11-v1" };
+    startQuiz(profileData.name || currentUser?.displayName || currentUser?.email, profileData.age ?? null, profileData.goal || "Autoconocimiento");
+  } catch (error) { status.textContent = error.message; }
+}
+
+async function exportMyData() {
+  const button = $("settings-export-data"); button.disabled = true;
+  try {
+    const response = await api("/api/my-data/export");
+    if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.error || "No se pudo preparar la copia de tus datos."); }
+    downloadBlob(await response.blob(), "neuroeval-pro-mis-datos.json");
+  } catch (error) { $("privacy-request-status").textContent = error.message; }
+  finally { button.disabled = false; }
+}
+
+async function loadPrivacyRequests() {
+  const target = $("privacy-request-list");
+  if (!target || !currentUser) return;
+  target.textContent = "Cargando solicitudes…";
+  try {
+    const response = await api("/api/privacy/requests"); const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudieron consultar tus solicitudes.");
+    target.replaceChildren();
+    const labels = { access: "Acceso / consulta", correction: "Rectificación", withdraw_consent: "Retiro de consentimiento", deletion: "Supresión de datos / cuenta" };
+    const requests = Array.isArray(data.requests) ? data.requests : [];
+    if (!requests.length) { const empty = document.createElement("p"); empty.className = "muted-text"; empty.textContent = "Todavía no tienes solicitudes de privacidad."; target.appendChild(empty); return; }
+    requests.forEach(item => {
+      const row = document.createElement("div"); row.className = "rounded-xl border border-slate-200 p-3";
+      const title = document.createElement("strong"); title.textContent = labels[item.requestType] || item.requestType;
+      const meta = document.createElement("p"); meta.className = "muted-text text-xs"; meta.textContent = (item.status || "pending") + " · " + formatAdminDate(item.createdAt);
+      row.append(title, meta); target.appendChild(row);
+    });
+  } catch (error) { target.textContent = error.message; }
+}
+
+async function submitPrivacyRequest(event) {
+  event.preventDefault();
+  const button = $("privacy-request-submit"), status = $("privacy-request-status");
+  button.disabled = true; status.textContent = "Enviando solicitud…";
+  try {
+    const response = await api("/api/privacy/requests", { method: "POST", body: JSON.stringify({ requestType: $("privacy-request-type").value, details: $("privacy-request-details").value.trim() }) });
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || "No se pudo registrar la solicitud.");
+    $("privacy-request-details").value = ""; status.textContent = "Solicitud registrada. Podrás consultar su estado aquí.";
+    await loadPrivacyRequests();
+  } catch (error) { status.textContent = error.message; }
+  finally { button.disabled = false; }
+}
+
+async function revokeSensitiveDataConsent() {
+  if (!confirm("¿Retirar tu autorización para futuras evaluaciones que traten datos sensibles? Esto no elimina automáticamente los registros anteriores.")) return;
+  const button = $("settings-revoke-sensitive"); button.disabled = true;
+  try {
+    const response = await api("/api/privacy/consent", { method: "POST", body: JSON.stringify({ consent: false }) });
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || "No se pudo retirar la autorización.");
+    profileData = { ...(profileData || {}), sensitiveDataConsent: false };
+    $("privacy-request-status").textContent = "Autorización retirada para evaluaciones futuras.";
+  } catch (error) { $("privacy-request-status").textContent = error.message; }
+  finally { button.disabled = false; }
+}
+
+async function loadAdminPrivacyRequests() {
+  const target = $("admin-privacy-list"); if (!target || !currentIsPrimaryAdmin) return;
+  target.textContent = "Cargando solicitudes…";
+  try {
+    const response = await api("/api/admin/privacy/requests"); const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "No se pudieron consultar las solicitudes.");
+    renderAdminPrivacyRequests(Array.isArray(data.requests) ? data.requests : []);
+  } catch (error) { target.textContent = error.message; }
+}
+
+function renderAdminPrivacyRequests(requests) {
+  const target = $("admin-privacy-list"); target.replaceChildren();
+  if (!requests.length) { const empty = document.createElement("p"); empty.className = "muted-text"; empty.textContent = "No hay solicitudes de privacidad."; target.appendChild(empty); return; }
+  const labels = { access: "Acceso", correction: "Rectificación", withdraw_consent: "Retiro de consentimiento", deletion: "Supresión" };
+  requests.forEach(item => {
+    const card = document.createElement("article"); card.className = "card space-y-2";
+    const title = document.createElement("strong"); title.textContent = (labels[item.requestType] || item.requestType) + " · " + (item.email || "Cuenta no disponible");
+    const meta = document.createElement("p"); meta.className = "muted-text text-xs"; meta.textContent = (item.status || "pending") + " · " + formatAdminDate(item.createdAt);
+    const details = document.createElement("p"); details.className = "text-sm"; details.textContent = item.details || "Sin detalle adicional.";
+    const actions = document.createElement("div"); actions.className = "flex flex-wrap gap-2";
+    const addAction = (label, action) => { const button = document.createElement("button"); button.type = "button"; button.className = "btn outline"; button.textContent = label; button.addEventListener("click", action); actions.appendChild(button); };
+    if (item.status === "pending") addAction("En revisión", () => updateAdminPrivacyRequest(item.id, "in_review"));
+    if (item.requestType === "deletion" && item.status === "in_review") addAction("Aprobar supresión", () => updateAdminPrivacyRequest(item.id, "approved"));
+    if (item.requestType !== "deletion" && ["pending","in_review"].includes(item.status)) addAction("Marcar completada", () => updateAdminPrivacyRequest(item.id, "completed"));
+    if (item.requestType === "deletion" && item.status === "approved") addAction("Completar supresión", () => completeAdminPrivacyDeletion(item.id));
+    card.append(title, meta, details, actions); target.appendChild(card);
+  });
+}
+
+async function updateAdminPrivacyRequest(id, status) {
+  try {
+    const response = await api("/api/admin/privacy/requests/" + encodeURIComponent(id), { method: "PATCH", body: JSON.stringify({ status }) });
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || "No se pudo actualizar la solicitud.");
+    await loadAdminPrivacyRequests();
+  } catch (error) { alert(error.message); }
+}
+
+async function completeAdminPrivacyDeletion(id) {
+  if (!confirm("Esta acción es irreversible. Se eliminarán la cuenta, respuestas, resultados y tickets. Solo se conservarán referencias mínimas de pagos Wompi que estén pendientes o confirmados. ¿Confirmas que la solicitud fue verificada y aprobada?")) return;
+  try {
+    const response = await api("/api/admin/privacy/requests/" + encodeURIComponent(id) + "/complete-deletion", { method: "POST" });
+    const data = await response.json(); if (!response.ok) throw new Error(data.error || "No se pudo completar la supresión.");
+    alert("Supresión completada. Evaluaciones eliminadas: " + data.deletedEvaluations + ". Registros mínimos de pago conservados: " + data.retainedPaymentRecords + ".");
+    await loadAdminPrivacyRequests();
+  } catch (error) { alert(error.message); }
+}
+
 function showSettings() {
   if (!currentUser) return show("auth-view");
   $("settings-email").textContent = currentUser.email || "No disponible";
   closeAccountMenu();
   show("settings-view");
+  loadPrivacyRequests();
 }
 
 function closeAccountMenu() {
@@ -1914,8 +2043,11 @@ function startParentEvaluation(event) {
   if (!$("parent-guardian-consent").checked) {
     return showMessage("parent-intro-message", "Confirma que tienes autorización para proporcionar esta información.", true);
   }
+  if (!$("parent-sensitive-consent").checked) {
+    return showMessage("parent-intro-message", "Debes autorizar expresamente el tratamiento de los datos sensibles del menor para continuar.", true);
+  }
   currentEvaluationType = "parent_observation";
-  parentEvaluationContext = { childAge, relationship, settings, consent: true };
+  parentEvaluationContext = { childAge, relationship, settings, consent: true, sensitiveDataConsent: true, consentAt: new Date().toISOString(), consentVersion: "2026-11-11-v1" };
   profileData = { ...(profileData || {}), name: profileData?.name || currentUser.displayName || currentUser.email, goal: "Observación familiar de indicadores asociados al TDAH" };
   questions = parentQuestionBank.map(([category, question, dimension, icon, example]) => {
     const ageExample = childAge <= 7
@@ -1940,7 +2072,12 @@ function startAdhdEvaluation() {
     showMessage("auth-message", "Inicia sesión para comenzar una evaluación.", true);
     return;
   }
-
+  if (profileData?.sensitiveDataConsent !== true || profileData?.sensitiveDataConsentVersion !== "2026-11-11-v1") {
+    $("sensitive-consent-checkbox").checked = false;
+    showMessage("sensitive-consent-message", "");
+    show("sensitive-consent-view");
+    return;
+  }
   startQuiz(
     profileData?.name || currentUser.displayName || currentUser.email,
     profileData?.age ?? null,
@@ -2388,7 +2525,7 @@ async function startQuiz(name, age, goal) {
   currentEvaluationType = "self_report";
   parentEvaluationContext = null;
   activeChoices = choices;
-  profileData = { name, age, goal };
+  profileData = { ...(profileData || {}), name, age, goal };
   // Orden temático fijo para que la experiencia tenga una progresión comprensible.
   questions = [...bank];
   answers = new Array(questions.length).fill(null);
@@ -3043,6 +3180,7 @@ async function loadAdmin() {
     renderAdminPayments(records.filter(record=>record.paymentProvider==="wompi"||record.paymentReference||record.wompiTransactionId));
     renderAdminDashboardCharts(records);
     setAdminTab("overview");
+    if (currentIsPrimaryAdmin) loadAdminPrivacyRequests();
   }catch(error){console.error("Panel administrativo:",error);alert("No se pudo cargar el panel: "+error.message);}
 }
 const ADMIN_PERMISSION_LABELS = {
@@ -4051,6 +4189,12 @@ function registerEventListeners() {
     closeAccountMenu();
     openForgotPassword(currentUser?.email || "");
   });
+  $("sensitive-consent-form").addEventListener("submit", acceptSensitiveDataConsent);
+  $("sensitive-consent-cancel").addEventListener("click", () => showDashboard(profileData?.name || currentUser?.displayName || currentUser?.email));
+  $("settings-export-data").addEventListener("click", exportMyData);
+  $("privacy-request-form").addEventListener("submit", submitPrivacyRequest);
+  $("settings-revoke-sensitive").addEventListener("click", revokeSensitiveDataConsent);
+  $("admin-privacy-refresh").addEventListener("click", loadAdminPrivacyRequests);
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".account-menu-wrap")) closeAccountMenu();
   });
