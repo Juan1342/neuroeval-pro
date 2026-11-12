@@ -114,6 +114,10 @@ test("privacy documents open and account privacy controls export data and submit
   await page.locator("#account-menu-toggle").click();
   await page.locator("#menu-settings").click();
   await expect(page.locator("#privacy-request-form")).toBeVisible();
+  await page.evaluate(() => localStorage.setItem("neuroeval-progress-browser-test-user", JSON.stringify({ games: [{ name: "test" }], activities: [], history: [] })));
+  page.once("dialog", dialog => dialog.accept());
+  await page.locator("#settings-clear-local-progress").click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("neuroeval-progress-browser-test-user"))).toBeNull();
   const downloadPromise = page.waitForEvent("download");
   await page.locator("#settings-export-data").click();
   const download = await downloadPromise;
