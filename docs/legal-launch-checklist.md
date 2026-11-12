@@ -29,7 +29,10 @@
 - [x] Correo oficial para privacidad, consultas y reclamaciones: soporte.neuroevalpro@gmail.com (validar operatividad y procedimiento interno).
 - [ ] Responsable interno que atenderá solicitudes y plazos operativos.
 - [x] Brevo confirmado por el titular como proveedor de correo activo y funcional. [ ] Revisar contrato, región y subencargados de Brevo.
-- [ ] Regiones de almacenamiento, subencargados, contratos y condiciones de transferencia de Firebase/Google Cloud, Render, Wompi y correo.
+- [x] Región de Cloud Firestore confirmada en el proyecto: southamerica-east1 (São Paulo, Brasil). La documentación oficial indica que la región de Firestore se fija al crear la base y no puede cambiarse después. [ ] Confirmar por consola/cuenta y contrato las condiciones de Google Cloud y Firebase Authentication.
+- [x] Región del servicio de aplicación Render confirmada en el Dashboard: Oregon, Estados Unidos. Render publica Oregon como una de sus regiones disponibles. [ ] Confirmar tratamiento de logs, copias, soporte y subencargados en el DPA.
+- [x] Documentación pública de Brevo indica bases de datos en la UE, almacenamiento Google Cloud en Bélgica e infraestructura OVH en Francia/Alemania. [ ] Verificar DPA, subencargados y alcance de la cuenta real.
+- [ ] Confirmar ubicación, subencargados, transferencias y contrato aplicable de Wompi.
 - [ ] Inventario real de cookies, almacenamiento local, SDK, logs, IP y analítica.
 - [ ] Política de retención por categoría de dato, backups y proceso verificable de eliminación.
 - [ ] Procedimiento para incidentes y notificación de brechas.
@@ -126,7 +129,7 @@ Los tres documentos se prepararon en español e inglés en la rama `feature/glob
 - [x] Proveedor activo confirmado por el titular: Brevo. [ ] Documentar sus condiciones de tratamiento, región y subencargados.
 - [ ] Documentar ubicación de datos, subencargados y contratos de Firebase/Google Cloud, Render, Wompi y correo.
 - [ ] Definir y configurar periodos de conservación y eliminación, incluyendo respaldos y logs.
-- [ ] Inspeccionar cookies, localStorage, sessionStorage, IndexedDB y solicitudes de terceros en los navegadores soportados.
+- [ ] Inspeccionar cookies, localStorage, sessionStorage, IndexedDB y solicitudes de terceros en los navegadores soportados. La hoja de estilos local y la retirada de Google Fonts/Tailwind CDN se verifican por CI, pero no sustituyen esta inspección.
 - [ ] Revisar y ajustar información precontractual, resumen de compra, ejecución del servicio digital, retracto, reversión del pago, garantías y reclamaciones conforme a la Ley 1480 y sus modificaciones.
 - [ ] Definir si la observación familiar de menores seguirá disponible en todos los países o se restringirá por jurisdicción; validar autoridad parental y requisitos locales.
 - [ ] Revisar el paquete completo con abogado con experiencia en privacidad, consumo digital y operación internacional.
