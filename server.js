@@ -3985,7 +3985,7 @@ app.listen(PORT, () => {
   console.log(` Entorno: ${process.env.NODE_ENV || "development"}`);
   console.log(` Precio: $${DEFAULT_EVAL_PRICE_COP} COP`);
   console.log(` Firebase: ${FIREBASE_PROJECT_ID || "No especificado"}`);
-  console.log(` SMTP: ${mailer ? "Configurado" : "Pendiente"}`);
+  console.log(` Correo transaccional (${EMAIL_PROVIDER}): ${emailConfigured ? "Configurado" : "Pendiente"}`);
   console.log(` Wompi: ${WOMPI_PUBLIC_KEY ? "Clave pública detectada" : "Pendiente"}`);
   console.log("-----------------------------------------");
 });
