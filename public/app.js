@@ -572,6 +572,11 @@ const uiTranslations = {
   "Se preparó la copia de tus datos.": "Your data copy is ready.",
   "Esto registra una solicitud de revisión de eliminación; no borra inmediatamente tu cuenta ni tus registros. ¿Continuar?": "This records a deletion-review request; it does not immediately delete your account or records. Continue?",
   "Tu solicitud de privacidad quedó registrada para revisión.": "Your privacy request has been submitted for review.",
+  "No se pudo completar el acceso con Google. Código:": "Could not complete Google sign-in. Code:",
+  "No se pudo iniciar sesión con Google. Código:": "Could not sign in with Google. Code:",
+  " triángulos.": " triangles.",
+  "franja no especificada": "unspecified age band",
+  "Los valores describen respuestas del autorregistro; no son probabilidades ni un diagnóstico.": "The values describe self-report responses; they are not probabilities or a diagnosis."
   "Alcance internacional": "International reach",
   "Distribución agregada por país, ciudad, edad, idioma y objetivo declarado.": "Aggregated distribution by country, city, age, language, and stated goal.",
   "↻ Actualizar datos": "↻ Refresh data",
