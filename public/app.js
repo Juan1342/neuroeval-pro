@@ -1584,7 +1584,7 @@ async function registerWithEmail(event) {
 
     showMessage("auth-message", "Creando tu cuenta...");
 
-    profileData = { name, age, goal, language: currentLanguage };
+    profileData = { name, age, goal, language: currentLanguage, country: "", city: "", regionalAnalyticsConsent: false };
 
     const credential = await createUserWithEmailAndPassword(
       auth,
@@ -1700,7 +1700,8 @@ async function handleAuthState(user) {
         goal: savedProfile.goal || "Autoconocimiento",
         country: savedProfile.country || "",
         city: savedProfile.city || "",
-        language: savedProfile.language || "es"
+        language: savedProfile.language || "es",
+        regionalAnalyticsConsent: savedProfile.regionalAnalyticsConsent === true
       };
     } else {
       profileData = {
@@ -1709,7 +1710,8 @@ async function handleAuthState(user) {
         goal: "Autoconocimiento",
         country: "",
         city: "",
-        language: preferredLanguage()
+        language: preferredLanguage(),
+        regionalAnalyticsConsent: false
       };
 
       await api("/api/profile", {
