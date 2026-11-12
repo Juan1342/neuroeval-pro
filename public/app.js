@@ -1583,7 +1583,7 @@ async function registerWithEmail(event) {
 
     showMessage("auth-message", "Creando tu cuenta...");
 
-    profileData = { name, age, goal };
+    profileData = { name, age, goal, language: currentLanguage };
 
     const credential = await createUserWithEmailAndPassword(
       auth,
@@ -1595,7 +1595,7 @@ async function registerWithEmail(event) {
 
     await api("/api/profile", {
       method: "POST",
-      body: JSON.stringify({ name, age, goal })
+      body: JSON.stringify(profileData)
     });
 
     // La pantalla de evaluación se inicia desde el observador de sesión.
