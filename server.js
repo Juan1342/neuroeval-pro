@@ -882,6 +882,7 @@ app.post("/api/profile", requireUser, async (req, res) => {
     const city = cleanText(req.body.city, 100);
     const requestedLanguage = String(req.body.language || "").trim().toLowerCase();
     const language = ["es", "en"].includes(requestedLanguage) ? requestedLanguage : "es";
+    const regionalAnalyticsConsent = req.body.regionalAnalyticsConsent === true;
     const age =
       req.body.age === null || req.body.age === undefined
         ? null
@@ -902,18 +903,16 @@ app.post("/api/profile", requireUser, async (req, res) => {
     const existing = await userRef.get();
 
     const previous = existing.exists ? existing.data() || {} : {};
-    const proxyCountry = String(req.headers["cf-ipcountry"] || req.headers["x-vercel-ip-country"] || "").trim().toUpperCase();
-    const validProxyCountry = /^[A-Z]{2}$/.test(proxyCountry) && proxyCountry !== "XX" ? proxyCountry : "";
     const profile = {
       uid: req.user.uid,
       name,
       email: String(req.user.email || "").toLowerCase(),
       age,
       goal: goal || "Autoconocimiento",
-      country: req.body.country !== undefined ? country : (previous.country || ""),
-      city: req.body.city !== undefined ? city : (previous.city || ""),
-      countrySource: country ? "user" : (validProxyCountry ? "proxy_country" : "unknown"),
-      detectedCountryCode: validProxyCountry || previous.detectedCountryCode || "",
+      country: regionalAnalyticsConsent ? country : "",
+      city: regionalAnalyticsConsent ? city : "",
+      regionalAnalyticsConsent,
+      countrySource: regionalAnalyticsConsent && country ? "user" : "unknown",
       language,
       updatedAt: FieldValue.serverTimestamp()
     };
@@ -3192,7 +3191,7 @@ app.get("/api/admin/analytics/global", requireUser, requireStaffAdmin("dashboard
     while (profiles.length < GLOBAL_ANALYTICS_MAX_USERS) {
       let query = usersCollection
         .orderBy(FieldPath.documentId())
-        .select("country", "city", "detectedCountryCode", "age", "language")
+        .select("country", "city", "age", "language", "regionalAnalyticsConsent")
         .limit(Math.min(GLOBAL_ANALYTICS_PAGE_SIZE, GLOBAL_ANALYTICS_MAX_USERS - profiles.length));
       if (cursor) query = query.startAfter(cursor);
       const page = await query.get();
