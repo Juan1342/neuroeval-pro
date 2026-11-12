@@ -17,6 +17,8 @@ test("the language selector offers Spanish and English and updates document meta
   assert.match(html, /<option value="en">🌐 English<\/option>/);
   assert.match(app, /document\.documentElement\.lang = currentLanguage/);
   assert.match(app, /document\.title = currentLanguage === "en"/);
+  assert.match(app, /toLocaleString\(currentLanguage === "en" \? "en-US" : "es-CO"/);
+  assert.match(app, /Intl\.NumberFormat\(currentLanguage === "en" \? "en-US" : "es-CO"/);
   assert.match(app, /localStorage\.setItem\("neuroeval-language", currentLanguage\)/);
   assert.match(app, /languageSelect\.addEventListener\("change", \(\) => setLanguage\(languageSelect\.value, \{ persist: true \}\)\)/);
 });
