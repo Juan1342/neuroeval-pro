@@ -1,0 +1,124 @@
+/* NeuroEval Pro local utility subset.
+   Replaces the Tailwind browser CDN. Keep selectors in sync with public/index.html
+   and utility classes assembled in public/app.js. No runtime CSS generation. */
+
+.hidden{display:none!important}
+.block{display:block}
+.flex{display:flex}
+.inline-flex{display:inline-flex}
+.grid{display:grid}
+.fixed{position:fixed}
+.relative{position:relative}
+.absolute{position:absolute}
+.inset-0{inset:0}
+.z-50{z-index:50}
+.w-full{width:100%}
+.h-full{height:100%}
+.h-2{height:.5rem}
+.min-w-0{min-width:0}
+.min-w-\[220px\]{min-width:220px}
+.max-w-sm{max-width:24rem}
+.max-w-lg{max-width:32rem}
+.max-w-xl{max-width:36rem}
+.max-w-3xl{max-width:48rem}
+.max-h-\[88vh\]{max-height:88vh}
+.mx-auto{margin-left:auto;margin-right:auto}
+.my-4{margin-top:1rem;margin-bottom:1rem}
+.my-5{margin-top:1.25rem;margin-bottom:1.25rem}
+.mt-1{margin-top:.25rem}
+.mt-2{margin-top:.5rem}
+.mt-3{margin-top:.75rem}
+.mt-4{margin-top:1rem}
+.mt-5{margin-top:1.25rem}
+.mt-6{margin-top:1.5rem}
+.mt-7{margin-top:1.75rem}
+.mr-2{margin-right:.5rem}
+.mb-2{margin-bottom:.5rem}
+.mb-3{margin-bottom:.75rem}
+.mb-4{margin-bottom:1rem}
+.mb-5{margin-bottom:1.25rem}
+.mb-7{margin-bottom:1.75rem}
+.flex-1{flex:1 1 0%}
+.flex-col{flex-direction:column}
+.flex-wrap{flex-wrap:wrap}
+.items-start{align-items:flex-start}
+.items-center{align-items:center}
+.items-end{align-items:flex-end}
+.justify-between{justify-content:space-between}
+.justify-center{justify-content:center}
+.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.gap-2{gap:.5rem}
+.gap-3{gap:.75rem}
+.gap-4{gap:1rem}
+.space-y-1>:not([hidden])~:not([hidden]){margin-top:.25rem}
+.space-y-2>:not([hidden])~:not([hidden]){margin-top:.5rem}
+.space-y-3>:not([hidden])~:not([hidden]){margin-top:.75rem}
+.space-y-4>:not([hidden])~:not([hidden]){margin-top:1rem}
+.space-y-5>:not([hidden])~:not([hidden]){margin-top:1.25rem}
+.space-x-2>:not([hidden])~:not([hidden]){margin-left:.5rem}
+.overflow-hidden{overflow:hidden}
+.overflow-y-auto{overflow-y:auto}
+.cursor-pointer{cursor:pointer}
+.rounded-xl{border-radius:.75rem}
+.rounded-2xl{border-radius:1rem}
+.rounded-full{border-radius:9999px}
+.border{border-width:1px;border-style:solid}
+.border-b{border-bottom-width:1px;border-bottom-style:solid}
+.border-slate-200{border-color:#e2e8f0}
+.border-slate-200\/20{border-color:rgb(226 232 240 / .2)}
+.border-slate-700\/20{border-color:rgb(51 65 85 / .2)}
+.border-slate-700\/30{border-color:rgb(51 65 85 / .3)}
+.bg-white{background-color:#fff}
+.bg-slate-50{background-color:#f8fafc}
+.bg-slate-100{background-color:#f1f5f9}
+.bg-slate-950\/60{background-color:rgb(2 6 23 / .6)}
+.bg-slate-700\/30{background-color:rgb(51 65 85 / .3)}
+.p-3{padding:.75rem}
+.p-4{padding:1rem}
+.p-5{padding:1.25rem}
+.py-3{padding-top:.75rem;padding-bottom:.75rem}
+.text-left{text-align:left}
+.text-center{text-align:center}
+.text-xs{font-size:.75rem;line-height:1rem}
+.text-sm{font-size:.875rem;line-height:1.25rem}
+.text-lg{font-size:1.125rem;line-height:1.75rem}
+.text-xl{font-size:1.25rem;line-height:1.75rem}
+.text-2xl{font-size:1.5rem;line-height:2rem}
+.text-3xl{font-size:1.875rem;line-height:2.25rem}
+.font-bold{font-weight:700}
+.font-extrabold{font-weight:800}
+.uppercase{text-transform:uppercase}
+.text-indigo-600{color:#4f46e5}
+.text-red-600{color:#dc2626}
+.text-slate-400{color:#94a3b8}
+.text-slate-500{color:#64748b}
+.text-slate-600{color:#475569}
+.text-slate-700{color:#334155}
+.shadow-2xl{box-shadow:0 25px 50px -12px rgb(0 0 0 / .25)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+@media(min-width:640px){
+  .sm\\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sm\\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sm\\:col-span-2{grid-column:span 2 / span 2}
+  .sm\\:col-span-3{grid-column:span 3 / span 3}
+  .sm\\:flex-row{flex-direction:row}
+  .sm\\:p-6{padding:1.5rem}
+  .sm\\:p-7{padding:1.75rem}
+}
+@media(min-width:768px){
+  .md\\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .md\\:col-span-2{grid-column:span 2 / span 2}
+}
+@media(min-width:1024px){
+  .lg\\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lg\\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .lg\\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .lg\\:col-span-2{grid-column:span 2 / span 2}
+}
+@media(min-width:1280px){
+  .xl\\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:1536px){
+  .\\32 xl\\:grid-cols-6{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
