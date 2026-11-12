@@ -910,9 +910,9 @@ app.post("/api/profile", requireUser, async (req, res) => {
       email: String(req.user.email || "").toLowerCase(),
       age,
       goal: goal || "Autoconocimiento",
-      country: country || previous.country || "",
-      city: city || previous.city || "",
-      countrySource: country ? "user" : (previous.country ? previous.countrySource || "user" : (validProxyCountry ? "proxy_country" : "unknown")),
+      country: req.body.country !== undefined ? country : (previous.country || ""),
+      city: req.body.city !== undefined ? city : (previous.city || ""),
+      countrySource: country ? "user" : (validProxyCountry ? "proxy_country" : "unknown"),
       detectedCountryCode: validProxyCountry || previous.detectedCountryCode || "",
       language,
       updatedAt: FieldValue.serverTimestamp()
