@@ -24,7 +24,7 @@ test("international analytics endpoint is authenticated, permission-scoped, pagi
   const server = fs.readFileSync("server.js", "utf8");
   assert.match(server, /api\/admin\/analytics\/global", requireUser, requireStaffAdmin\("dashboard\.view"\)/);
   assert.match(server, /GLOBAL_ANALYTICS_PAGE_SIZE = 1000/);
-  assert.match(server, /regionalAnalyticsConsent: req\.body\.regionalAnalyticsConsent === true/);
+  assert.match(server, /const regionalAnalyticsConsent = req\.body\.regionalAnalyticsConsent === true/);
   assert.match(server, /GLOBAL_ANALYTICS_MAX_USERS = 50000/);
   assert.match(server, /aggregateProfiles\(profiles, 10\)/);
   assert.match(server, /\.select\("country", "city", "detectedCountryCode", "age", "language"\)/);
