@@ -1,5 +1,5 @@
 name: ES-EN and world map checks
-# Run server, browser-module syntax checks and regression tests on the final feature branch, including explicit regional consent, privacy-thresholded aggregates and report localization and consent filtering.
+# Run server, browser-module syntax checks and regression tests on the final feature branch, including explicit regional consent, privacy-thresholded aggregates and report localization and cache invalidation after consent changes.
 
 on:
   push:
