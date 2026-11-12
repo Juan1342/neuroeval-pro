@@ -19,7 +19,7 @@ test("world map asset is a valid Natural Earth country FeatureCollection", () =>
     assert.equal(typeof feature.properties?.name_en, "string");
     assert.equal(typeof feature.properties?.name_es, "string");
     assert.equal(typeof feature.properties?.iso_a2, "string");
-    assert.ok(feature.properties.iso_a2 === "-9" || feature.properties.iso_a2 === "-99" || /^[A-Z]{2}$/.test(feature.properties.iso_a2));
+    assert.ok(feature.properties.iso_a2 === "-99" || /^[A-Z]{2}$/.test(feature.properties.iso_a2));
   }
 });
 
