@@ -68,7 +68,8 @@ const uiTranslations = {
   "Ciudad (opcional)": "City (optional)",
   "Idioma preferido": "Preferred language",
   "Guardar preferencias regionales": "Save regional preferences",
-  "La ciudad y el país son voluntarios. Se utilizan en estadísticas agregadas y no para localizarte individualmente.": "City and country are optional. They are used for aggregate statistics, not to locate you individually.",
+  "El consentimiento es voluntario. Si lo aceptas, tu país, ciudad, rango de edad e idioma se usan solo en estadísticas agregadas; nunca se muestra tu ubicación individual ni se registra GPS.": "Consent is optional. If you agree, your country, city, age range and language are used only for aggregate statistics; your individual location is never shown and GPS is not collected.",
+  "Acepto compartir voluntariamente mi país, ciudad, rango de edad e idioma para estadísticas agregadas. Solo se muestran grupos de 10 o más perfiles.": "I voluntarily agree to share my country, city, age range and language for aggregated statistics. Only groups of 10 or more profiles are shown.",
   "Volver a mis pruebas": "Back to my assessments",
   "Guardando preferencias…": "Saving preferences…",
   "Preferencias regionales guardadas.": "Regional preferences saved.",
@@ -1828,6 +1829,7 @@ function showProfile() {
   $("profile-country-input").value = profileData?.country || "";
   $("profile-city-input").value = profileData?.city || "";
   $("profile-language-input").value = profileData?.language || currentLanguage;
+  $("profile-regional-consent").checked = profileData?.regionalAnalyticsConsent === true;
   closeAccountMenu();
   show("profile-view");
 }
@@ -4016,7 +4018,8 @@ function registerEventListeners() {
     const status = $("profile-locale-message");
     status.textContent = currentLanguage === "en" ? "Saving preferences…" : "Guardando preferencias…";
     try {
-      const next = { ...(profileData || {}), country: $("profile-country-input").value.trim(), city: $("profile-city-input").value.trim(), language: $("profile-language-input").value };
+      const regionalAnalyticsConsent = $("profile-regional-consent").checked;
+      const next = { ...(profileData || {}), country: regionalAnalyticsConsent ? $("profile-country-input").value.trim() : "", city: regionalAnalyticsConsent ? $("profile-city-input").value.trim() : "", language: $("profile-language-input").value, regionalAnalyticsConsent };
       const response = await api("/api/profile", { method: "POST", body: JSON.stringify(next) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "No se pudieron guardar las preferencias.");
