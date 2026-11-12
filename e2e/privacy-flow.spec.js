@@ -51,6 +51,7 @@ async function mockBrowserServices(page) {
     if (url.pathname === "/api/my-data/export") return route.fulfill({ json: { product: "NeuroEval Pro", account: { email: "browser@example.com" }, evaluations: [] } });
     if (url.pathname === "/api/evaluations" && method === "POST") return route.fulfill({ status: 201, json: { ok: true, id: "evaluation-e2e", reference: "NEURO-E2E", paymentStatus: "pending", amountCop: 4000, currency: "COP" } });
     if (url.pathname === "/api/my-evaluations/evaluation-e2e/payment-status") return route.fulfill({ json: { id: "evaluation-e2e", paymentStatus: "pending", reference: "NEURO-E2E", amountCop: 4000, currency: "COP" } });
+    if (url.pathname === "/api/payments/wompi-signature") return route.fulfill({ status: 503, json: { ok: false, error: "Checkout de prueba simulado; no se procesa ningún pago." } });
     return route.fulfill({ status: 200, json: { ok: true, tickets: [], requests: [] } });
   });
 }
