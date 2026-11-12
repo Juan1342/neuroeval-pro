@@ -9,7 +9,7 @@ export function getAuth() { return state; }
 export async function getRedirectResult() { return null; }
 export function onAuthStateChanged(auth, callback) {
   auth.listeners.push(callback);
-  queueMicrotask(() => callback(auth.currentUser));
+  callback(auth.currentUser);
   return () => {};
 }
 function setUser(auth, email) {
@@ -63,7 +63,7 @@ test("registration, bilingual UI, sensitive-consent gate and assessment payment 
 
   await page.locator("#global-language").selectOption("en");
   await expect(page.locator("#auth-view h1")).toContainText("Understand how your mind works");
-  await expect(page.locator('a[data-legal-link="privacy"]')).toHaveAttribute("href", "/legal/privacy-en.html");
+  await expect(page.locator('a[data-legal-link="privacy"]').first()).toHaveAttribute("href", "/legal/privacy-en.html");
 
   await page.locator("#show-register").click();
   await page.locator("#reg-name").fill("Browser Test");
