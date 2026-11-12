@@ -10,8 +10,8 @@
 - Las respuestas y resultados pueden revelar o permitir inferir información relacionada con la salud o el bienestar cognitivo.
 - La evaluación individual exige una cuenta adulta (18–99 años) en el servidor.
 - Existe un flujo de observación familiar que puede referirse a menores; el formulario registra una declaración de autorización del adulto, pero el sistema no verifica documentalmente la identidad ni la autoridad parental.
-- La plataforma utiliza Firebase Authentication/Firestore, Render, Wompi y un proveedor de correo configurable por entorno (Brevo, Resend o SMTP). El proveedor realmente activo debe confirmarse en Render.
-- La página carga recursos de Google Fonts y Tailwind CDN. Deben verificarse en navegador las solicitudes, almacenamiento local y cookies efectivamente generadas.
+- La plataforma utiliza Firebase Authentication/Firestore, Render y Wompi. El titular confirmó que Brevo está configurado como proveedor de correo activo y que el envío funciona; siguen pendientes la revisión contractual, los subencargados y la ubicación efectiva del tratamiento.
+- En la rama de preparación se retiraron las solicitudes de Google Fonts y Tailwind CDN: se usan fuentes del sistema y estilos locales. El SDK web de Firebase (gstatic.com) y el widget de Wompi (checkout.wompi.co) siguen siendo recursos externos. Falta inspección de red en navegador y en producción.
 - La política de privacidad existente contiene 24 marcadores pendientes y está identificada como borrador no apto para publicación.
 
 ## Identificación confirmada del responsable
@@ -28,7 +28,7 @@
 - [x] NIT 1007114237-5: el responsable confirmó el 11 de noviembre de 2026 que coincide exactamente con el dato de su RUT. La verificación se basa en esa confirmación; no se ha inspeccionado una copia del RUT.
 - [x] Correo oficial para privacidad, consultas y reclamaciones: soporte.neuroevalpro@gmail.com (validar operatividad y procedimiento interno).
 - [ ] Responsable interno que atenderá solicitudes y plazos operativos.
-- [ ] Confirmación del proveedor de correo realmente configurado.
+- [x] Brevo confirmado por el titular como proveedor de correo activo y funcional. [ ] Revisar contrato, región y subencargados de Brevo.
 - [ ] Regiones de almacenamiento, subencargados, contratos y condiciones de transferencia de Firebase/Google Cloud, Render, Wompi y correo.
 - [ ] Inventario real de cookies, almacenamiento local, SDK, logs, IP y analítica.
 - [ ] Política de retención por categoría de dato, backups y proceso verificable de eliminación.
@@ -123,7 +123,7 @@ Los tres documentos se prepararon en español e inglés en la rama `feature/glob
 - [x] Correo oficial soporte.neuroevalpro@gmail.com recibido.
 - [x] Dirección oficial de notificación judicial confirmada y publicación autorizada: Carrera 60 # 71-10, Bello, Antioquia, Colombia.
 - [x] El responsable confirmó que el NIT 1007114237-5 coincide exactamente con su RUT. Confirmar en la revisión contable/jurídica la identidad comercial y de facturación que se mostrará al consumidor.
-- [ ] Confirmar el proveedor SMTP realmente activo y sus condiciones de tratamiento.
+- [x] Proveedor activo confirmado por el titular: Brevo. [ ] Documentar sus condiciones de tratamiento, región y subencargados.
 - [ ] Documentar ubicación de datos, subencargados y contratos de Firebase/Google Cloud, Render, Wompi y correo.
 - [ ] Definir y configurar periodos de conservación y eliminación, incluyendo respaldos y logs.
 - [ ] Inspeccionar cookies, localStorage, sessionStorage, IndexedDB y solicitudes de terceros en los navegadores soportados.
