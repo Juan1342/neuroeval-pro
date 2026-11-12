@@ -93,6 +93,10 @@ const uiTranslations = {
   "Describe brevemente lo que necesitas. No incluyas contraseñas ni datos sensibles innecesarios.": "Briefly describe what you need. Do not include passwords or unnecessary sensitive data.",
   "Enviar solicitud": "Submit request",
   "Retirar autorización de datos sensibles": "Withdraw sensitive-data authorization",
+  "Borrar progreso de este dispositivo": "Delete progress on this device",
+  "¿Borrar el progreso guardado en este dispositivo? Esta acción no elimina evaluaciones ni informes de tu cuenta.": "Delete progress stored on this device? This does not delete assessments or reports in your account.",
+  "Se borró el progreso local de este dispositivo.": "Local progress on this device was deleted.",
+  "No se pudo borrar el progreso local.": "Could not delete local progress.",
   "Tus solicitudes aparecerán aquí.": "Your requests will appear here.",
   "Enviar una solicitud no borra datos automáticamente. Algunos registros de pago o contabilidad pueden conservarse cuando exista una obligación legal. La revocatoria impide nuevas evaluaciones que requieran ese consentimiento.": "Submitting a request does not automatically delete data. Some payment or accounting records may be retained where legally required. Withdrawal prevents new assessments that require that consent.",
   "Cargando solicitudes…": "Loading requests…",
@@ -1962,6 +1966,17 @@ async function submitPrivacyRequest(event) {
     await loadPrivacyRequests();
   } catch (error) { status.textContent = error.message; }
   finally { button.disabled = false; }
+}
+
+function clearLocalProgress() {
+  if (!confirm("¿Borrar el progreso guardado en este dispositivo? Esta acción no elimina evaluaciones ni informes de tu cuenta.")) return;
+  try {
+    localStorage.removeItem(progressKey());
+    renderProgress();
+    $("privacy-request-status").textContent = "Se borró el progreso local de este dispositivo.";
+  } catch (error) {
+    $("privacy-request-status").textContent = "No se pudo borrar el progreso local.";
+  }
 }
 
 async function revokeSensitiveDataConsent() {
@@ -4255,6 +4270,7 @@ function registerEventListeners() {
   $("settings-export-data").addEventListener("click", exportMyData);
   $("privacy-request-form").addEventListener("submit", submitPrivacyRequest);
   $("settings-revoke-sensitive").addEventListener("click", revokeSensitiveDataConsent);
+  $("settings-clear-local-progress").addEventListener("click", clearLocalProgress);
   $("admin-privacy-refresh").addEventListener("click", loadAdminPrivacyRequests);
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".account-menu-wrap")) closeAccountMenu();
