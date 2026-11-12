@@ -1690,13 +1690,19 @@ async function handleAuthState(user) {
       profileData = {
         name: savedProfile.name || user.displayName || user.email,
         age: savedProfile.age ?? null,
-        goal: savedProfile.goal || "Autoconocimiento"
+        goal: savedProfile.goal || "Autoconocimiento",
+        country: savedProfile.country || "",
+        city: savedProfile.city || "",
+        language: savedProfile.language || "es"
       };
     } else {
       profileData = {
         name: user.displayName || user.email,
         age: null,
-        goal: "Autoconocimiento"
+        goal: "Autoconocimiento",
+        country: "",
+        city: "",
+        language: preferredLanguage()
       };
 
       await api("/api/profile", {
