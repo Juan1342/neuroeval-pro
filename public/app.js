@@ -576,7 +576,7 @@ const uiTranslations = {
   "No se pudo iniciar sesión con Google. Código:": "Could not sign in with Google. Code:",
   " triángulos.": " triangles.",
   "franja no especificada": "unspecified age band",
-  "Los valores describen respuestas del autorregistro; no son probabilidades ni un diagnóstico.": "The values describe self-report responses; they are not probabilities or a diagnosis."
+  "Los valores describen respuestas del autorregistro; no son probabilidades ni un diagnóstico.": "The values describe self-report responses; they are not probabilities or a diagnosis.",
   "Alcance internacional": "International reach",
   "Distribución agregada por país, ciudad, edad, idioma y objetivo declarado.": "Aggregated distribution by country, city, age, language, and stated goal.",
   "↻ Actualizar datos": "↻ Refresh data",
