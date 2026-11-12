@@ -22,6 +22,9 @@ Usar cuentas de prueba propias; no utilizar datos clínicos de clientes reales.
 - [ ] Aceptar el aviso general y la autorización expresa de datos sensibles; verificar que el servidor registra ambas versiones, idioma y fecha.
 - [ ] Iniciar sesión con una cuenta existente; confirmar que solo vuelve a pedir consentimiento cuando falta o está desactualizado.
 - [ ] Cambiar Español ↔ English y comprobar formularios, cuestionario, mensajes, resultados, PDF, correos y fechas.
+- [ ] Comprobar también textos generados dinámicamente: opciones, placeholders, etiquetas accesibles, diálogos de confirmación/alerta, historial, soporte y panel administrativo.
+- [ ] Confirmar que el atributo `lang` del documento y el título de la pestaña cambian junto con el idioma visible.
+- [ ] Recargar la página en ambos idiomas y comprobar que se conserva la preferencia sin traducir dos veces ni mezclar idiomas.
 - [ ] En observación familiar, comprobar que se requieren autorización del adulto y autorización expresa separada para los datos sensibles del menor.
 - [ ] Retirar autorización sensible desde el perfil; comprobar que la API bloquea nuevas evaluaciones.
 - [ ] Exportar datos y verificar que incluye historial de consentimientos sensibles.
@@ -62,7 +65,17 @@ No usar una tarjeta real en este bloque.
 - [ ] Navegar por los países resaltados con Tab, Enter y barra espaciadora; verificar foco visible y etiquetas accesibles.
 - [ ] Comprobar el aviso `truncated` al superar el límite de 50.000 perfiles.
 
-## 6. Producción
+## 6. Recursos externos y privacidad del navegador
+
+- [ ] Inspeccionar las solicitudes de red desde una sesión limpia y registrar los dominios de terceros realmente contactados.
+- [ ] Confirmar si Google Fonts continúa cargándose desde `fonts.googleapis.com` y `fonts.gstatic.com`; si se mantiene, reflejarlo correctamente en el aviso de privacidad/cookies y en la lista de proveedores.
+- [ ] Confirmar si Tailwind continúa cargándose desde `cdn.tailwindcss.com`; priorizar una compilación local antes del lanzamiento global.
+- [ ] Identificar las solicitudes de Firebase SDK, autenticación, Wompi y cualquier otro tercero; contrastarlas con los avisos y contratos aplicables.
+- [ ] Repetir la carga con bloqueo de cada recurso externo no esencial y comprobar que el registro, la evaluación, el informe y el pago no fallan de forma silenciosa.
+- [ ] Revisar cookies, almacenamiento local y de sesión, y tecnologías de seguimiento en navegador; no inferir su ausencia solo porque no haya Google Analytics habilitado.
+- [ ] Confirmar que la preferencia de idioma se almacena localmente sin introducir identificadores o datos sensibles adicionales.
+
+## 7. Producción
 
 - [ ] No hacer una transacción real hasta aprobar Sandbox, configuración de Wompi y documentación legal.
 - [ ] Si se autoriza un cobro real controlado, utilizar una cuenta de prueba propia y acordar previamente el procedimiento de conciliación/reembolso.
