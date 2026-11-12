@@ -40,3 +40,20 @@ Antes de superar el límite operativo, migrar a agregados incrementales o rollup
 ## Verificación
 
 La cobertura automatizada comprueba normalización de países, consolidación de variantes, bandas de edad, umbral mínimo, límite de grupos, etiquetas bilingües y protección de la ruta administrativa. Las pruebas de integración contra Firestore real y revisión de costos deben ejecutarse antes de aumentar el volumen.
+
+## Auditoría del mapa del panel (11 de noviembre de 2026)
+
+La implementación actual es una visualización SVG esquemática construida con polígonos simplificados y una tabla fija de centroides para un subconjunto de países. No utiliza límites geográficos oficiales y los países sin centroide definido no aparecen en el mapa, aunque sí pueden estar incluidos en las tablas agregadas. Por tanto, debe presentarse como **mapa esquemático**, no como cartografía mundial completa.
+
+### Trabajo necesario para completar el mapa
+
+- Sustituir los polígonos ilustrativos por geometrías de países de una fuente cartográfica con licencia compatible, empaquetada localmente para no depender de un CDN durante el uso.
+- Relacionar cada geometría con su código ISO 3166-1 alpha-2.
+- Dibujar únicamente países que superen el umbral de privacidad de 10 perfiles.
+- Mantener el mapa por país; no añadir marcadores de domicilio, coordenadas ni ubicaciones individuales.
+- Añadir leyenda, escala visual accesible, navegación por teclado y etiquetas ES/EN.
+- Comprobar que territorios, países pequeños, islas y zonas sin datos se representen sin inducir a error.
+- Mantener tablas agregadas como alternativa accesible y para países sin geometría reconocida.
+
+La geometría cartográfica debe ser un recurso estático versionado en el repositorio, con atribución y licencia documentadas. No se debe introducir un proveedor de mapas externo que reciba la IP o consultas de visitantes sin revisar previamente privacidad, contratos y cookies.
+
