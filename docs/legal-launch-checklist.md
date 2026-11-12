@@ -19,7 +19,7 @@
 - [x] Responsable: JUAN MANUEL ZAMORA ZAPATA, persona natural, Colombia (dato confirmado por el titular del proyecto el 11 de noviembre de 2026).
 - [x] Dirección oficial para notificaciones judiciales: Carrera 60 # 71-10, Bello, Antioquia, Colombia (confirmada por el responsable y autorizada expresamente para publicación el 11 de noviembre de 2026; la revisión jurídica de su suficiencia continúa pendiente).
 - [x] Correo oficial de privacidad, soporte y reclamaciones: soporte.neuroevalpro@gmail.com (facilitado por el responsable; falta probar operatividad y tiempos de respuesta).
-- [ ] Teléfono oficial de contacto y soporte: pendiente de confirmación por el responsable.
+- [x] Se decidió no publicar un teléfono; el correo soporte.neuroevalpro@gmail.com es el canal público de contacto. Confirmar capacidad operativa y tiempos de atención.
 - [ ] Definir si se designará un canal separado para derechos de protección de datos.
 
 ## Datos reales adicionales que debe aportar el responsable
@@ -28,7 +28,7 @@
 - [x] País y domicilio informados: Colombia; dirección facilitada en Bello, Antioquia (pendiente validación legal).
 - [x] NIT 1007114237-5: el responsable confirmó el 11 de noviembre de 2026 que coincide exactamente con el dato de su RUT. La verificación se basa en esa confirmación; no se ha inspeccionado una copia del RUT.
 - [x] Correo oficial para privacidad, consultas y reclamaciones: soporte.neuroevalpro@gmail.com (validar operatividad y procedimiento interno).
-- [ ] Teléfono oficial de contacto: pendiente de confirmación; no inventar ni publicar un número no autorizado.
+- [x] No se publicará teléfono oficial; el correo soporte.neuroevalpro@gmail.com será el canal público.
 - [ ] Responsable interno que atenderá solicitudes y plazos operativos.
 - [x] Brevo confirmado por el titular como proveedor de correo activo y funcional. [ ] Revisar contrato, región y subencargados de Brevo.
 - [x] Región de Cloud Firestore confirmada en el proyecto: southamerica-east1 (São Paulo, Brasil). La documentación oficial indica que la región de Firestore se fija al crear la base y no puede cambiarse después. [ ] Confirmar por consola/cuenta y contrato las condiciones de Google Cloud y Firebase Authentication.
@@ -145,3 +145,11 @@ Los tres documentos se prepararon en español e inglés en la rama `feature/glob
 - [ ] Aprobar formalmente versión, fecha de entrada en vigor y procedimiento de notificación de cambios.
 
 **Importante:** la preparación del texto y su incorporación al repositorio no convierten por sí solas los documentos en instrumentos jurídicos validados ni demuestran cumplimiento legal en Colombia o en otros países.
+
+
+## Actualización editorial — 11 de noviembre de 2026
+
+- Se retiraron los campos de teléfono de `public/privacy.html` y `public/terms.html` por decisión del responsable; el canal público es soporte.neuroevalpro@gmail.com.
+- Se eliminaron los marcadores visibles de `public/privacy.html` y se reemplazaron por explicaciones sobre el estado real de la información y las verificaciones pendientes. Esto no cierra los pendientes de retención automatizada, inventario de cookies en navegador, contratos de proveedores, bases jurídicas por país ni designación de delegado si fuese obligatoria.
+- Los términos mantienen pendiente la fecha efectiva, que solo debe completarse tras aprobación y publicación.
+- La elegibilidad por edades no se ha modificado. La aplicación actual limita las evaluaciones individuales a adultos y el flujo familiar contempla rangos de menores; no debe publicarse una política que prometa acceso universal por edad hasta revisar la arquitectura y las normas aplicables.
