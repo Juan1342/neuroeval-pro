@@ -3063,10 +3063,8 @@ const ADMIN_PERMISSION_LABELS = {
   "support.manage": "Responder y gestionar soporte"
 };
 
-const WORLD_COUNTRY_CENTROIDS = {
-  CO:[4,-74],US:[39,-98],CA:[57,-106],MX:[23,-102],BR:[-10,-52],AR:[-34,-64],CL:[-30,-71],PE:[-9,-75],EC:[-1,-78],VE:[8,-66],PA:[9,-80],CR:[10,-84],GT:[15,-90],DO:[19,-70],ES:[40,-4],GB:[55,-3],FR:[46,2],DE:[51,10],IT:[42,12],PT:[39,-8],NL:[52,5],CH:[47,8],IE:[53,-8],AU:[-25,134],NZ:[-41,174],JP:[37,138],KR:[36,128],CN:[35,103],IN:[22,79],SG:[1,104],AE:[24,54],SA:[24,45],ZA:[-29,24],NG:[9,8],KE:[0,38],EG:[26,30],SE:[62,15],NO:[62,10],DK:[56,10],FI:[64,26],PL:[52,20],UA:[49,32],TR:[39,35],IL:[31,35],TH:[16,101],ID:[-2,118],PH:[13,122],PK:[30,70]
-};
-function renderWorldMap(rows = []) {
+let worldMapGeometryPromise;
+async function renderWorldMap(rows = []) {
   const host = $("admin-world-map");
   if (!host) return;
   host.replaceChildren();
@@ -3074,34 +3072,68 @@ function renderWorldMap(rows = []) {
   const svg = document.createElementNS(NS,"svg");
   svg.setAttribute("viewBox","0 0 900 440");
   svg.setAttribute("role","img");
-  svg.setAttribute("aria-label",currentLanguage==="en"?"Aggregated users by country":"Usuarios agrupados por país");
-  const addLand = d => { const p=document.createElementNS(NS,"path");p.setAttribute("d",d);p.setAttribute("class","land");svg.appendChild(p); };
-  addLand("M65 85 L115 45 190 35 245 60 270 100 240 130 220 170 190 185 175 230 145 220 130 180 100 165 80 125 Z");
-  addLand("M210 235 L245 245 270 280 265 320 245 365 225 405 205 370 195 325 180 285 Z");
-  addLand("M395 85 L435 65 475 70 500 95 535 95 565 120 550 150 520 160 505 190 475 195 455 165 425 155 410 125 Z");
-  addLand("M465 195 L500 185 535 205 550 245 540 285 515 330 490 350 470 320 455 275 445 235 Z");
-  addLand("M540 90 L590 55 680 45 770 75 820 120 790 160 730 175 680 155 640 180 600 155 560 145 Z");
-  addLand("M710 260 L755 245 790 270 785 315 755 345 720 325 700 290 Z");
-  addLand("M820 350 L840 340 855 355 845 375 825 370 Z");
-  const project=(lat,lon)=>({x:(lon+180)/360*900,y:(90-lat)/180*440});
-  const mapped=rows.filter(row=>row.code&&WORLD_COUNTRY_CENTROIDS[row.code]);
-  if (!mapped.length) {
-    const note=document.createElementNS(NS,"text");note.setAttribute("x","450");note.setAttribute("y","220");note.setAttribute("text-anchor","middle");note.setAttribute("class","map-point-label");note.textContent=currentLanguage==="en"?"No mappable country groups yet":"Aún no hay grupos de países que puedan ubicarse";svg.appendChild(note);
-  } else {
-    const max=Math.max(1,...mapped.map(row=>Number(row.count)||0));
-    mapped.forEach(row=>{
-      const countryLabel=currentLanguage==="en"?(row.labelEn||row.label):row.label;
-      const [lat,lon]=WORLD_COUNTRY_CENTROIDS[row.code],pos=project(lat,lon);
-      const circle=document.createElementNS(NS,"circle");circle.setAttribute("cx",pos.x);circle.setAttribute("cy",pos.y);circle.setAttribute("r",String(5+Math.sqrt(Number(row.count)/max)*13));circle.setAttribute("class","map-point");circle.setAttribute("tabindex","0");circle.setAttribute("role","button");
-      const countLabel=Number(row.count).toLocaleString(currentLanguage==="en"?"en-US":(currentLanguage === "en" ? "en-US" : "es-CO"));
-      circle.setAttribute("aria-label",countryLabel+": "+countLabel+(currentLanguage==="en"?" users":" usuarios"));
-      const title=document.createElementNS(NS,"title");title.textContent=countryLabel+": "+countLabel+(currentLanguage==="en"?" users":" usuarios");circle.appendChild(title);
-      const reveal=()=>{const status=$("admin-global-status");if(status)status.textContent=countryLabel+": "+countLabel+(currentLanguage==="en"?" users in this aggregated group.":" usuarios en este grupo agregado.");};
-      circle.addEventListener("click",reveal);circle.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();reveal();}});
-      svg.appendChild(circle);
+  svg.setAttribute("aria-label",currentLanguage==="en"?"World country map with aggregated user groups highlighted":"Mapa mundial con países que tienen grupos agregados de usuarios");
+  const project=(lon,lat)=>({x:(lon+180)/360*900,y:(90-Math.max(-85,Math.min(85,lat)))/180*440});
+  const ringPath=ring=>{
+    if(!Array.isArray(ring)||ring.length<4)return "";
+    return ring.map((point,index)=>{
+      const p=project(Number(point[0]),Number(point[1]));
+      return (index===0?"M":"L")+p.x.toFixed(2)+" "+p.y.toFixed(2);
+    }).join(" ")+" Z";
+  };
+  const geometryPath=geometry=>{
+    if(!geometry)return "";
+    const polygons=geometry.type==="Polygon"?[geometry.coordinates]:geometry.type==="MultiPolygon"?geometry.coordinates:[];
+    return polygons.map(polygon=>polygon.map(ringPath).filter(Boolean).join(" ")).filter(Boolean).join(" ");
+  };
+  try {
+    if(!worldMapGeometryPromise){
+      worldMapGeometryPromise=fetch("/data/world-countries-110m.geojson",{cache:"force-cache"}).then(response=>{
+        if(!response.ok)throw new Error("No se pudo cargar la cartografía mundial.");
+        return response.json();
+      }).then(data=>{
+        if(data.type!=="FeatureCollection"||!Array.isArray(data.features))throw new Error("El archivo cartográfico no es válido.");
+        return data;
+      }).catch(error=>{worldMapGeometryPromise=null;throw error;});
+    }
+    const world=await worldMapGeometryPromise;
+    const counts=new Map((Array.isArray(rows)?rows:[]).filter(row=>row.code).map(row=>[String(row.code).toUpperCase(),Number(row.count)||0]));
+    world.features.forEach(feature=>{
+      const code=String(feature.properties?.iso_a2||"").toUpperCase();
+      const name=String(feature.properties?.name||code||"");
+      const count=counts.get(code)||0;
+      const pathData=geometryPath(feature.geometry);
+      if(!pathData)return;
+      const path=document.createElementNS(NS,"path");
+      path.setAttribute("d",pathData);
+      path.setAttribute("class","land"+(count>=10?" has-users":""));
+      path.setAttribute("fill-rule","evenodd");
+      path.setAttribute("tabindex",count>=10?"0":"-1");
+      if(count>=10){
+        const label=currentLanguage==="en"?name:name;
+        const formatted=count.toLocaleString(currentLanguage==="en"?"en-US":"es-CO");
+        const description=label+": "+formatted+(currentLanguage==="en"?" users":" usuarios");
+        path.setAttribute("aria-label",description);
+        path.setAttribute("role","img");
+        const title=document.createElementNS(NS,"title");
+        title.textContent=description;
+        path.appendChild(title);
+        path.addEventListener("click",()=>{const status=$("admin-global-status");if(status)status.textContent=description;});
+        path.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();const status=$("admin-global-status");if(status)status.textContent=description;}});
+      }
+      svg.appendChild(path);
     });
+    if(!counts.size||![...counts.values()].some(count=>count>=10)){
+      const note=document.createElementNS(NS,"text");
+      note.setAttribute("x","450");note.setAttribute("y","220");note.setAttribute("text-anchor","middle");note.setAttribute("class","map-point-label");
+      note.textContent=currentLanguage==="en"?"No country groups meet the privacy threshold yet":"Aún no hay grupos de países que cumplan el umbral de privacidad";
+      svg.appendChild(note);
+    }
+    host.appendChild(svg);
+  } catch(error) {
+    host.textContent=currentLanguage==="en"?"The world map could not be loaded. Country statistics remain available below.":"No fue posible cargar el mapa mundial. Las estadísticas por país siguen disponibles abajo.";
+    const status=$("admin-global-status");if(status)status.textContent=error.message;
   }
-  host.appendChild(svg);
 }
 
 async function loadAdminGlobalAnalytics() {
