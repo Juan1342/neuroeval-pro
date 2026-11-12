@@ -3100,7 +3100,7 @@ async function renderWorldMap(rows = []) {
     const counts=new Map((Array.isArray(rows)?rows:[]).filter(row=>row.code).map(row=>[String(row.code).toUpperCase(),Number(row.count)||0]));
     world.features.forEach(feature=>{
       const code=String(feature.properties?.iso_a2||"").toUpperCase();
-      const name=String(feature.properties?.name||code||"");
+      const name=String((currentLanguage==="en"?feature.properties?.name_en:feature.properties?.name_es)||feature.properties?.name_en||code||"");
       const count=counts.get(code)||0;
       const pathData=geometryPath(feature.geometry);
       if(!pathData)return;
