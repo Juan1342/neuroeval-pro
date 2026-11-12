@@ -102,12 +102,13 @@ test("privacy documents open and account privacy controls export data and submit
   await expect(page.getByRole("heading", { name: /Terms and Conditions of Use/ })).toBeVisible();
 
   await page.goto("/");
+  await page.locator("#global-language").selectOption("en");
   await page.locator("#show-register").click();
   await page.locator("#reg-name").fill("Browser Test");
   await page.locator("#reg-email").fill("browser2@example.com");
   await page.locator("#reg-password").fill("SafePass123!");
   await page.locator("#reg-age").fill("31");
-  await page.locator("#reg-goal").selectOption("concentración y organización");
+  await page.locator("#reg-goal").selectOption({ label: "Focus" });
   await page.locator("#consent").check();
   await page.locator("#register-form button[type=submit]").click();
   await expect(page.locator("#dashboard-view")).toBeVisible();
@@ -133,12 +134,13 @@ test("privacy documents open and account privacy controls export data and submit
 test("family observation requires both guardian authority and sensitive-data consent", async ({ page }) => {
   await mockBrowserServices(page);
   await page.goto("/");
+  await page.locator("#global-language").selectOption("en");
   await page.locator("#show-register").click();
   await page.locator("#reg-name").fill("Parent Browser Test");
   await page.locator("#reg-email").fill("parent-browser@example.com");
   await page.locator("#reg-password").fill("SafePass123!");
   await page.locator("#reg-age").fill("35");
-  await page.locator("#reg-goal").selectOption("concentración y organización");
+  await page.locator("#reg-goal").selectOption({ label: "Focus" });
   await page.locator("#consent").check();
   await page.locator("#register-form button[type=submit]").click();
   await expect(page.locator("#dashboard-view")).toBeVisible();
