@@ -26,6 +26,7 @@ test("international analytics endpoint is authenticated, permission-scoped, pagi
   assert.match(server, /GLOBAL_ANALYTICS_PAGE_SIZE = 1000/);
   assert.match(server, /const regionalAnalyticsConsent = req\.body\.regionalAnalyticsConsent === true/);
   assert.match(server, /GLOBAL_ANALYTICS_MAX_USERS = 50000/);
+  assert.ok(server.includes("if (regionalDataChanged)") && server.includes("globalAnalyticsCache = null"));
   assert.match(server, /aggregateProfiles\(profiles, 10\)/);
   assert.match(server, /\.select\("country", "city", "age", "language", "regionalAnalyticsConsent"\)/);
 });
