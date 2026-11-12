@@ -4011,11 +4011,11 @@ app.get("/", (req, res, next) => {
     const description = isEnglish
       ? "NeuroEval Pro is a self-reflection tool for attention, organization, and cognitive habits. It is informative and does not provide a medical diagnosis."
       : "NeuroEval Pro es una herramienta de autorregistro orientativo sobre atención, organización y hábitos cognitivos. Ofrece información y no emite diagnósticos médicos.";
-    const origin = `${req.protocol}://${req.get("host")}`;
+    const origin = "https://neuroeval-pro.onrender.com";
     const html = fs.readFileSync(path.join(publicDirectory, "index.html"), "utf8")
       .replace('<html lang="es">', `<html lang="${requestedLanguage}">`)
       .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${description}">`)
-      .replace(/<title>[^<]*<\\/title>/, `<title>${title}</title>`)
+      .replace(/<title>[^<]*<\/title>/, '<title>' + title + '</title>')
       .replace("</head>", `<link rel="canonical" href="${origin}/?lang=${requestedLanguage}" data-seo-canonical>
   <link rel="alternate" hreflang="es" href="${origin}/?lang=es">
   <link rel="alternate" hreflang="en" href="${origin}/?lang=en">
