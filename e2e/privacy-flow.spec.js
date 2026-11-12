@@ -85,10 +85,16 @@ test("registration, bilingual UI, sensitive-consent gate and assessment payment 
 
   for (let step = 0; step < 30; step++) {
     if (await page.locator("#payment-view").isVisible()) break;
-    const answers = page.locator("#answers button");
+    const answers = page.locator("#quiz-view #answers button:visible");
     await expect(answers.first()).toBeVisible();
     await answers.first().click();
     await page.locator("#next-question").click();
+    await page.waitForFunction(() => {
+      const quiz = document.querySelector("#quiz-view");
+      const payment = document.querySelector("#payment-view");
+      return (quiz && !quiz.classList.contains("hidden")) ||
+        (payment && !payment.classList.contains("hidden"));
+    });
   }
   await expect(page.locator("#payment-view")).toBeVisible();
   await expect(page.locator("#payment-price")).toContainText("4,000");
