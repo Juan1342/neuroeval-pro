@@ -56,14 +56,15 @@ test("world map renderer creates SVG country paths and enforces the ten-profile 
   const paths = svg.children.filter(node => node.tagName === "path");
   assert.ok(paths.length >= 150, "expected broad country path coverage");
 
+  const highlighted = paths.filter(node => node.attributes.class === "land has-users");
   const colombia = paths.find(node => node.attributes["aria-label"]?.startsWith("Colombia:"));
-  const unitedStates = paths.find(node => node.attributes.class === "land" && node.attributes.tabindex === "-1" && node.attributes.d);
+  assert.equal(highlighted.length, 1, "only the country meeting the threshold should be highlighted");
   assert.ok(colombia, "country with 12 profiles should be highlighted and labelled");
   assert.equal(colombia.attributes.class, "land has-users");
   assert.equal(colombia.attributes.tabindex, "0");
   assert.equal(colombia.attributes.role, "button");
   assert.match(colombia.attributes["aria-label"], /12 usuarios/);
-  assert.ok(unitedStates, "countries below the threshold remain non-interactive");
+  assert.ok(paths.filter(node => node.attributes.class === "land").every(node => node.attributes.tabindex === "-1"), "countries below the threshold remain non-interactive");
 });
 
 test("highlighted map countries expose keyboard interaction and localized labels", async () => {
