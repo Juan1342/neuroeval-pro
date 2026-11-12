@@ -12,7 +12,7 @@
 - Existe un flujo de observación familiar que puede referirse a menores; el formulario registra una declaración de autorización del adulto, pero el sistema no verifica documentalmente la identidad ni la autoridad parental.
 - La plataforma utiliza Firebase Authentication/Firestore, Render y Wompi. El titular confirmó que Brevo está configurado como proveedor de correo activo y que el envío funciona; siguen pendientes la revisión contractual, los subencargados y la ubicación efectiva del tratamiento.
 - En la rama de preparación se retiraron las solicitudes de Google Fonts y Tailwind CDN: se usan fuentes del sistema y estilos locales. El SDK web de Firebase (gstatic.com) y el widget de Wompi (checkout.wompi.co) siguen siendo recursos externos. Falta inspección de red en navegador y en producción.
-- La política de privacidad existente contiene 24 marcadores pendientes y está identificada como borrador no apto para publicación.
+- La política de privacidad conserva 14 marcadores pendientes de completar o validar y está identificada como borrador no apto para publicación.
 
 ## Identificación confirmada del responsable
 
@@ -23,7 +23,7 @@
 
 ## Datos reales adicionales que debe aportar el responsable
 
-- [ ] Nombre legal o razón social del responsable.
+- [x] Nombre legal del responsable persona natural: JUAN MANUEL ZAMORA ZAPATA.
 - [x] País y domicilio informados: Colombia; dirección facilitada en Bello, Antioquia (pendiente validación legal).
 - [x] NIT 1007114237-5: el responsable confirmó el 11 de noviembre de 2026 que coincide exactamente con el dato de su RUT. La verificación se basa en esa confirmación; no se ha inspeccionado una copia del RUT.
 - [x] Correo oficial para privacidad, consultas y reclamaciones: soporte.neuroevalpro@gmail.com (validar operatividad y procedimiento interno).
