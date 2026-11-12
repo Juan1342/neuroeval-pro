@@ -70,6 +70,7 @@ test("privacy consent can be recorded or withdrawn and data export is private", 
   assert.match(server, /Cache-Control", "private, no-store"/);
   assert.match(server, /passwordResets/);
   assert.match(app, /\/api\/my-data\/export/);
+  assert.match(app, /exported\.localProgress = readProgress\(\)/);
 });
 
 test("privacy requests are authenticated and admin deletion requires primary-admin approval", () => {
