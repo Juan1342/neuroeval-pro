@@ -1015,6 +1015,11 @@ function setLanguage(language, options = {}) {
   try { localStorage.setItem("neuroeval-language", currentLanguage); } catch (_) {}
   document.documentElement.lang = currentLanguage;
   document.title = currentLanguage === "en" ? "NeuroEval Pro | Understand how your mind works" : "NeuroEval Pro | Conoce cómo funciona tu mente";
+  if (options.persist) {
+    const languageUrl = new URL(window.location.href);
+    languageUrl.searchParams.set("lang", currentLanguage);
+    window.history.replaceState({}, document.title, languageUrl.pathname + languageUrl.search + languageUrl.hash);
+  }
   const description = currentLanguage === "en"
     ? "NeuroEval Pro is a self-reflection tool for attention, organization, and cognitive habits. It is informative and does not provide a medical diagnosis."
     : "NeuroEval Pro es una herramienta de autorregistro orientativo sobre atención, organización y hábitos cognitivos. Ofrece información y no emite diagnósticos médicos.";
