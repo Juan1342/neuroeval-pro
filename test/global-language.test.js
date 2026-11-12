@@ -25,6 +25,8 @@ test("language handling covers generated DOM text, placeholders, accessibility a
   assert.match(app, /function applyLanguageToDom\(root = document\.body\)/);
   assert.match(app, /input\[placeholder\],textarea\[placeholder\]/);
   assert.match(app, /\[title\],\[aria-label\],\[alt\]/);
+  assert.match(app, /attributes: true, attributeFilter: \["placeholder", "title", "aria-label", "alt", "value"\]/);
+  assert.match(app, /input\[type=button\]\[value\],input\[type=submit\]\[value\]/);
   assert.match(app, /function startLanguageObserver\(\)/);
   assert.match(app, /window\.alert = message => nativeAlert\(translateUiText\(message\)\)/);
   assert.match(app, /window\.confirm = message => nativeConfirm\(translateUiText\(message\)\)/);
@@ -52,4 +54,9 @@ test("country map is localized, privacy-thresholded and does not request individ
   assert.match(app, /host\.setAttribute\("aria-label", mapLabel\)/);
   assert.match(app, /path\.setAttribute\("data-country-code", code\)/);
   assert.doesNotMatch(app, /navigator\.geolocation|Geolocation\.getCurrentPosition/);
+});
+
+
+test("the English word-memory game uses English prompts and answer values", () => {
+  assert.match(app, /const bank=currentLanguage==="en"\?\["CLOUD","PENCIL","RIVER","CUP","MOON","FLOWER","CLOCK","BREAD","KEY","MOUNTAIN","BOOK","WINDOW","ROAD","ORANGE","STAR","GARDEN","MUSIC","TRAIN"\]/);
 });
