@@ -901,6 +901,7 @@ app.post("/api/profile", requireUser, async (req, res) => {
 
     const userRef = db.collection("users").doc(req.user.uid);
     const existing = await userRef.get();
+    const previous = existing.exists ? existing.data() || {} : {};
 
     const profile = {
       uid: req.user.uid,
@@ -922,6 +923,17 @@ app.post("/api/profile", requireUser, async (req, res) => {
     }
 
     await userRef.set(profile, { merge: true });
+
+    const regionalDataChanged =
+      previous.country !== profile.country ||
+      previous.city !== profile.city ||
+      previous.regionalAnalyticsConsent !== profile.regionalAnalyticsConsent;
+    if (regionalDataChanged) {
+      globalAnalyticsCache = null;
+      await db.collection("systemCache").doc("globalAnalytics").delete().catch(error => {
+        console.warn("No se pudo invalidar la caché geográfica:", error.message);
+      });
+    }
 
     return res.json({ ok: true, profile });
 
