@@ -27,7 +27,7 @@ test("international analytics endpoint is authenticated, permission-scoped, pagi
   assert.match(server, /const regionalAnalyticsConsent = req\.body\.regionalAnalyticsConsent === true/);
   assert.match(server, /GLOBAL_ANALYTICS_MAX_USERS = 50000/);
   assert.match(server, /aggregateProfiles\(profiles, 10\)/);
-  assert.match(server, /\.select\("country", "city", "detectedCountryCode", "age", "language"\)/);
+  assert.match(server, /\.select\("country", "city", "age", "language", "regionalAnalyticsConsent"\)/);
 });
 
 test("profiles without explicit regional analytics consent are excluded", () => {
