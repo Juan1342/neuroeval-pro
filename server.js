@@ -956,7 +956,7 @@ app.post("/api/profile", requireUser, async (req, res) => {
    PRIVACIDAD: CONSENTIMIENTO, EXPORTACIÓN Y SOLICITUDES
 ========================================================= */
 
-const PRIVACY_NOTICE_VERSION = "2026-11-11-v1";
+const PRIVACY_NOTICE_VERSION = "2026-11-11-v2";
 
 app.post("/api/privacy/consent", requireUser, async (req, res) => {
   try {
@@ -1254,7 +1254,7 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
     } else {
       const parentContext = body.parentContext || {};
       if (parentContext.consent !== true || parentContext.sensitiveDataConsent !== true ||
-          parentContext.consentVersion !== PRIVACY_NOTICE_VERSION || !parentContext.consentAt) {
+          parentContext.consentVersion !== PRIVACY_NOTICE_VERSION || parentContext.minorHeard !== true || !parentContext.consentAt) {
         return sendError(res, 403, "El adulto responsable debe autorizar expresamente el tratamiento de los datos sensibles del menor.");
       }
     }
@@ -1282,7 +1282,7 @@ app.post("/api/evaluations", requireUser, async (req, res) => {
       age,
       goal,
       evaluationType,
-      parentContext: evaluationType === "parent_observation" ? { ...calculated.parentContext, guardianConsent: true, sensitiveDataConsent: true, consentVersion: PRIVACY_NOTICE_VERSION, consentAt: new Date().toISOString(), consentByUid: req.user.uid } : null,
+      parentContext: evaluationType === "parent_observation" ? { ...calculated.parentContext, guardianConsent: true, sensitiveDataConsent: true, minorHeard: true, consentVersion: PRIVACY_NOTICE_VERSION, consentAt: new Date().toISOString(), consentByUid: req.user.uid } : null,
       answers: calculated.answers,
       scores: calculated.scores,
       profile: calculated.profile,
