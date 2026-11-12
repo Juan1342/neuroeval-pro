@@ -7,7 +7,7 @@
 
 - [ ] Confirmar que Render Auto-Deploy permanece OFF.
 - [ ] Confirmar que el servicio Render sigue conectado a `mejoras/neuroeval-pro`, no a la rama de preparación.
-- [ ] Confirmar que el último workflow de GitHub Actions termina en `success`.
+- [x] Confirmar que el workflow `Node tests` termina en `success` para el commit `f44c742a3260dff9dfab5f601609baf28f130ae3` (12 nov 2026).
 - [ ] Confirmar que `WOMPI_PUBLIC_KEY` y `WOMPI_PRIVATE_KEY` pertenecen al mismo ambiente.
 - [ ] Configurar `WOMPI_PRIVATE_KEY` en Render como secreto, si no está configurada.
 - [ ] Confirmar que `WOMPI_INTEGRITY_SECRET` y `WOMPI_EVENTS_SECRET` corresponden al mismo ambiente.
@@ -68,8 +68,7 @@ No usar una tarjeta real en este bloque.
 ## 6. Recursos externos y privacidad del navegador
 
 - [ ] Inspeccionar las solicitudes de red desde una sesión limpia y registrar los dominios de terceros realmente contactados.
-- [ ] Confirmar si Google Fonts continúa cargándose desde `fonts.googleapis.com` y `fonts.gstatic.com`; si se mantiene, reflejarlo correctamente en el aviso de privacidad/cookies y en la lista de proveedores.
-- [ ] Confirmar si Tailwind continúa cargándose desde `cdn.tailwindcss.com`; priorizar una compilación local antes del lanzamiento global.
+- [x] La rama de preparación retiró Google Fonts y Tailwind CDN; usa fuentes del sistema y CSS local. La verificación de solicitudes de red en navegador permanece pendiente.
 - [ ] Identificar las solicitudes de Firebase SDK, autenticación, Wompi y cualquier otro tercero; contrastarlas con los avisos y contratos aplicables.
 - [ ] Repetir la carga con bloqueo de cada recurso externo no esencial y comprobar que el registro, la evaluación, el informe y el pago no fallan de forma silenciosa.
 - [ ] Revisar cookies, almacenamiento local y de sesión, y tecnologías de seguimiento en navegador; no inferir su ausencia solo porque no haya Google Analytics habilitado.
@@ -89,7 +88,7 @@ No usar una tarjeta real en este bloque.
 - [x] Comprobar que la página principal ya no solicita Google Fonts ni Tailwind CDN y que enlaza la hoja de estilos local.
 - [x] Comprobar que las clases de utilidad usadas en el HTML y en el marcado generado por JavaScript tienen selectores CSS locales.
 - [x] Ejecutar el renderizador del mapa mundial con un DOM simulado: verifica paths SVG, umbral de 10 perfiles, etiquetas ES/EN, accesibilidad por teclado y recorte del meridiano 180°.
-- [x] Añadir pruebas automatizadas de selector ES/EN, persistencia de idioma, metadatos del documento, textos dinámicos, atributos accesibles y palabras del juego de memoria en inglés.
+- [x] Ejecutar pruebas automatizadas de selector ES/EN, persistencia de idioma, metadatos del documento, textos dinámicos, atributos accesibles y palabras del juego de memoria en inglés.
 - [x] Mantener pruebas unitarias de la consulta autenticada de transacciones Wompi y validación de prefijos de llaves.
 - [ ] Inspección visual del mapa y la interfaz en un navegador real; las pruebas simuladas no validan diseño, responsive ni errores de consola del navegador.
 - [x] Pruebas de transacciones aprobadas/rechazadas y webhooks repetidos en Wompi Sandbox confirmadas por el titular. Las pruebas de alteración de referencia, ausencia de llave y timeout de API siguen pendientes si no se han ejecutado.
