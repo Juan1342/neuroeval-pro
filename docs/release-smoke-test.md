@@ -56,6 +56,10 @@ No usar una tarjeta real en este bloque.
 - [ ] Entrar con un colaborador sin `dashboard.view`; confirmar que no accede a analítica.
 - [ ] Verificar que país, ciudad, edad e idioma se agregan y que grupos con menos de 10 personas no aparecen.
 - [ ] Verificar que los nombres de países se consolidan aunque el usuario introduzca variantes en español, inglés o código ISO.
+- [ ] Confirmar que `/data/world-countries-110m.geojson` carga desde el mismo dominio y que el mapa dibuja los límites sin errores de consola.
+- [ ] Confirmar que el mapa resalta solo países con grupos de al menos 10 perfiles y que no muestra ubicaciones individuales.
+- [ ] Cambiar Español ↔ English con el panel internacional abierto y verificar que se actualizan nombres del mapa, listas y mensajes.
+- [ ] Navegar por los países resaltados con Tab, Enter y barra espaciadora; verificar foco visible y etiquetas accesibles.
 - [ ] Comprobar el aviso `truncated` al superar el límite de 50.000 perfiles.
 
 ## 6. Producción
