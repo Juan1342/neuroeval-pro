@@ -124,3 +124,28 @@ test("privacy documents open and account privacy controls export data and submit
   await page.locator("#privacy-request-submit").click();
   await expect(page.locator("#privacy-request-status")).toContainText("Solicitud registrada");
 });
+
+test("family observation requires both guardian authority and sensitive-data consent", async ({ page }) => {
+  await mockBrowserServices(page);
+  await page.goto("/");
+  await page.locator("#show-register").click();
+  await page.locator("#reg-name").fill("Parent Browser Test");
+  await page.locator("#reg-email").fill("parent-browser@example.com");
+  await page.locator("#reg-password").fill("SafePass123!");
+  await page.locator("#reg-age").fill("35");
+  await page.locator("#reg-goal").selectOption("autoconocimiento");
+  await page.locator("#consent").check();
+  await page.locator("#register-form button[type=submit]").click();
+  await expect(page.locator("#dashboard-view")).toBeVisible();
+  await page.locator("#start-parent-evaluation").click();
+  await page.locator("#parent-child-age").selectOption("12");
+  await page.locator("#parent-relationship").selectOption({ index: 1 });
+  await page.locator("#parent-setting-home").check();
+  await page.locator("#parent-guardian-consent").check();
+  await page.locator("#parent-evaluation-form button[type=submit]").click();
+  await expect(page.locator("#parent-intro-message")).toContainText("autorizar expresamente");
+  await expect(page.locator("#quiz-view")).toBeHidden();
+  await page.locator("#parent-sensitive-consent").check();
+  await page.locator("#parent-evaluation-form button[type=submit]").click();
+  await expect(page.locator("#quiz-view")).toBeVisible();
+});
