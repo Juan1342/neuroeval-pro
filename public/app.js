@@ -116,7 +116,7 @@ const uiTranslations = {
   "No se pudo completar la supresión.": "Could not complete deletion.",
   "No se pudieron consultar las solicitudes.": "Could not load requests.",
   "Privacidad": "Privacy",
-  "Términos": "Terms"
+  "Términos": "Terms",
   "Tu cuenta": "Your account",
   "Mi perfil": "My profile",
   "Consulta la información asociada a tu cuenta.": "Review the information associated with your account.",
