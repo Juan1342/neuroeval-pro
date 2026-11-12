@@ -97,6 +97,8 @@ test("user-facing privacy controls and administrator request inbox are present",
   assert.match(html, /id="privacy-request-form"/);
   assert.match(html, /id="settings-export-data"/);
   assert.match(html, /id="settings-revoke-sensitive"/);
+  assert.match(html, /id="settings-clear-local-progress"/);
+  assert.match(app, /localStorage\.removeItem\(progressKey\(\)\)/);
   assert.match(html, /id="admin-privacy-list"/);
   assert.match(app, /function submitPrivacyRequest/);
   assert.match(app, /function renderAdminPrivacyRequests/);
