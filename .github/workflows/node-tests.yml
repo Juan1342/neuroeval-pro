@@ -6,6 +6,7 @@ on:
     branches:
       - release/es-en-world-map
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - mejoras/neuroeval-pro
 
