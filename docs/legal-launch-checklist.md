@@ -95,6 +95,13 @@ No asumir que cumplir en Colombia o la UE habilita automáticamente todos los de
 
 No publicar los documentos hasta que los campos anteriores estén completos, los flujos de menores estén resueltos y un profesional jurídico con experiencia en privacidad y servicios digitales revise el paquete para los mercados realmente elegidos.
 
+## Fuentes oficiales de proveedores e infraestructura
+
+- Brevo — ubicación de almacenamiento: https://help.brevo.com/hc/en-us/articles/360001005510-Data-storage-location (la documentación declara bases de datos en la UE, almacenamiento Google Cloud en Bélgica e infraestructura OVH en Francia y Alemania; verificar el DPA y subencargados de la cuenta).
+- Render — regiones: https://render.com/docs/regions (Oregon figura entre las regiones disponibles); seguridad y subprocesadores: https://render.com/security (revisar el DPA vigente y la cobertura contractual).
+- Firebase — ubicaciones de Cloud Firestore: https://firebase.google.com/docs/firestore/locations (la ubicación se elige al aprovisionar y no puede cambiarse después).
+- Wompi — política de tratamiento de datos personales, actualizada en octubre de 2026: https://wompi.co/es/co/politica-de-privacidad (descargar y revisar el documento contractual vigente para el comercio).
+
 ## Fuentes oficiales de partida
 
 - SIC Colombia — datos sensibles y datos de salud: https://sedeelectronica.sic.gov.co/politica-de-tratamiento-de-datos-personales
