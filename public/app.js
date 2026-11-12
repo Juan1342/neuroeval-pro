@@ -945,7 +945,7 @@ const nativePrompt = window.prompt.bind(window);
 window.alert = message => nativeAlert(translateUiText(message));
 window.confirm = message => nativeConfirm(translateUiText(message));
 window.prompt = (message, defaultValue) => nativePrompt(translateUiText(message), defaultValue);
-function setLanguage(language) {
+function setLanguage(language, options = {}) {
   currentLanguage = language === "en" ? "en" : "es";
   try { localStorage.setItem("neuroeval-language", currentLanguage); } catch (_) {}
   document.documentElement.lang = currentLanguage;
@@ -955,6 +955,11 @@ function setLanguage(language) {
   applyLanguageToDom();
   const globalPanel = $("admin-panel-global");
   if (currentIsAdmin && globalPanel && !globalPanel.classList.contains("hidden")) loadAdminGlobalAnalytics();
+  if (options.persist && currentUser && !currentIsAdmin) {
+    profileData = { ...(profileData || {}), language: currentLanguage };
+    api("/api/profile", { method: "POST", body: JSON.stringify({ ...(profileData || {}), language: currentLanguage }) })
+      .catch(error => console.warn("No se pudo sincronizar el idioma del perfil:", error));
+  }
 }
 function preferredLanguage() {
   try {
@@ -3983,7 +3988,7 @@ function registerEventListeners() {
   if (languageSelect) {
     languageSelect.value = preferredLanguage();
     setLanguage(languageSelect.value);
-    languageSelect.addEventListener("change", () => setLanguage(languageSelect.value));
+    languageSelect.addEventListener("change", () => setLanguage(languageSelect.value, { persist: true }));
   }
   startLanguageObserver();
 
