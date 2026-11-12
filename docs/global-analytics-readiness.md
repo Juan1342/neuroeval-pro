@@ -43,11 +43,11 @@ La cobertura automatizada comprueba normalización de países, consolidación de
 
 ## Auditoría del mapa del panel (11 de noviembre de 2026)
 
-La implementación actual es una visualización SVG esquemática construida con polígonos simplificados y una tabla fija de centroides para un subconjunto de países. No utiliza límites geográficos oficiales y los países sin centroide definido no aparecen en el mapa, aunque sí pueden estar incluidos en las tablas agregadas. Por tanto, debe presentarse como **mapa esquemático**, no como cartografía mundial completa.
+La implementación ahora utiliza un GeoJSON local de Natural Earth a escala 1:110m con 177 entidades, geometrías de país y nombres en español e inglés. El navegador dibuja los límites como SVG y resalta países solo cuando el agregado supera el umbral de privacidad de 10 perfiles. El recurso está alojado en `public/data/world-countries-110m.geojson`; no consulta un servicio cartográfico externo ni transmite datos de visitantes a un proveedor de mapas. Esta escala es de visión global: omite microestados y algunos territorios pequeños, por lo que las tablas agregadas siguen siendo la fuente completa de los grupos que cumplen el umbral. Los límites representan la cartografía de Natural Earth, no una declaración oficial de fronteras.
 
 ### Trabajo necesario para completar el mapa
 
-- Sustituir los polígonos ilustrativos por geometrías de países de una fuente cartográfica con licencia compatible, empaquetada localmente para no depender de un CDN durante el uso.
+- Para cubrir microestados y territorios pequeños que la escala 1:110m omite, evaluar una geometría de mayor resolución (1:50m) solo si el tamaño y el rendimiento son adecuados.
 - Relacionar cada geometría con su código ISO 3166-1 alpha-2.
 - Dibujar únicamente países que superen el umbral de privacidad de 10 perfiles.
 - Mantener el mapa por país; no añadir marcadores de domicilio, coordenadas ni ubicaciones individuales.
@@ -55,5 +55,16 @@ La implementación actual es una visualización SVG esquemática construida con 
 - Comprobar que territorios, países pequeños, islas y zonas sin datos se representen sin inducir a error.
 - Mantener tablas agregadas como alternativa accesible y para países sin geometría reconocida.
 
-La geometría cartográfica debe ser un recurso estático versionado en el repositorio, con atribución y licencia documentadas. No se debe introducir un proveedor de mapas externo que reciba la IP o consultas de visitantes sin revisar previamente privacidad, contratos y cookies.
+La geometría cartográfica está versionada localmente y procede de Natural Earth, cuyos datos vectoriales son de dominio público. Se muestra la atribución en la interfaz. No se introduce un proveedor de mapas externo que reciba la IP o consultas de visitantes.
 
+
+
+### Implementación cartográfica añadida
+
+- [x] GeoJSON local con 177 entidades Natural Earth 1:110m.
+- [x] Etiquetas de país en español e inglés.
+- [x] Resaltado de países con grupos agregados de al menos 10 perfiles.
+- [x] Sin marcadores ni coordenadas de usuarios individuales.
+- [x] Fallback de interfaz si el recurso cartográfico no carga.
+- [x] Pruebas automáticas de estructura, geometrías y rangos de coordenadas.
+- [ ] Evaluar una escala 1:50m para microestados y territorios pequeños si el presupuesto de rendimiento lo permite.
