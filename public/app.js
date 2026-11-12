@@ -79,6 +79,8 @@ const uiTranslations = {
   "Guardando autorización…": "Saving authorization…",
   "No se pudo guardar la autorización.": "Could not save the authorization.",
   "Debes autorizar expresamente el tratamiento de los datos sensibles del menor para continuar.": "You must expressly authorize processing of the minor's sensitive data to continue.",
+  "Confirma que explicaste la actividad al menor y escuchaste su opinión de acuerdo con su edad y madurez.": "Confirm that you explained the activity to the child and heard their opinion according to their age and maturity.",
+  "Confirmo que expliqué al menor, de manera adecuada a su edad y madurez, el propósito de esta observación y escuché su opinión antes de continuar, respetando su interés superior.": "I confirm that I explained the purpose of this observation to the child in an age- and maturity-appropriate way and heard their opinion before continuing, respecting their best interests.",
   "Tus datos y privacidad": "Your data and privacy",
   "Consulta la política, descarga una copia de tus datos o presenta una solicitud de privacidad.": "Read the policy, download a copy of your data, or submit a privacy request.",
   "Política de privacidad": "Privacy policy",
@@ -1918,7 +1920,7 @@ async function acceptSensitiveDataConsent(event) {
     const response = await api("/api/privacy/consent", { method: "POST", body: JSON.stringify({ consent: true }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "No se pudo guardar la autorización.");
-    profileData = { ...(profileData || {}), sensitiveDataConsent: true, sensitiveDataConsentVersion: data.version || "2026-11-11-v1" };
+    profileData = { ...(profileData || {}), sensitiveDataConsent: true, sensitiveDataConsentVersion: data.version || "2026-11-11-v2" };
     startQuiz(profileData.name || currentUser?.displayName || currentUser?.email, profileData.age ?? null, profileData.goal || "Autoconocimiento");
   } catch (error) { status.textContent = error.message; }
 }
@@ -2097,6 +2099,7 @@ function openParentEvaluation() {
   $("parent-setting-social").checked = false;
   $("parent-guardian-consent").checked = false;
   $("parent-sensitive-consent").checked = false;
+  $("parent-child-informed-consent").checked = false;
   showMessage("parent-intro-message", "");
   show("parent-intro-view");
 }
@@ -2122,8 +2125,11 @@ function startParentEvaluation(event) {
   if (!$("parent-sensitive-consent").checked) {
     return showMessage("parent-intro-message", "Debes autorizar expresamente el tratamiento de los datos sensibles del menor para continuar.", true);
   }
+  if (!$("parent-child-informed-consent").checked) {
+    return showMessage("parent-intro-message", "Confirma que explicaste la actividad al menor y escuchaste su opinión de acuerdo con su edad y madurez.", true);
+  }
   currentEvaluationType = "parent_observation";
-  parentEvaluationContext = { childAge, relationship, settings, consent: true, sensitiveDataConsent: true, consentAt: new Date().toISOString(), consentVersion: "2026-11-11-v1" };
+  parentEvaluationContext = { childAge, relationship, settings, consent: true, sensitiveDataConsent: true, minorHeard: true, consentAt: new Date().toISOString(), consentVersion: "2026-11-11-v2" };
   profileData = { ...(profileData || {}), name: profileData?.name || currentUser.displayName || currentUser.email, goal: "Observación familiar de indicadores asociados al TDAH" };
   questions = parentQuestionBank.map(([category, question, dimension, icon, example]) => {
     const ageExample = childAge <= 7
@@ -2148,7 +2154,7 @@ function startAdhdEvaluation() {
     showMessage("auth-message", "Inicia sesión para comenzar una evaluación.", true);
     return;
   }
-  if (profileData?.sensitiveDataConsent !== true || profileData?.sensitiveDataConsentVersion !== "2026-11-11-v1") {
+  if (profileData?.sensitiveDataConsent !== true || profileData?.sensitiveDataConsentVersion !== "2026-11-11-v2") {
     $("sensitive-consent-checkbox").checked = false;
     showMessage("sensitive-consent-message", "");
     show("sensitive-consent-view");
