@@ -3949,7 +3949,7 @@ function closeAdminDetail() {
 async function downloadAdminPdf(id) {
   try {
     const response = await api(
-      `/api/admin/evaluations/${encodeURIComponent(id)}/pdf`
+      `/api/admin/evaluations/${encodeURIComponent(id)}/pdf?language=${encodeURIComponent(currentLanguage)}`
     );
 
     downloadBlob(await response.blob(), `NeuroEval-Pro-${id}.pdf`);
