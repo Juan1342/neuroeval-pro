@@ -84,6 +84,15 @@ No usar una tarjeta real en este bloque.
 - [ ] Mantener Auto-Deploy OFF hasta aprobar el despliegue manual.
 - [ ] Desplegar solo después de aprobar explícitamente el cambio.
 
+## Cobertura automatizada añadida en la rama de preparación
+
+- [x] Comprobar que la página principal ya no solicita Google Fonts ni Tailwind CDN y que enlaza la hoja de estilos local.
+- [x] Comprobar que las clases de utilidad usadas en el HTML y en el marcado generado por JavaScript tienen selectores CSS locales.
+- [x] Ejecutar el renderizador del mapa mundial con un DOM simulado: verifica paths SVG, umbral de 10 perfiles, etiquetas ES/EN y activación por teclado.
+- [x] Mantener pruebas unitarias de la consulta autenticada de transacciones Wompi y validación de prefijos de llaves.
+- [ ] Inspección visual del mapa y la interfaz en un navegador real; el DOM simulado no valida diseño, responsive ni errores de consola del navegador.
+- [ ] Ejecutar transacciones aprobadas/rechazadas y webhooks repetidos en Wompi Sandbox con las credenciales del comercio.
+
 ## Alcance de pruebas ya automatizadas
 
 GitHub Actions ejecuta Node.js 22, instala dependencias y corre pruebas unitarias/regresiones. Esto no reemplaza pruebas reales en navegador, Firebase conectado ni Wompi Sandbox. Esas verificaciones siguen pendientes.
