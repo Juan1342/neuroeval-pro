@@ -3,6 +3,7 @@
 require("dotenv").config();
 
 const express = require("express");
+const fs = require("fs");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -3996,6 +3997,36 @@ app.use("/api", (req, res) => {
 });
 
 const publicDirectory = path.join(__dirname, "public");
+
+// Entrega metadatos HTML específicos por idioma para el rastreo internacional.
+app.get("/", (req, res, next) => {
+  try {
+    const requestedLanguage = req.query.lang === "en" || req.query.lang === "es"
+      ? req.query.lang
+      : (String(req.headers["accept-language"] || "").toLowerCase().startsWith("en") ? "en" : "es");
+    const isEnglish = requestedLanguage === "en";
+    const title = isEnglish
+      ? "NeuroEval Pro | Understand how your mind works"
+      : "NeuroEval Pro | Conoce cómo funciona tu mente";
+    const description = isEnglish
+      ? "NeuroEval Pro is a self-reflection tool for attention, organization, and cognitive habits. It is informative and does not provide a medical diagnosis."
+      : "NeuroEval Pro es una herramienta de autorregistro orientativo sobre atención, organización y hábitos cognitivos. Ofrece información y no emite diagnósticos médicos.";
+    const origin = `${req.protocol}://${req.get("host")}`;
+    const html = fs.readFileSync(path.join(publicDirectory, "index.html"), "utf8")
+      .replace('<html lang="es">', `<html lang="${requestedLanguage}">`)
+      .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${description}">`)
+      .replace(/<title>[^<]*<\\/title>/, `<title>${title}</title>`)
+      .replace("</head>", `<link rel="canonical" href="${origin}/?lang=${requestedLanguage}" data-seo-canonical>
+  <link rel="alternate" hreflang="es" href="${origin}/?lang=es">
+  <link rel="alternate" hreflang="en" href="${origin}/?lang=en">
+  <link rel="alternate" hreflang="x-default" href="${origin}/">
+</head>`);
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.type("html").send(html);
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.use(
   express.static(publicDirectory, {
